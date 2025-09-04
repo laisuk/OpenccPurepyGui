@@ -86,7 +86,8 @@ EPUB (`.epub`).
 1. Select or drag file(s) into the source list box.
 2. Select the desired conversion configuration.
 3. Set the output folder.
-4. Click the **Process** button to begin batch conversion.
+4. Tick and enable `Convert Filename in batch mode` at \<File\> menu if needed.
+5. Click the **Process** button to begin batch conversion.
 
 ---
 
