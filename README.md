@@ -1,16 +1,101 @@
-# ZhoConvertPyQtRs
+# OpenccPurepyGui
 
-**PySide6 Linux Notes:**
+[![GitHub Release](https://img.shields.io/github/v/release/laisuk/OpenccJPurepyGui?display_name=tag&sort=semver)](https://github.com/laisuk/OpenccPurepyGui/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Ensure the xcb-cursor0 library is installed using:
+**OpenccPurepyGui** is a Chinese text conversion application built with PySide6 and the Qt design framework. It leverages
+the [opencc-purepy](https://github.com/laisuk/opencc-purepy) Python package to provide simplified and traditional Chinese conversion.
 
-`sudo apt-get install libxcb-cursor0`
+---
 
-Verify your Qt installation with:
+## 🚀 Download
 
-`sudo apt-get install --reinstall qt6-default`
+Download the latest version of **OpenccPurepyGui** for your platform
+at [Release](https://github.com/laisuk/OpenccPurepyGui/releases) section.
 
-Check library paths:
+> 📦 These are **Python Scripts**, targeting `Python 3.8+`.  
+> You must have [Python 3.8+ Interpreter](https://www.python.org/downloads/) installed to run them.
 
-`export LD_LIBRARY_PATH=/path/to/libxcb-cursor0:$LD_LIBRARY_PATH
-`
+---
+
+## Features
+
+- **Chinese Conversion**: Convert between simplified and traditional Chinese text.
+- **Single/Batch Conversion**: Perform Chinese text conversion in single or batch mode.
+- Designed to convert most **text based file types** and **Office documents** (`.docx`, `.xlsx`, `.pptx`, `.odt`)
+
+---
+
+## Dependencies
+
+- [Pyside6](https://wiki.qt.io/Qt_for_Python): Python bindings for the Qt cross-platform application and UI framework.  
+  ```bash
+  pip install PySide6
+  ```
+- [opencc-purepy](https://github.com/laisuk/opencc-purepy): Pure Java library for conversions between Traditional and
+  Simplified Chinese.
+
+---
+
+## Getting Started
+
+**Clone the repository**:
+
+```bash
+git clone https://github.com/laisuk/OpenccPurepyGui.git
+```
+
+**Navigate to the project directory**:
+
+```bash
+cd OpenccPurepyGui
+```
+
+**Run the application**:
+
+```bash
+python ./mainwindow.py
+```
+
+---
+
+## Usage
+
+### Single Mode
+
+![image01](./assets/image01.png)
+
+Support most **text base** file types.
+
+1. Paste the text or open a file you wish to convert (file/text drag and drop are supported).
+2. Select the desired conversion configuration (e.g., Simplified to Traditional).
+3. Click the **Process** button to see the results.
+
+---
+
+### Batch Mode
+
+![image02](./assets/image02.png)
+![image03](./assets/image03.png)
+
+Support most **text base** file types, **Office documents** (`.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`, `.odp`) and
+EPUB (`.epub`).
+
+1. Select or drag file(s) into the source list box.
+2. Select the desired conversion configuration.
+3. Set the output folder.
+4. Click the **Process** button to begin batch conversion.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
+
+---
+
+## Acknowledgements
+
+- [OpenCC](https://github.com/BYVoid/OpenCC) for the Chinese text conversion lexicon.
+- [opencc-purepy](https://github.com/laisuk/opencc-purepy) Pure Python implementation of OpenCC for Chinese text conversion.
+- [PySide6](https://wiki.qt.io/Qt_for_Python) Python bindings for the Qt cross-platform application and UI framework.

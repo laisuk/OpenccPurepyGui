@@ -272,7 +272,7 @@
        <enum>QTabWidget::TabShape::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="iconSize">
        <size>
@@ -307,7 +307,7 @@
            <widget class="TextEditWidget" name="tbSource">
             <property name="font">
              <font>
-              <family>Segoe UI</family>
+              <family>Noto Sans SC</family>
               <pointsize>12</pointsize>
               <bold>false</bold>
              </font>
@@ -330,7 +330,7 @@
            <widget class="QPlainTextEdit" name="tbDestination">
             <property name="font">
              <font>
-              <family>Segoe UI</family>
+              <family>Noto Sans SC</family>
               <pointsize>12</pointsize>
               <bold>false</bold>
              </font>
@@ -647,7 +647,7 @@
              <bool>true</bool>
             </property>
             <property name="dragDropMode">
-             <enum>QAbstractItemView::DragDropMode::NoDragDrop</enum>
+             <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
             </property>
             <property name="alternatingRowColors">
              <bool>true</bool>
@@ -991,7 +991,7 @@
      <x>0</x>
      <y>0</y>
      <width>990</width>
-     <height>22</height>
+     <height>33</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1050,7 +1050,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>

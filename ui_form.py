@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'form.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.9.1
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -171,7 +171,7 @@ class Ui_MainWindow(object):
         self.tbSource = TextEditWidget(self.tab_main)
         self.tbSource.setObjectName(u"tbSource")
         font3 = QFont()
-        font3.setFamilies([u"Segoe UI"])
+        font3.setFamilies([u"Noto Sans SC"])
         font3.setPointSize(12)
         font3.setBold(False)
         self.tbSource.setFont(font3)
@@ -248,7 +248,7 @@ class Ui_MainWindow(object):
         font4.setBold(True)
         self.btnDetect.setFont(font4)
         icon = QIcon()
-        icon.addFile(u":/images/resource/icons8-refresh-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon.addFile(u":/images/resource/icons8-refresh-48.png", QSize(), QIcon.Normal, QIcon.Off)
         self.btnDetect.setIcon(icon)
 
         self.horizontalLayout_source.addWidget(self.btnDetect)
@@ -316,7 +316,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.addLayout(self.horizontalLayout_textbox_action)
 
         icon1 = QIcon()
-        icon1.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon1.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Normal, QIcon.Off)
         self.tabWidget.addTab(self.tab_main, icon1, "")
         self.tab_batch = QWidget()
         self.tab_batch.setObjectName(u"tab_batch")
@@ -334,7 +334,7 @@ class Ui_MainWindow(object):
         self.listSource.setFrameShape(QFrame.Shape.Box)
         self.listSource.setLineWidth(2)
         self.listSource.setDragEnabled(True)
-        self.listSource.setDragDropMode(QAbstractItemView.DragDropMode.NoDragDrop)
+        self.listSource.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
         self.listSource.setAlternatingRowColors(True)
         self.listSource.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.listSource.setSortingEnabled(True)
@@ -382,7 +382,7 @@ class Ui_MainWindow(object):
         font6.setBold(False)
         self.btnPreview.setFont(font6)
         icon2 = QIcon()
-        icon2.addFile(u":/images/resource/icons8-preview-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon2.addFile(u":/images/resource/icons8-preview-48.png", QSize(), QIcon.Normal, QIcon.Off)
         self.btnPreview.setIcon(icon2)
         self.btnPreview.setIconSize(QSize(16, 16))
 
@@ -417,7 +417,7 @@ class Ui_MainWindow(object):
         self.btnOutDir.setMaximumSize(QSize(30, 16777215))
         self.btnOutDir.setFont(font4)
         icon3 = QIcon()
-        icon3.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon3.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Normal, QIcon.Off)
         self.btnOutDir.setIcon(icon3)
         self.btnOutDir.setIconSize(QSize(18, 18))
 
@@ -440,7 +440,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addLayout(self.horizontalLayout_listbox_action)
 
         icon4 = QIcon()
-        icon4.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon4.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Normal, QIcon.Off)
         self.tabWidget.addTab(self.tab_batch, icon4, "")
 
         self.verticalLayout_3.addWidget(self.tabWidget)
@@ -480,7 +480,7 @@ class Ui_MainWindow(object):
         font7.setBold(True)
         self.btnProcess.setFont(font7)
         icon5 = QIcon()
-        icon5.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon5.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Normal, QIcon.Off)
         self.btnProcess.setIcon(icon5)
         self.btnProcess.setIconSize(QSize(24, 24))
 
@@ -524,7 +524,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 990, 22))
+        self.menubar.setGeometry(QRect(0, 0, 990, 33))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuHelp = QMenu(self.menubar)
@@ -543,7 +543,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
 
         self.cbManual.setCurrentIndex(0)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
