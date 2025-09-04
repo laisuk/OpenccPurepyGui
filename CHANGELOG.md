@@ -7,12 +7,12 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ---
 
-## [1.0.0] – 2025-06-18
+## [1.0.0] – 2025-09-05
 
 ### Added
 
-- Initial release of `opencc-purepy` on PyPI.
-- Pure Python OpenCC-compatible engine for Chinese text conversion.
+- Initial release of `OpenccPurepyGui` for `opencc-purepy`.
+- Pure Python OpenCC-compatible engine for Traditional and Simplified Chinese text conversion.
 - Supported standard OpenCC configs:
     - `s2t`, `s2tw`, `s2twp`, `s2hk`, `t2s`, `tw2s`, `tw2sp`, `hk2s`, `jp2t`, `t2jp`
-- CLI tool: `python -m opencc_purepy` for simple command-line conversion.
+- Support conversion of plain text, Office documents and Epub.
