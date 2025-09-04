@@ -51,7 +51,7 @@ class MainWindow(QMainWindow):
         self.converter = OpenCC()
 
     def action_about_triggered(self):
-        QMessageBox.about(self, "About", "Zho Converter version 1.0.0 (c) 2024 Bryan Lai")
+        QMessageBox.about(self, "About", "OpenccPurepyGui version 1.0.0 (c) 2025 Laisuk")
 
     def tab_bar_changed(self, index: int) -> None:
         if index == 0:
