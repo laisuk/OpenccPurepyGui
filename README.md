@@ -3,8 +3,10 @@
 [![GitHub Release](https://img.shields.io/github/v/release/laisuk/OpenccJPurepyGui?display_name=tag&sort=semver)](https://github.com/laisuk/OpenccPurepyGui/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**OpenccPurepyGui** is a Chinese text conversion application built with PySide6 and the Qt design framework. It leverages
-the [opencc-purepy](https://github.com/laisuk/opencc-purepy) Python package to provide simplified and traditional Chinese conversion.
+**OpenccPurepyGui** is a Chinese text conversion application built with PySide6 and the Qt design framework. It
+leverages
+the [opencc-purepy](https://github.com/laisuk/opencc-purepy) Python package to provide simplified and traditional
+Chinese conversion.
 
 ---
 
@@ -28,7 +30,7 @@ at [Release](https://github.com/laisuk/OpenccPurepyGui/releases) section.
 
 ## Dependencies
 
-- [Pyside6](https://wiki.qt.io/Qt_for_Python): Python bindings for the Qt cross-platform application and UI framework.  
+- [Pyside6](https://wiki.qt.io/Qt_for_Python): Python bindings for the Qt cross-platform application and UI framework.
   ```bash
   pip install PySide6
   ```
@@ -97,5 +99,6 @@ This project is licensed under the MIT License. See the [LICENSE](./LICENSE) fil
 ## Acknowledgements
 
 - [OpenCC](https://github.com/BYVoid/OpenCC) for the Chinese text conversion lexicon.
-- [opencc-purepy](https://github.com/laisuk/opencc-purepy) Pure Python implementation of OpenCC for Chinese text conversion.
+- [opencc-purepy](https://github.com/laisuk/opencc-purepy) Pure Python implementation of OpenCC for Chinese text
+  conversion.
 - [PySide6](https://wiki.qt.io/Qt_for_Python) Python bindings for the Qt cross-platform application and UI framework.
