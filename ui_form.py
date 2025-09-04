@@ -37,6 +37,9 @@ class Ui_MainWindow(object):
         self.actionAbout = QAction(MainWindow)
         self.actionAbout.setObjectName(u"actionAbout")
         self.actionAbout.setMenuRole(QAction.MenuRole.NoRole)
+        self.actionConvert_filename = QAction(MainWindow)
+        self.actionConvert_filename.setObjectName(u"actionConvert_filename")
+        self.actionConvert_filename.setCheckable(True)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout_3 = QVBoxLayout(self.centralwidget)
@@ -537,6 +540,7 @@ class Ui_MainWindow(object):
 
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
+        self.menuFile.addAction(self.actionConvert_filename)
         self.menuFile.addAction(self.actionExit)
         self.menuHelp.addAction(self.actionAbout)
 
@@ -553,6 +557,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"OpenccPurepyGui", None))
         self.actionExit.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.actionAbout.setText(QCoreApplication.translate("MainWindow", u"About", None))
+        self.actionConvert_filename.setText(QCoreApplication.translate("MainWindow", u"Convert filename in batch mode", None))
         self.rbS2t.setText(QCoreApplication.translate("MainWindow", u"zh-Hans \uff08\u7b80\uff09 To zh-Hant \uff08\u7e41\uff09", None))
         self.rbT2s.setText(QCoreApplication.translate("MainWindow", u"zh-Hant \uff08\u7e41\uff09 To zh-Hans \uff08\u7b80\uff09", None))
         self.rbManual.setText(QCoreApplication.translate("MainWindow", u"Manual (\u81ea\u5b9a\u4e49) :", None))

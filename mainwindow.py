@@ -189,6 +189,10 @@ class MainWindow(QMainWindow):
                     file_path: str = self.ui.listSource.item(index).text()
                     file_base_path, file_extension = os.path.splitext(file_path)
                     ext = file_extension.lower().lstrip(".")
+
+                    if self.ui.actionConvert_filename.isChecked():
+                        file_base_path = self.converter.convert(file_path, is_punctuation)
+
                     if os.path.exists(file_path):
                         output_filename = self.ui.lineEditDir.text() + f"/{os.path.basename(file_base_path)}_{config}.{ext}"
 
