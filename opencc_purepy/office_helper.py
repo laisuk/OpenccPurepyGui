@@ -30,25 +30,6 @@ OFFICE_FORMATS = [
 ]
 
 
-def _normalized_temp_root() -> str:
-    # Normalize temp root path string to avoid Windows resolve() issues (e.g., R:\Temp)
-    return os.path.normpath(os.path.abspath(tempfile.gettempdir()))
-
-
-def _safe_zip_join(base_dir: str, member: str) -> Path:
-    """
-    Safely join a zip member path under base_dir without using Path.resolve(),
-    preventing Zip Slip via commonpath check.
-    """
-    # Normalize
-    base_dir_norm = os.path.normpath(base_dir)
-    dest = os.path.normpath(os.path.join(base_dir_norm, member))
-    # Ensure dest remains inside base_dir
-    if os.path.commonpath([base_dir_norm, dest]) != base_dir_norm:
-        raise ValueError(f"Unsafe ZIP path detected: {member}")
-    return Path(dest)
-
-
 def convert_office_doc(
         input_path: str,
         output_path: str,
@@ -167,6 +148,25 @@ def convert_office_doc(
                     pass
 
             shutil.rmtree(temp_dir, onerror=_onerror)
+
+
+def _normalized_temp_root() -> str:
+    # Normalize temp root path string to avoid Windows resolve() issues (e.g., R:\Temp)
+    return os.path.normpath(os.path.abspath(tempfile.gettempdir()))
+
+
+def _safe_zip_join(base_dir: str, member: str) -> Path:
+    """
+    Safely join a zip member path under base_dir without using Path.resolve(),
+    preventing Zip Slip via commonpath check.
+    """
+    # Normalize
+    base_dir_norm = os.path.normpath(base_dir)
+    dest = os.path.normpath(os.path.join(base_dir_norm, member))
+    # Ensure dest remains inside base_dir
+    if os.path.commonpath([base_dir_norm, dest]) != base_dir_norm:
+        raise ValueError(f"Unsafe ZIP path detected: {member}")
+    return Path(dest)
 
 
 def _get_target_xml_paths(office_format: str, base_dir: Path) -> Optional[List[Path]]:
