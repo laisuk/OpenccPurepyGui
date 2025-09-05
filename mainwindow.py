@@ -2,6 +2,7 @@
 import os
 import sys
 import time
+from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QGuiApplication
@@ -183,29 +184,39 @@ class MainWindow(QMainWindow):
                 self.ui.statusbar.showMessage("Invalid output directory.")
             else:
                 self.ui.tbPreview.clear()
+                out_dir = Path(self.ui.lineEditDir.text())
                 for index in range(self.ui.listSource.count()):
-                    file_path: str = self.ui.listSource.item(index).text()
-                    file_base_path, file_extension = os.path.splitext(file_path)
-                    ext = file_extension.lower().lstrip(".")
+                    file_path = Path(self.ui.listSource.item(index).text())
+                    # For single extension behavior (like splitext):
+                    base = file_path.stem  # 'basename'
+                    ext = file_path.suffix.lower()  # '.txt' or ''
+                    ext_no_dot = ext.lstrip(".")
 
-                    if self.ui.actionConvert_filename.isChecked():
-                        file_base_path = self.converter.convert(file_path, is_punctuation)
+                    # If you want to preserve multipart extensions like .tar.gz, use:
+                    # ext = ''.join(s.lower() for s in file_path.suffixes)
 
-                    if os.path.exists(file_path):
-                        output_filename = os.path.join(
-                            self.ui.lineEditDir.text(),
-                            f"{os.path.basename(file_base_path)}_{config}.{ext}"
-                        )
+                    basename = (
+                        self.converter.convert(base, is_punctuation)
+                        if self.ui.actionConvert_filename.isChecked()
+                        else base
+                    )
 
-                        if ext in OFFICE_FORMATS:
+                    if file_path.exists():
+                        out_dir.mkdir(parents=True, exist_ok=True)  # make sure dir exists
+                        output = out_dir / f"{basename}_{config}{ext}"
+                        input_filename = str(file_path)
+                        output_filename = str(output)
+
+                        if ext_no_dot in OFFICE_FORMATS:
                             # Convert Office documents
-                            success, message = convert_office_doc(file_path, output_filename, ext, self.converter,
+                            success, message = convert_office_doc(input_filename, output_filename, ext_no_dot,
+                                                                  self.converter,
                                                                   is_punctuation, True)
                             if success:
                                 self.ui.tbPreview.appendPlainText(
                                     f"{index + 1}: {output_filename} -> {message} -> Done.")
                             else:
-                                self.ui.tbPreview.appendPlainText(f"{index + 1}: {file_path} -> Skip: {message}.")
+                                self.ui.tbPreview.appendPlainText(f"{index + 1}: {input_filename} -> Skip: {message}.")
                             continue
 
                         else:
@@ -224,7 +235,8 @@ class MainWindow(QMainWindow):
                                     f.write(converted_text)
                                 self.ui.tbPreview.appendPlainText(f"{index + 1}: {output_filename} -> Done.")
                             else:
-                                self.ui.tbPreview.appendPlainText(f"{index + 1}: {file_path} -> Skip: Not text file.")
+                                self.ui.tbPreview.appendPlainText(
+                                    f"{index + 1}: {input_filename} -> Skip: Not text or valid file.")
                     else:
                         self.ui.tbPreview.appendPlainText(f"{index + 1}: {file_path} -> File not found.")
                 self.ui.statusbar.showMessage("Process completed")
@@ -303,6 +315,7 @@ class MainWindow(QMainWindow):
                 self.ui.statusbar.showMessage(f"Error opening {file_path}: {e}")
 
         self.ui.tbPreview.setPlainText(contents)
+        self.ui.statusbar.showMessage(f"File preview: {selected_items[0].text()}")
 
     def btn_out_directory_clicked(self):
         directory = QFileDialog.getExistingDirectory(self, "Select output directory")
