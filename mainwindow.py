@@ -102,24 +102,22 @@ class MainWindow(QMainWindow):
         self.ui.statusbar.showMessage("Contents copied to clipboard")
 
     def btn_openfile_click(self):
-        filename = QFileDialog.getOpenFileName(
+        filename, _ = QFileDialog.getOpenFileName(
             self,
             "Open Text File",
             "",
-            "Text Files (*.txt);;"
-            "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml));;"
-            "XML Files (*.xml *.ttml2);;"
-            "All Files (*.*)")
-        if not filename[0]:
+            "Text Files (*.txt);;Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;XML Files (*.xml *.ttml2);;All Files (*.*)"
+        )
+        if not filename:
             return
 
-        with open(filename[0], "r", encoding="utf-8") as f:
+        with open(filename, "r", encoding="utf-8") as f:
             contents = f.read()
 
         self.ui.tbSource.document().setPlainText(contents)
-        self.ui.tbSource.content_filename = filename[0]
+        self.ui.tbSource.content_filename = filename
         self.detect_source_text_info()
-        self.ui.statusbar.showMessage(f"File: {filename[0]}")
+        self.ui.statusbar.showMessage(f"File: {filename}")
 
     def get_current_config(self):
         config = "s2tw"
