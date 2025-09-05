@@ -121,25 +121,24 @@ class MainWindow(QMainWindow):
         self.ui.statusbar.showMessage(f"File: {filename}")
 
     def get_current_config(self):
-        config = "s2tw"
         if self.ui.rbManual.isChecked():
-            config = self.ui.cbManual.currentText().split(' ')[0]
-        else:
-            if self.ui.rbS2t.isChecked():
-                if self.ui.rbHK.isChecked():
-                    config = "s2hk"
-                elif self.ui.rbStd.isChecked():
-                    config = "s2t"
-                else:
-                    config = "s2twp" if self.ui.cbZhTw.isChecked() else "s2tw"
-            elif self.ui.rbT2s.isChecked():
-                if self.ui.rbHK.isChecked():
-                    config = "hk2s"
-                elif self.ui.rbStd.isChecked():
-                    config = "t2s"
-                else:
-                    config = "tw2sp" if self.ui.cbZhTw.isChecked() else "tw2s"
-        return config
+            return self.ui.cbManual.currentText().split(' ')[0]
+
+        if self.ui.rbS2t.isChecked():
+            if self.ui.rbHK.isChecked():
+                return "s2hk"
+            if self.ui.rbStd.isChecked():
+                return "s2t"
+            return "s2twp" if self.ui.cbZhTw.isChecked() else "s2tw"
+
+        if self.ui.rbT2s.isChecked():
+            if self.ui.rbHK.isChecked():
+                return "hk2s"
+            if self.ui.rbStd.isChecked():
+                return "t2s"
+            return "tw2sp" if self.ui.cbZhTw.isChecked() else "tw2s"
+
+        return "s2tw"
 
     def btn_process_click(self):
         config = self.get_current_config()
