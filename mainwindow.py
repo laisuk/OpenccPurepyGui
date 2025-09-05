@@ -192,7 +192,10 @@ class MainWindow(QMainWindow):
                         file_base_path = self.converter.convert(file_path, is_punctuation)
 
                     if os.path.exists(file_path):
-                        output_filename = self.ui.lineEditDir.text() + f"/{os.path.basename(file_base_path)}_{config}.{ext}"
+                        output_filename = os.path.join(
+                            self.ui.lineEditDir.text(),
+                            f"{os.path.basename(file_base_path)}_{config}.{ext}"
+                        )
 
                         if ext in OFFICE_FORMATS:
                             # Convert Office documents
