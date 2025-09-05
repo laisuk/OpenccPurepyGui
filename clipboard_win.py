@@ -75,7 +75,8 @@ def set_clipboard_text(text):
             return False
 
         text = str(text)
-        buffer_size = (len(text) + 1) * sizeof(ctypes.c_wchar)
+        buf = ctypes.create_unicode_buffer(text)
+        buffer_size = ctypes.sizeof(buf)
         handle = GlobalAlloc(GMEM_MOVEABLE, buffer_size)
         if not handle:
             print("Failed to allocate global memory")
@@ -90,7 +91,7 @@ def set_clipboard_text(text):
             return False
 
         try:
-            ctypes.memmove(data, c_wchar_p(text), buffer_size)
+            ctypes.memmove(data, buf, buffer_size)
         finally:
             unlock_result = GlobalUnlock(handle)
             if unlock_result == 0 and ctypes.GetLastError() != 0:
@@ -103,6 +104,7 @@ def set_clipboard_text(text):
             kernel32.GlobalFree(handle)  # Free the allocated memory
             return False
 
+        # Do not free handle after SetClipboardData succeeds
         return True
 
 
@@ -122,7 +124,7 @@ def get_clipboard_text():
             return ""
 
         try:
-            text = c_wchar_p(data).value
+            text = ctypes.wstring_at(data)
             return text if text else ""
         finally:
             unlock_result = GlobalUnlock(handle)
