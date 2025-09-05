@@ -58,14 +58,13 @@ def convert_office_doc(
 
     # --- NEW: normalized temp root and pre-created working dir
     temp_root = _normalized_temp_root()
-    temp_dir_str = tempfile.mkdtemp(prefix=f"{office_format}_temp_", dir=temp_root)
-    temp_dir = Path(temp_dir_str)
+    temp_dir = Path(tempfile.mkdtemp(prefix=f"{office_format}_temp_", dir=temp_root))
 
     try:
         with zipfile.ZipFile(input_path, 'r') as archive:
             for entry in archive.infolist():
                 try:
-                    dest_path = _safe_zip_join(temp_dir_str, entry.filename)
+                    dest_path = _safe_zip_join(str(temp_dir), entry.filename)
                 except ValueError as ve:
                     return False, f"❌ {ve}"
 
