@@ -303,6 +303,7 @@ class MainWindow(QMainWindow):
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     contents = f.read()
+                self.ui.statusbar.showMessage(f"File preview: {selected_items[0].text()}")
             except UnicodeDecodeError:
                 contents = ""  # Already initialized, but good to explicitly handle for clarity
                 self.ui.statusbar.showMessage(f"{file_path}: Not a valid text file.")
@@ -314,7 +315,6 @@ class MainWindow(QMainWindow):
                 self.ui.statusbar.showMessage(f"Error opening {file_path}: {e}")
 
         self.ui.tbPreview.setPlainText(contents)
-        self.ui.statusbar.showMessage(f"File preview: {selected_items[0].text()}")
 
     def btn_out_directory_clicked(self):
         directory = QFileDialog.getExistingDirectory(self, "Select output directory")
