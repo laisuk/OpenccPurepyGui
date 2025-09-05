@@ -264,18 +264,11 @@ class MainWindow(QMainWindow):
             self.ui.statusbar.showMessage("File(s) added.")
 
     def display_file_list(self, files):
+        existing = {self.ui.listSource.item(i).text() for i in range(self.ui.listSource.count())}
         for file in files:
-            # Check if the file path is not already in the list box
-            if not self.file_path_exists(file):
+            if file not in existing:
                 self.ui.listSource.addItem(file)
-
-    def file_path_exists(self, file_path):
-        # Check if the file path is already in the list box
-        for index in range(self.ui.listSource.count()):
-            item = self.ui.listSource.item(index)
-            if item.text() == file_path:
-                return True
-        return False
+                existing.add(file)
 
     def btn_remove_clicked(self):
         selected_items = self.ui.listSource.selectedItems()
