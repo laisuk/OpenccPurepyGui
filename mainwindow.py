@@ -69,7 +69,7 @@ class MainWindow(QMainWindow):
     def detect_source_text_info(self):
         text = self.ui.tbSource.toPlainText()
         if text:
-            self.update_source_code(get_text_code(text))
+            self.update_source_code(self.converter.zho_check(text))
             self.ui.lblFilename.setText(os.path.basename(self.ui.tbSource.content_filename))
         if self.ui.tbSource.content_filename:
             self.statusBar().showMessage(f"File: {self.ui.tbSource.content_filename}")
@@ -338,10 +338,6 @@ class MainWindow(QMainWindow):
 
 def btn_exit_click():
     QApplication.quit()
-
-
-def get_text_code(text):
-    return OpenCC().zho_check(text)
 
 
 if __name__ == "__main__":
