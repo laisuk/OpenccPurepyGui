@@ -35,12 +35,17 @@ class StarterUnion:
 
     @staticmethod
     def merge_precedence(slots: Iterable[DictSlot]) -> "StarterUnion":
+        slots = list(slots)
+        if len(slots) == 1:
+            d, m_len = slots[0]
+            return StarterUnion(merged_map=d, cap=int(m_len))
+
         merged: Dict[str, str] = {}
         max_len = 0
         for d, m_len in slots:
             if d:
                 for k, v in d.items():
-                    if k not in merged:
+                    if k not in merged:  # precedence: first dict wins
                         merged[k] = v
             max_len = max(max_len, int(m_len))
         return StarterUnion(merged_map=merged, cap=max_len)
