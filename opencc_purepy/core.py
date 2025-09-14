@@ -786,7 +786,7 @@ class OpenCC:
         if not input_text:
             return 0
 
-        stripped = STRIP_REGEX.sub("", input_text[:1000])
+        stripped = STRIP_REGEX.sub("", input_text[:500])
         strip_text = stripped[:100]
 
         if strip_text != self.ts(strip_text):
