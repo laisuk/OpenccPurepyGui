@@ -1,9 +1,12 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import QPlainTextEdit, QListWidget, QAbstractItemView, QListWidgetItem
 
 
 class TextEditWidget(QPlainTextEdit):
+    # Emit file path on file drop; emit "" when plain text is dropped
+    fileDropped = Signal(str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setAcceptDrops(True)
@@ -24,9 +27,13 @@ class TextEditWidget(QPlainTextEdit):
             # Read the content of the file and set it to QTextEdit
             self.load_file(file_path)
             self.content_filename = file_path
+            self.fileDropped.emit(file_path)  # <-- emit with path
+            event.acceptProposedAction()
         elif mime_data.hasText():
             self.document().setPlainText(mime_data.text())
             self.content_filename = ""
+            self.fileDropped.emit("")
+            event.acceptProposedAction()
 
     def load_file(self, file_path):
         try:

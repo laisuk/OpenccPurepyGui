@@ -36,7 +36,6 @@ class MainWindow(QMainWindow):
         self.ui.rbStd.clicked.connect(self.std_hk_select)
         self.ui.rbHK.clicked.connect(self.std_hk_select)
         self.ui.rbZhTw.clicked.connect(self.zhtw_select)
-        self.ui.btnDetect.clicked.connect(self.detect_source_text_info)
         self.ui.tabWidget.currentChanged[int].connect(self.tab_bar_changed)
         self.ui.cbZhTw.clicked[bool].connect(self.cbzhtw_clicked)
         self.ui.btnAdd.clicked.connect(self.btn_add_clicked)
@@ -48,8 +47,14 @@ class MainWindow(QMainWindow):
         self.ui.cbManual.activated.connect(self.cb_manual_activated)
         self.ui.actionAbout.triggered.connect(self.action_about_triggered)
         self.ui.actionExit.triggered.connect(btn_exit_click)
+        self.ui.tbSource.fileDropped.connect(self._on_tbSource_fileDropped)
 
         self.converter = OpenCC()
+
+    def _on_tbSource_fileDropped(self, path: str):
+        self.detect_source_text_info()
+        if not path:
+            self.statusBar().showMessage("Text contents dropped")
 
     def action_about_triggered(self):
         QMessageBox.about(self, "About", "OpenccPurepyGui version 1.0.0 (c) 2025 Laisuk")
@@ -69,10 +74,21 @@ class MainWindow(QMainWindow):
 
     def detect_source_text_info(self):
         text = self.ui.tbSource.toPlainText()
-        if text:
-            self.update_source_code(self.converter.zho_check(text))
-            self.ui.lblFilename.setText(os.path.basename(self.ui.tbSource.content_filename))
+        if not text:
+            return
+
+        text_code = self.converter.zho_check(text)
+        if text_code == 1:
+            self.ui.lblSourceCode.setText("zh-Hant (繁体)")
+            self.ui.rbT2s.setChecked(True)
+        elif text_code == 2:
+            self.ui.lblSourceCode.setText("zh-Hans (简体)")
+            self.ui.rbS2t.setChecked(True)
+        else:
+            self.ui.lblSourceCode.setText("Non-zh (其它)")
+
         if self.ui.tbSource.content_filename:
+            self.ui.lblFilename.setText(os.path.basename(self.ui.tbSource.content_filename))
             self.statusBar().showMessage(f"File: {self.ui.tbSource.content_filename}")
 
     def std_hk_select(self):
@@ -239,16 +255,6 @@ class MainWindow(QMainWindow):
                     else:
                         self.ui.tbPreview.appendPlainText(f"{index + 1}: {file_path} -> File not found.")
                 self.ui.statusbar.showMessage("Process completed")
-
-    def update_source_code(self, text_code):
-        if text_code == 1:
-            self.ui.lblSourceCode.setText("zh-Hant (繁体)")
-            self.ui.rbT2s.setChecked(True)
-        elif text_code == 2:
-            self.ui.lblSourceCode.setText("zh-Hans (简体)")
-            self.ui.rbS2t.setChecked(True)
-        else:
-            self.ui.lblSourceCode.setText("Non-zh (其它)")
 
     def btn_savefile_click(self):
         filename = QFileDialog.getSaveFileName(

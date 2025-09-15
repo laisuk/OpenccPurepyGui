@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'form.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.9.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -241,24 +241,12 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_source.addWidget(self.lblCharCount)
 
-        self.btnDetect = QPushButton(self.tab_main)
-        self.btnDetect.setObjectName(u"btnDetect")
-        sizePolicy.setHeightForWidth(self.btnDetect.sizePolicy().hasHeightForWidth())
-        self.btnDetect.setSizePolicy(sizePolicy)
-        self.btnDetect.setMaximumSize(QSize(30, 16777215))
-        font4 = QFont()
-        font4.setPointSize(10)
-        font4.setBold(True)
-        self.btnDetect.setFont(font4)
-        icon = QIcon()
-        icon.addFile(u":/images/resource/icons8-refresh-48.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.btnDetect.setIcon(icon)
-
-        self.horizontalLayout_source.addWidget(self.btnDetect)
-
         self.btnClearTbSource = QPushButton(self.tab_main)
         self.btnClearTbSource.setObjectName(u"btnClearTbSource")
         self.btnClearTbSource.setMaximumSize(QSize(30, 16777215))
+        font4 = QFont()
+        font4.setPointSize(10)
+        font4.setBold(True)
         self.btnClearTbSource.setFont(font4)
 
         self.horizontalLayout_source.addWidget(self.btnClearTbSource)
@@ -318,9 +306,9 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addLayout(self.horizontalLayout_textbox_action)
 
-        icon1 = QIcon()
-        icon1.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.tabWidget.addTab(self.tab_main, icon1, "")
+        icon = QIcon()
+        icon.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.tabWidget.addTab(self.tab_main, icon, "")
         self.tab_batch = QWidget()
         self.tab_batch.setObjectName(u"tab_batch")
         self.verticalLayout = QVBoxLayout(self.tab_batch)
@@ -384,9 +372,9 @@ class Ui_MainWindow(object):
         font6.setPointSize(9)
         font6.setBold(False)
         self.btnPreview.setFont(font6)
-        icon2 = QIcon()
-        icon2.addFile(u":/images/resource/icons8-preview-48.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.btnPreview.setIcon(icon2)
+        icon1 = QIcon()
+        icon1.addFile(u":/images/resource/icons8-preview-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnPreview.setIcon(icon1)
         self.btnPreview.setIconSize(QSize(16, 16))
 
         self.horizontalLayout_listbox_buttons.addWidget(self.btnPreview)
@@ -419,9 +407,9 @@ class Ui_MainWindow(object):
         self.btnOutDir.setSizePolicy(sizePolicy)
         self.btnOutDir.setMaximumSize(QSize(30, 16777215))
         self.btnOutDir.setFont(font4)
-        icon3 = QIcon()
-        icon3.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.btnOutDir.setIcon(icon3)
+        icon2 = QIcon()
+        icon2.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnOutDir.setIcon(icon2)
         self.btnOutDir.setIconSize(QSize(18, 18))
 
         self.horizontalLayout_preview.addWidget(self.btnOutDir)
@@ -442,9 +430,9 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout_listbox_action)
 
-        icon4 = QIcon()
-        icon4.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.tabWidget.addTab(self.tab_batch, icon4, "")
+        icon3 = QIcon()
+        icon3.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.tabWidget.addTab(self.tab_batch, icon3, "")
 
         self.verticalLayout_3.addWidget(self.tabWidget)
 
@@ -482,9 +470,9 @@ class Ui_MainWindow(object):
         font7.setPointSize(12)
         font7.setBold(True)
         self.btnProcess.setFont(font7)
-        icon5 = QIcon()
-        icon5.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.btnProcess.setIcon(icon5)
+        icon4 = QIcon()
+        icon4.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnProcess.setIcon(icon4)
         self.btnProcess.setIconSize(QSize(24, 24))
 
         self.horizontalLayout_process.addWidget(self.btnProcess)
@@ -527,7 +515,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 990, 33))
+        self.menubar.setGeometry(QRect(0, 0, 990, 22))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuHelp = QMenu(self.menubar)
@@ -586,10 +574,6 @@ class Ui_MainWindow(object):
         self.lblSource.setText(QCoreApplication.translate("MainWindow", u"Source", None))
         self.lblSourceCode.setText("")
         self.lblCharCount.setText("")
-#if QT_CONFIG(tooltip)
-        self.btnDetect.setToolTip(QCoreApplication.translate("MainWindow", u"Refresh source info", None))
-#endif // QT_CONFIG(tooltip)
-        self.btnDetect.setText("")
 #if QT_CONFIG(tooltip)
         self.btnClearTbSource.setToolTip(QCoreApplication.translate("MainWindow", u"Clear source box contents", None))
 #endif // QT_CONFIG(tooltip)
