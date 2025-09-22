@@ -4,12 +4,12 @@ from typing import Tuple, Dict, Any, Union, List, Optional, Callable
 import inspect
 
 DictSlot = Tuple[Dict[str, str], int]
-StarterUnion = Any  # type: ignore
+StarterUnionT = Any  # type: ignore
 RoundInput = Union[
     None,
     DictSlot,
     List[DictSlot],
-    StarterUnion,
+    StarterUnionT,
 ]
 
 
@@ -136,7 +136,7 @@ class DictRefs:
             input_text: str,
             *,
             segment_replace: Optional[Callable[[str, List[DictSlot], int], str]] = None,
-            union_replace: Optional[Callable[[str, "StarterUnion"], str]] = None,  # e.g. opencc.convert_union
+            union_replace: Optional[Callable[[str, "StarterUnionT"], str]] = None,  # e.g. opencc.convert_union
     ) -> str:
         """
         Unified 3-round apply. You can pass:
