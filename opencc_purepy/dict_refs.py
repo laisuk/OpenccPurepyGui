@@ -161,7 +161,7 @@ class DictRefs:
             StarterUnion = None  # type: ignore
 
         def _is_union(obj) -> bool:
-            return bool(obj) and StarterUnion is not None and "StarterUnion" in str(type(obj))
+            return bool(obj) and StarterUnion is not None and isinstance(obj, StarterUnion)
 
         def _ensure_index(_u):
             if not getattr(_u, "_indexed", False):
