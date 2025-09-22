@@ -1,3 +1,4 @@
+from __future__ import annotations
 import warnings
 from pathlib import Path
 from typing import Dict, Tuple, Tuple as Tup  # type checking
@@ -10,8 +11,8 @@ class DictionaryMaxlength:
     """
     # Immutable, subclass-overridable
     DICT_FIELDS: Tup[str, ...] = (
-        "st_characters", "st_phrases",
-        "ts_characters", "ts_phrases",
+        "st_characters", "st_phrases", "st_punctuations",
+        "ts_characters", "ts_phrases", "ts_punctuations",
         "tw_phrases", "tw_phrases_rev",
         "tw_variants", "tw_variants_rev", "tw_variants_rev_phrases",
         "hk_variants", "hk_variants_rev", "hk_variants_rev_phrases",
@@ -25,8 +26,10 @@ class DictionaryMaxlength:
         """
         self.st_characters: Tuple[Dict[str, str], int] = ({}, 0)
         self.st_phrases: Tuple[Dict[str, str], int] = ({}, 0)
+        self.st_punctuations: Tuple[Dict[str, str], int] = ({}, 0)
         self.ts_characters: Tuple[Dict[str, str], int] = ({}, 0)
         self.ts_phrases: Tuple[Dict[str, str], int] = ({}, 0)
+        self.ts_punctuations: Tuple[Dict[str, str], int] = ({}, 0)
         self.tw_phrases: Tuple[Dict[str, str], int] = ({}, 0)
         self.tw_phrases_rev: Tuple[Dict[str, str], int] = ({}, 0)
         self.tw_variants: Tuple[Dict[str, str], int] = ({}, 0)
@@ -107,8 +110,10 @@ class DictionaryMaxlength:
         paths = {
             'st_characters': "STCharacters.txt",
             'st_phrases': "STPhrases.txt",
+            'st_punctuations': "STPunctuations.txt",
             'ts_characters': "TSCharacters.txt",
             'ts_phrases': "TSPhrases.txt",
+            'ts_punctuations': "TSPunctuations.txt",
             'tw_phrases': "TWPhrases.txt",
             'tw_phrases_rev': "TWPhrasesRev.txt",
             'tw_variants': "TWVariants.txt",
@@ -166,8 +171,8 @@ class DictionaryMaxlength:
             where the mapping is sorted by (key length ASC, then key ASC).
 
         Fields are written in a fixed order:
-            st_characters, st_phrases,
-            ts_characters, ts_phrases,
+            st_characters, st_phrases, st_punctuations,
+            ts_characters, ts_phrases, ts_punctuations,
             tw_phrases, tw_phrases_rev,
             tw_variants, tw_variants_rev, tw_variants_rev_phrases,
             hk_variants, hk_variants_rev, hk_variants_rev_phrases,

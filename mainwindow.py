@@ -311,13 +311,13 @@ class MainWindow(QMainWindow):
                     contents = f.read()
                 self.ui.statusbar.showMessage(f"File preview: {selected_items[0].text()}")
             except UnicodeDecodeError:
-                contents = ""  # Already initialized, but good to explicitly handle for clarity
+                contents = "❌ Not a valid text file"  # Already initialized, but good to explicitly handle for clarity
                 self.ui.statusbar.showMessage(f"{file_path}: Not a valid text file.")
             except FileNotFoundError:  # Add this to handle non-existent files
-                contents = ""
+                contents = "❌ File not found"
                 self.ui.statusbar.showMessage(f"{file_path}: File not found.")
             except Exception as e:  # Catch other potential errors
-                contents = ""
+                contents = "❌ Error opening file"
                 self.ui.statusbar.showMessage(f"Error opening {file_path}: {e}")
 
         self.ui.tbPreview.setPlainText(contents)

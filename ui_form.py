@@ -515,11 +515,13 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 990, 22))
+        self.menubar.setGeometry(QRect(0, 0, 990, 33))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuHelp = QMenu(self.menubar)
         self.menuHelp.setObjectName(u"menuHelp")
+        self.menuSettings = QMenu(self.menubar)
+        self.menuSettings.setObjectName(u"menuSettings")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -527,10 +529,11 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.menuFile.menuAction())
+        self.menubar.addAction(self.menuSettings.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
-        self.menuFile.addAction(self.actionConvert_filename)
         self.menuFile.addAction(self.actionExit)
         self.menuHelp.addAction(self.actionAbout)
+        self.menuSettings.addAction(self.actionConvert_filename)
 
         self.retranslateUi(MainWindow)
 
@@ -545,7 +548,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"OpenccPurepyGui", None))
         self.actionExit.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.actionAbout.setText(QCoreApplication.translate("MainWindow", u"About", None))
-        self.actionConvert_filename.setText(QCoreApplication.translate("MainWindow", u"Convert filename in batch mode", None))
+        self.actionConvert_filename.setText(QCoreApplication.translate("MainWindow", u"Convert Filename (\u8f6c\u6362\u6587\u4ef6\u540d)", None))
         self.rbS2t.setText(QCoreApplication.translate("MainWindow", u"zh-Hans \uff08\u7b80\uff09 To zh-Hant \uff08\u7e41\uff09", None))
         self.rbT2s.setText(QCoreApplication.translate("MainWindow", u"zh-Hant \uff08\u7e41\uff09 To zh-Hans \uff08\u7b80\uff09", None))
         self.rbManual.setText(QCoreApplication.translate("MainWindow", u"Manual (\u81ea\u5b9a\u4e49) :", None))
@@ -603,5 +606,6 @@ class Ui_MainWindow(object):
         self.btnExit.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", u"Help", None))
+        self.menuSettings.setTitle(QCoreApplication.translate("MainWindow", u"Settings", None))
     # retranslateUi
 

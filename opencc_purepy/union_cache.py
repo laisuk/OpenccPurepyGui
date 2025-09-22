@@ -10,7 +10,9 @@ from .starter_union import DictSlot, StarterUnion
 class UnionKey(Enum):
     # S2T / T2S (no punctuation – we convert punctuation separately)
     S2T = auto()
+    S2T_PUNCT = auto()
     T2S = auto()
+    T2S_PUNCT = auto()
 
     # TW helpers
     TwPhrasesOnly = auto()
@@ -79,8 +81,12 @@ class UnionCache:
         g = self._get
         if key is UnionKey.S2T:
             return [g("st_phrases"), g("st_characters")]
+        if key is UnionKey.S2T_PUNCT:
+            return [g("st_phrases"), g("st_characters"), g("st_punctuations")]
         if key is UnionKey.T2S:
             return [g("ts_phrases"), g("ts_characters")]
+        if key is UnionKey.T2S_PUNCT:
+            return [g("ts_phrases"), g("ts_characters"), g("ts_punctuations")]
 
         # ---------- TW helpers ----------
         if key is UnionKey.TwPhrasesOnly:

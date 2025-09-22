@@ -959,14 +959,13 @@
      <x>0</x>
      <y>0</y>
      <width>990</width>
-     <height>22</height>
+     <height>33</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="actionConvert_filename"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -975,7 +974,14 @@
     </property>
     <addaction name="actionAbout"/>
    </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionConvert_filename"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuSettings"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar">
@@ -1006,7 +1012,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Convert filename in batch mode</string>
+    <string>Convert Filename (转换文件名)</string>
    </property>
   </action>
  </widget>
