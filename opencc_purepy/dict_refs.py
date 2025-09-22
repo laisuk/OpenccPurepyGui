@@ -4,19 +4,70 @@ from typing import Tuple, Dict, Any, Union, List, Optional, Callable
 import inspect
 
 DictSlot = Tuple[Dict[str, str], int]
+"""Tuple representing a dictionary and its maximum word length.
+
+The first element is a mapping of source strings to target strings,
+and the second element is the maximum phrase length in that dictionary.
+"""
+
 StarterUnionT = Any  # type: ignore
+"""Type placeholder for StarterUnion.
+
+This is typically a union data structure used internally for
+starter-index optimizations. Declared as `Any` to avoid circular
+imports at type-check time.
+"""
+
 RoundInput = Union[
     None,
     DictSlot,
     List[DictSlot],
     StarterUnionT,
 ]
+"""Union type describing valid inputs for a conversion round.
+
+- ``None``: No dictionary or union provided.
+- ``DictSlot``: A single dictionary with max length.
+- ``List[DictSlot]``: Multiple dictionaries applied in order.
+- ``StarterUnionT``: A pre-built union structure for fast lookup.
+"""
 
 
 def _check_delegates(
         segment_replace: Optional[Callable],
         union_replace: Optional[Callable],
 ) -> None:
+    """
+        Validate delegate function signatures for segment and union replacement.
+
+        This function inspects the callables provided for segment-based and
+        union-based replacement to ensure they have the expected number of
+        positional parameters. It raises a ``TypeError`` if a delegate
+        appears to have been mis-specified.
+
+        Args:
+            segment_replace (Optional[Callable]):
+                A function expected to accept three parameters:
+                ``(text: str, slots: List[DictSlot], cap: int)``.
+                Used for performing dictionary-based segment replacement.
+            union_replace (Optional[Callable]):
+                A function expected to accept two parameters:
+                ``(text: str, union: StarterUnion)``.
+                Used for performing replacement with a pre-built union.
+
+        Raises:
+            TypeError:
+                - If ``segment_replace`` does not accept at least 3 positional arguments.
+                - If ``union_replace`` does not accept at least 2 positional arguments.
+                - If both delegates are the same function reference.
+            ValueError:
+                Propagated if function signature introspection fails.
+
+        Notes:
+            - If a delegate function cannot be introspected (e.g., built-ins or
+              C-extensions), it is accepted and any runtime errors are deferred
+              until actual invocation.
+        """
     # segment_replace must accept (text, slots, cap)
     if segment_replace is not None:
         try:
@@ -119,6 +170,41 @@ class DictRefs:
         raise TypeError(f"Unsupported round input type: {type(inp)}")
 
     def _normalize(self) -> List[Tuple[List[DictSlot], int]]:
+        """
+            Normalize all configured dictionary rounds into a standard form.
+
+            This method consolidates up to three rounds of dictionary data
+            (`round_1`, `round_2`, `round_3`) into a uniform representation:
+            a list of tuples, where each tuple contains:
+
+              - A list of ``DictSlot`` items (dictionaries with max length).
+              - An integer representing the maximum word length (`cap`) across
+                those dictionaries.
+
+            Results are cached in ``self._norm`` to avoid recomputation.
+
+            Returns:
+                List[Tuple[List[DictSlot], int]]:
+                    A list of normalized rounds in the order
+                    ``[round_1, round_2, round_3]``.
+
+                    Each element is a 2-tuple:
+                    ``(slots, cap)`` where:
+                      * ``slots`` is a list of dictionaries for that round.
+                      * ``cap`` is the maximum word length for those dictionaries.
+
+            Notes:
+                - If a round is ``None`` or empty, it is normalized to
+                  ``([], 0)``.
+                - Subsequent calls reuse the cached ``self._norm`` value.
+                - Internal helper ``_as_slots_and_cap`` performs the actual
+                  unpacking and maximum-length calculation.
+
+            Example:
+                >>> d = DictRefs(round_1=[({"a":"b"}, 1)])
+                >>> d._normalize()
+                [([({"a":"b"}, 1)], 1), ([], 0), ([], 0)]
+            """
         if self._norm is not None:
             return self._norm
         rounds = [self.round_1, self.round_2, self.round_3]
