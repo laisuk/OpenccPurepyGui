@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Defaults (override via env or flags)
-ONEFILE=0                 # 1 = --onefile, 0 = --standalone
-RELEASE=1                 # 1 = add --lto=yes
-CONSOLE=0                 # kept for parity; no special handling on Linux
-CLEAN=0                   # 1 = remove previous .build/.dist
-ASSUME_YES=1              # 1 = --assume-yes-for-downloads
-ENTRY="mainwindow.py"     # entry script
+# Defaults (override via flags or env PYTHON_EXE)
+ONEFILE=0                  # 1 = --onefile, 0 = --standalone
+RELEASE=1                  # 1 = add --lto=yes
+CONSOLE=0                  # no-op on Linux; kept for parity
+CLEAN=0                    # 1 = remove previous .build/.dist
+ASSUME_YES=1               # 1 = --assume-yes-for-downloads
+ENTRY="mainwindow.py"      # entry script
 OUTPUT_NAME="OpenccPurepyGui"   # final binary name (no .exe on Linux)
-ICON="resource/openccpurepygui.png" # optional; not used by Nuitka on Linux directly
+ICON="resource/openccpurepygui.png"  # not used directly by Nuitka on Linux
+PYTHON_EXE="${PYTHON_EXE:-python3}"
 
 usage() {
   cat <<EOF
@@ -23,12 +24,13 @@ Options:
   --assume-yes / --no-assume-yes  Auto-yes for tool downloads (default: yes)
   --entry <path>                Entry Python file (default: $ENTRY)
   --output-name <name>          Output binary name (default: $OUTPUT_NAME)
-  --icon <png>                  PNG icon (not directly used by Nuitka on Linux)
+  --icon <png>                  PNG icon (not used by Nuitka on Linux)
+  --python-exe <cmd>            Python to run (default: $PYTHON_EXE)
   -h, --help                    Show this help
 EOF
 }
 
-# Parse args (simple long-opts)
+# Parse args
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --onefile) ONEFILE=1; shift ;;
@@ -43,44 +45,48 @@ while [[ $# -gt 0 ]]; do
     --entry) ENTRY="${2:?}"; shift 2 ;;
     --output-name) OUTPUT_NAME="${2:?}"; shift 2 ;;
     --icon) ICON="${2:?}"; shift 2 ;;
+    --python-exe) PYTHON_EXE="${2:?}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1"; usage; exit 2 ;;
   esac
 done
 
-# --- setup & checks ---
-# activate venv
-if [[ ! -f ".venv/bin/activate" ]]; then
-  echo "ERROR: Virtual env .venv313u not found. Create it or adjust the path." >&2
-  exit 1
+# Pick a Python if the chosen one isn't available
+if ! command -v "$PYTHON_EXE" >/dev/null 2>&1; then
+  if command -v python >/dev/null 2>&1; then
+    PYTHON_EXE=python
+  else
+    echo "ERROR: Python executable not found (tried '$PYTHON_EXE' and 'python')." >&2
+    exit 1
+  fi
 fi
-# shellcheck disable=SC1091
-source .venv/bin/activate
 
-# entry check
+# Entry check
 if [[ ! -f "$ENTRY" ]]; then
   echo "ERROR: Entry file '$ENTRY' not found." >&2
   exit 1
 fi
 
-# icon warning (not used by Nuitka on Linux; you may use it for .desktop packaging)
+# Icon warning (not used directly by Nuitka on Linux)
 if [[ ! -f "$ICON" ]]; then
   echo "WARN: Icon '$ICON' not found. Continuing without a custom icon."
 fi
 
-# clean
+# Clean previous builds
 if [[ "$CLEAN" == "1" ]]; then
   find . -maxdepth 1 -type d \( -name "*.build" -o -name "*.dist" \) -print0 | xargs -0r rm -rf
 fi
 
-# --- common args ---
+# Common Nuitka args
 common=(
   --enable-plugin=pyside6
   --include-package=opencc_purepy
-  --include-data-dir=resource=resource
   --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts
   --output-filename="$OUTPUT_NAME"
 )
+
+# (Optional) include GUI resources directory if you have one:
+# common+=( --include-data-dir=resource=resource )
 
 # Release flags
 if [[ "$RELEASE" == "1" ]]; then
@@ -98,12 +104,13 @@ echo "  Release:     $RELEASE"
 echo "  Console:     $CONSOLE (no-op on Linux)"
 echo "  OutputName:  $OUTPUT_NAME"
 echo "  Entry:       $ENTRY"
+echo "  PythonExe:   $PYTHON_EXE"
 echo
 
 if [[ "$ONEFILE" == "1" ]]; then
-  python -m nuitka --onefile "${common[@]}" "$ENTRY"
+  "$PYTHON_EXE" -m nuitka --onefile "${common[@]}" "$ENTRY"
 else
-  python -m nuitka --standalone "${common[@]}" "$ENTRY"
+  "$PYTHON_EXE" -m nuitka --standalone "${common[@]}" "$ENTRY"
 fi
 
 echo

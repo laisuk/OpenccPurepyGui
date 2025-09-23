@@ -657,12 +657,12 @@
              <widget class="QPushButton" name="btnAdd">
               <property name="font">
                <font>
-                <pointsize>10</pointsize>
+                <pointsize>9</pointsize>
                 <bold>true</bold>
                </font>
               </property>
               <property name="text">
-               <string>＋</string>
+               <string>➕</string>
               </property>
              </widget>
             </item>
@@ -675,7 +675,7 @@
                </font>
               </property>
               <property name="text">
-               <string>—</string>
+               <string>➖</string>
               </property>
              </widget>
             </item>
@@ -1033,7 +1033,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>
