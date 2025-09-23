@@ -23,6 +23,9 @@ __pycache__/
 # Wheels
 *.whl
 
-mainwindow.build/
-mainwindow.dist/
+# Nuitka build outputs
+*.build/
+*.dist/
+**/*.build/
+**/*.dist/
 
