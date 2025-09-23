@@ -22,3 +22,7 @@ __pycache__/
 
 # Wheels
 *.whl
+
+mainwindow.build/
+mainwindow.dist/
+

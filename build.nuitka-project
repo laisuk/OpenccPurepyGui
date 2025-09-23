@@ -1,0 +1,44 @@
+# build.nuitka-project
+[Project]
+# Your entry point:
+main = mainwindow.py
+
+# Standalone (portable folder):
+standalone = true
+
+# Optional: bundle to a single EXE (slower startup); comment out if you prefer a folder
+onefile = false
+
+# Use Nuitka’s PySide6 integration (copies Qt plugins, handles PATH etc.)
+enable-plugin = pyside6
+
+# Include your local package explicitly (belt-and-suspenders even if it's importable)
+include-package = opencc_purepy
+
+# If your GUI package is a proper package, Nuitka will follow imports.
+# If you keep loose scripts, add them with include-data-files or include-module.
+
+# Include app data (adjust globs/paths to your project):
+#   left side = on-disk pattern; right side = target folder inside dist
+include-data-dir = resource=resource
+
+# (Optional) include license/readme
+#include-data-files = LICENSE=LICENSE
+#include-data-files = README.md=README.md
+
+# Reduce size (adds build time):
+lto = yes
+nofollow-imports = no
+no-follow = tkinter  # example: exclude frameworks you don't use
+
+# (Windows) use MSVC for best compatibility:
+msvc = latest
+
+# (Windows) set icon (ICO):
+windows-icon-from-ico = resource/openccpurepygui.ico
+
+# (macOS) app bundle basics:
+#macos-app-icon = opencc.icns
+#macos-app-name = OpenccPurepyGui
+
+windows-console-mode = disable
