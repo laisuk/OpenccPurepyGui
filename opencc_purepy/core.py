@@ -167,7 +167,7 @@ class OpenCC:
             return text
 
         total_length = len(text)
-        if total_length < 1_000_000:
+        if total_length < 100_000:
             return OpenCC.convert_segment(text, dictionaries, max_word_length)
 
         # Split into segments (inclusive keeps delimiters attached to segments)
@@ -178,7 +178,7 @@ class OpenCC:
             return OpenCC.convert_segment(text, dictionaries, max_word_length)
 
         # Parallel threshold
-        use_parallel = len(ranges) > 1_000
+        use_parallel = len(ranges) > 1_000 and total_length > 1_000_000
 
         if use_parallel:
             group_count = min(4, max(1, cpu_count()))
@@ -259,7 +259,7 @@ class OpenCC:
             union.build_starter_index()
 
         total_length = len(text)
-        if total_length < 1_000_000:
+        if total_length < 800_000:
             return OpenCC.convert_union(text, union)
 
         ranges: List[Tuple[int, int]] = self.get_split_ranges(text, inclusive=True)
@@ -269,7 +269,7 @@ class OpenCC:
             return OpenCC.convert_union(text, union)
 
         # Parallel threshold (same as legacy)
-        use_parallel = len(ranges) > 1_000
+        use_parallel = len(ranges) > 1_000 and total_length > 1_000_000
 
         if use_parallel:
             group_count = min(4, max(1, cpu_count()))
