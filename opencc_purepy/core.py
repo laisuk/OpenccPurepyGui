@@ -178,7 +178,7 @@ class OpenCC:
             return OpenCC.convert_segment(text, dictionaries, max_word_length)
 
         # Parallel threshold
-        use_parallel = len(ranges) > 1_000 and total_length >= 1_000_000
+        use_parallel = len(ranges) > 1_000
 
         if use_parallel:
             group_count = min(4, max(1, cpu_count()))
@@ -269,7 +269,7 @@ class OpenCC:
             return OpenCC.convert_union(text, union)
 
         # Parallel threshold (same as legacy)
-        use_parallel = len(ranges) > 1_000 and total_length >= 1_000_000
+        use_parallel = len(ranges) > 1_000
 
         if use_parallel:
             group_count = min(4, max(1, cpu_count()))
