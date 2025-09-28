@@ -166,6 +166,10 @@ class OpenCC:
         if not text:
             return text
 
+        total_length = len(text)
+        if total_length < 1_000_000:
+            return OpenCC.convert_segment(text, dictionaries, max_word_length)
+
         # Split into segments (inclusive keeps delimiters attached to segments)
         ranges = self.get_split_ranges(text, inclusive=True)
 
@@ -174,7 +178,6 @@ class OpenCC:
             return OpenCC.convert_segment(text, dictionaries, max_word_length)
 
         # Parallel threshold
-        total_length = len(text)
         use_parallel = len(ranges) > 1_000 and total_length >= 1_000_000
 
         if use_parallel:
@@ -255,6 +258,10 @@ class OpenCC:
         if not getattr(union, "_indexed", False):
             union.build_starter_index()
 
+        total_length = len(text)
+        if total_length < 1_000_000:
+            return OpenCC.convert_union(text, union)
+
         ranges: List[Tuple[int, int]] = self.get_split_ranges(text, inclusive=True)
 
         # Single segment → direct
@@ -262,7 +269,6 @@ class OpenCC:
             return OpenCC.convert_union(text, union)
 
         # Parallel threshold (same as legacy)
-        total_length = len(text)
         use_parallel = len(ranges) > 1_000 and total_length >= 1_000_000
 
         if use_parallel:
@@ -795,8 +801,9 @@ def convert_range_group(args):
     :return: A string representing the converted result for the group.
     """
     text, group_ranges, dictionaries, max_word_length, convert_segment_fn = args
+    conv = convert_segment_fn  # local bind
     return ''.join(
-        convert_segment_fn(text[start:end], dictionaries, max_word_length)
+        conv(text[start:end], dictionaries, max_word_length)
         for start, end in group_ranges
     )
 
