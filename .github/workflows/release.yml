@@ -18,21 +18,21 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_suffix: linux-x64
-            archive_ext: tar.gz
-            archive_cmd: tar -czf OpenccPurepyGui-${{ github.ref_name }}-linux-x64.tar.gz -C mainwindow.dist .
+            pack_cmd: |
+              tar -czf OpenccPurepyGui-${{ github.ref_name }}-linux-x64.tar.gz -C mainwindow.dist .
+            artifact_glob: OpenccPurepyGui-*-linux-x64.tar.gz
           - os: windows-latest
             artifact_suffix: win-x64
-            archive_ext: zip
-            # Use PowerShell's Compress-Archive for Windows
-            archive_cmd: powershell -Command "Compress-Archive -Path mainwindow.dist\\* -DestinationPath OpenccPurepyGui-${{ github.ref_name }}-win-x64.zip"
+            pack_cmd: powershell -Command "Compress-Archive -Path mainwindow.dist\* -DestinationPath OpenccPurepyGui-${{ github.ref_name }}-win-x64.zip"
+            artifact_glob: OpenccPurepyGui-*-win-x64.zip
           - os: macos-latest
             artifact_suffix: macos
-            archive_ext: zip
-            # Zip the .app bundle; name is consistent with Nuitka output-filename
-            archive_cmd: |
+            # Zip the entire dist directory, regardless of whether an .app exists
+            pack_cmd: |
               cd mainwindow.dist
-              zip -r ../OpenccPurepyGui-${{ github.ref_name }}-macos.zip OpenccPurepyGui.app
+              zip -r ../OpenccPurepyGui-${{ github.ref_name }}-macos.zip .
               cd ..
+            artifact_glob: OpenccPurepyGui-*-macos.zip
 
     steps:
       - name: Checkout
@@ -47,11 +47,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install build dependencies
+      - name: Install dependencies
         run: |
           python -m pip install -U pip
           python -m pip install -r requirements.txt
@@ -63,10 +63,15 @@ jobs:
           sudo apt-get install -y patchelf libgl1 libx11-xcb1 libxkbcommon-x11-0 libxcb-cursor0 libnss3
 
       - name: Show tool versions
+        shell: bash
         run: |
           python --version
           python -m nuitka --version || true
-          patchelf --version || true
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            patchelf --version || true
+          else
+            echo "Skipping patchelf check (not Linux)."
+          fi
 
       - name: Build (Nuitka)
         shell: bash
@@ -81,61 +86,20 @@ jobs:
             --assume-yes-for-downloads \
             mainwindow.py
 
-      # ----- Optional macOS codesign/notarize (guarded by secrets) -----
-      - name: Import signing certificate (macOS)
-        if: runner.os == 'macOS' && env.MAC_CERT_BASE64 != '' && env.MAC_CERT_PASSWORD != '' && env.MAC_CODESIGN_ID != ''
-        env:
-          MAC_CERT_BASE64: ${{ secrets.MAC_CERT_BASE64 }}
-          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
-          MAC_CODESIGN_ID: ${{ secrets.MAC_CODESIGN_ID }} # e.g. "Developer ID Application: Your Name (TEAMID)"
-        run: |
-          echo "$MAC_CERT_BASE64" | base64 --decode > signing.p12
-          security create-keychain -p temp build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p temp build.keychain
-          security import signing.p12 -k build.keychain -P "$MAC_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k temp build.keychain
-          /usr/bin/codesign --force --options runtime --deep \
-            --sign "$MAC_CODESIGN_ID" "mainwindow.dist/OpenccPurepyGui.app"
-          /usr/bin/codesign --verify --deep --strict "mainwindow.dist/OpenccPurepyGui.app"
-
-      - name: Notarize (macOS)
-        if: runner.os == 'macOS' && env.MAC_CERT_BASE64 != '' && env.MAC_CERT_PASSWORD != '' && env.MAC_CODESIGN_ID != '' && env.APPLE_ID != '' && env.APPLE_TEAM_ID != '' && env.APPLE_APP_SPECIFIC_PASSWORD != ''
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}                         # your Apple ID email
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}               # e.g. ABCDE12345
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-        run: |
-          # Create the zip for notarization
-          cd mainwindow.dist
-          /usr/bin/zip -r ../OpenccPurepyGui-notarize.zip OpenccPurepyGui.app
-          cd ..
-          # Submit to Apple Notary Service
-          xcrun notarytool submit OpenccPurepyGui-notarize.zip \
-            --apple-id "$APPLE_ID" \
-            --team-id "$APPLE_TEAM_ID" \
-            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-            --wait
-          # Staple ticket
-          xcrun stapler staple "mainwindow.dist/OpenccPurepyGui.app"
-
-      # Package artifacts
-      - name: Package
+      - name: Package artifact
         shell: bash
-        run: ${{ matrix.archive_cmd }}
+        run: ${{ matrix.pack_cmd }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: OpenccPurepyGui-${{ github.ref_name }}-${{ matrix.artifact_suffix }}
-          path: |
-            *.${{ matrix.archive_ext }}
-            OpenccPurepyGui-*.zip
-          if-no-files-found: warn
+          path: ${{ matrix.artifact_glob }}
+          if-no-files-found: error
 
   release:
     name: Create GitHub Release
-    needs: [ build ]
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
