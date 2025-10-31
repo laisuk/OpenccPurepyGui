@@ -65,27 +65,6 @@ jobs:
             echo "Skipping patchelf check (not Linux)."
           fi
 
-      # ---------- Windows-only: create .ico from PNG (if no .ico committed) ----------
-      - name: Prepare Windows icon (.ico from PNG)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          if (Test-Path "resource/openccpurepygui.ico") {
-            Write-Host "ICO already exists."
-          } elseif (Test-Path "resource/openccpurepygui.png") {
-            python - << 'PY'
-          import sys
-          from PIL import Image
-          img = Image.open("resource/openccpurepygui.png").convert("RGBA")
-          # save multi-size ICO for best results
-          sizes = [(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)]
-          img.save("resource/openccpurepygui.ico", sizes=sizes)
-          print("Generated resource/openccpurepygui.ico")
-          PY
-          } else {
-            Write-Host "No PNG found at resource/openccpurepygui.png and no ICO; continuing without icon."
-          }
-
       # ---------- Build per OS so we can pass the right flags ----------
       - name: Build (Linux, Nuitka)
         if: runner.os == 'Linux'
@@ -105,17 +84,21 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: >
-          python -m nuitka
-          --standalone
-          --enable-plugin=pyside6
-          --include-package=opencc_purepy
-          --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts
-          --output-filename=OpenccPurepyGui
-          --windows-console-mode=disable
-          --lto=yes
-          --assume-yes-for-downloads
-          mainwindow.py
-          $(if (Test-Path "resource/openccpurepygui.ico") { " --windows-icon-from-ico=resource/openccpurepygui.ico" } else { "" })
+          $iconFlag = ""
+          if (Test-Path "resource/openccpurepygui.ico") {
+            $iconFlag = "--windows-icon-from-ico=resource/openccpurepygui.ico"
+          }
+          python -m nuitka `
+            --standalone `
+            --enable-plugin=pyside6 `
+            --include-package=opencc_purepy `
+            --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts `
+            --output-filename=OpenccPurepyGui `
+            --windows-console-mode=disable `
+            --lto=yes `
+            --assume-yes-for-downloads `
+            $iconFlag `
+            mainwindow.py
 
       - name: Build (macOS, Nuitka + app icon)
         if: runner.os == 'macOS'
