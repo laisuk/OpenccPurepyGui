@@ -37,7 +37,7 @@ at [Release](https://github.com/laisuk/OpenccPurepyGui/releases) section.
   ```bash
   pip install PySide6
   ```
-- [opencc-purepy](https://github.com/laisuk/opencc-purepy): Pure Python module for conversions between Traditional and
+- [opencc-purepy](https://github.com/laisuk/opencc_purepy): Pure Python module for conversions between Traditional and
   Simplified Chinese.
 
 ---
