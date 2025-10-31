@@ -18,21 +18,20 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_suffix: linux-x64
+            archive_name: OpenccPurepyGui-${{ github.ref_name }}-linux-x64.tar.gz
             pack_cmd: |
-              tar -czf OpenccPurepyGui-${{ github.ref_name }}-linux-x64.tar.gz -C mainwindow.dist .
-            artifact_glob: OpenccPurepyGui-*-linux-x64.tar.gz
+              tar -czf ${{ matrix.archive_name }} -C mainwindow.dist .
           - os: windows-latest
             artifact_suffix: win-x64
-            pack_cmd: powershell -Command "Compress-Archive -Path mainwindow.dist\* -DestinationPath OpenccPurepyGui-${{ github.ref_name }}-win-x64.zip"
-            artifact_glob: OpenccPurepyGui-*-win-x64.zip
+            archive_name: OpenccPurepyGui-${{ github.ref_name }}-win-x64.zip
+            pack_cmd: powershell -Command "Compress-Archive -Path mainwindow.dist\* -DestinationPath $env:archive_name"
           - os: macos-latest
             artifact_suffix: macos
-            # Zip the entire dist directory, regardless of whether an .app exists
+            archive_name: OpenccPurepyGui-${{ github.ref_name }}-macos.zip
             pack_cmd: |
               cd mainwindow.dist
-              zip -r ../OpenccPurepyGui-${{ github.ref_name }}-macos.zip .
+              zip -r ../${{ matrix.archive_name }} .
               cd ..
-            artifact_glob: OpenccPurepyGui-*-macos.zip
 
     steps:
       - name: Checkout
@@ -88,13 +87,15 @@ jobs:
 
       - name: Package artifact
         shell: bash
+        env:
+          archive_name: ${{ matrix.archive_name }}
         run: ${{ matrix.pack_cmd }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: OpenccPurepyGui-${{ github.ref_name }}-${{ matrix.artifact_suffix }}
-          path: ${{ matrix.artifact_glob }}
+          path: ${{ matrix.archive_name }}
           if-no-files-found: error
 
   release:
