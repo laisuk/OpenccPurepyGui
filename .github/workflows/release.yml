@@ -20,18 +20,22 @@ jobs:
             artifact_suffix: linux-x64
             archive_name: OpenccPurepyGui-${{ github.ref_name }}-linux-x64.tar.gz
             pack_cmd: |
-              tar -czf ${{ matrix.archive_name }} -C mainwindow.dist .
+              tar -czf "$archive_name" -C mainwindow.dist .
+            shell: bash
           - os: windows-latest
             artifact_suffix: win-x64
             archive_name: OpenccPurepyGui-${{ github.ref_name }}-win-x64.zip
-            pack_cmd: powershell -Command "Compress-Archive -Path mainwindow.dist\* -DestinationPath $env:archive_name"
+            pack_cmd: |
+              Compress-Archive -Path mainwindow.dist\* -DestinationPath $env:archive_name
+            shell: pwsh
           - os: macos-latest
             artifact_suffix: macos
             archive_name: OpenccPurepyGui-${{ github.ref_name }}-macos.zip
             pack_cmd: |
               cd mainwindow.dist
-              zip -r ../${{ matrix.archive_name }} .
+              zip -r "../$archive_name" .
               cd ..
+            shell: bash
 
     steps:
       - name: Checkout
@@ -86,7 +90,7 @@ jobs:
             mainwindow.py
 
       - name: Package artifact
-        shell: bash
+        shell: ${{ matrix.shell }}
         env:
           archive_name: ${{ matrix.archive_name }}
         run: ${{ matrix.pack_cmd }}
