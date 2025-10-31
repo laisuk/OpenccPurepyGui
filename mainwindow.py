@@ -108,6 +108,7 @@ class MainWindow(QMainWindow):
         self.ui.tbSource.clear()
         self.ui.tbSource.paste()
         self.ui.tbSource.content_filename = ""
+        self.ui.lblFilename.setText("")
         self.detect_source_text_info()
         self.ui.statusbar.showMessage("Clipboard contents pasted to source box")
 
