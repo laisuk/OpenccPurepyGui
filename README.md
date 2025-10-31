@@ -103,6 +103,6 @@ This project is licensed under the MIT License. See the [LICENSE](./LICENSE) fil
 ## Acknowledgements
 
 - [OpenCC](https://github.com/BYVoid/OpenCC) for the Chinese text conversion lexicon.
-- [opencc-purepy](https://github.com/laisuk/opencc-purepy) Pure Python implementation of OpenCC for Chinese text
+- [opencc-purepy](https://github.com/laisuk/opencc_purepy) Pure Python implementation of OpenCC for Chinese text
   conversion.
 - [PySide6](https://wiki.qt.io/Qt_for_Python) Python bindings for the Qt cross-platform application and UI framework.
