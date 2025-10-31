@@ -1,6 +1,9 @@
 # OpenccPurepyGui
 
 [![GitHub Release](https://img.shields.io/github/v/release/laisuk/OpenccPurepyGui?display_name=tag&sort=semver)](https://github.com/laisuk/OpenccPurepyGui/releases/latest)
+[![Total Downloads](https://img.shields.io/github/downloads/laisuk/openccpurepygui/total.svg)](https://github.com/laisuk/openccpurepygui/releases)
+[![Latest Downloads](https://img.shields.io/github/downloads/laisuk/openccpurepygui/latest/total.svg)](https://github.com/laisuk/openccpurepygui/releases/latest)
+![Release](https://github.com/laisuk/OpenccpurepyGui/actions/workflows/release.yml/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **OpenccPurepyGui** is a Chinese text conversion application built with PySide6 and the Qt design framework. It
