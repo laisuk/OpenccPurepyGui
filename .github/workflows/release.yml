@@ -80,14 +80,15 @@ jobs:
             --assume-yes-for-downloads \
             mainwindow.py
 
-      - name: Build (Windows, Nuitka + icon + no console)
+      - name: Build (Windows, Nuitka + optional icon + no console)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: >
+        run: |
           $iconFlag = ""
           if (Test-Path "resource/openccpurepygui.ico") {
             $iconFlag = "--windows-icon-from-ico=resource/openccpurepygui.ico"
           }
+
           python -m nuitka `
             --standalone `
             --enable-plugin=pyside6 `
@@ -98,7 +99,7 @@ jobs:
             --lto=yes `
             --assume-yes-for-downloads `
             $iconFlag `
-            mainwindow.py
+            mainwindow.py      
 
       - name: Build (macOS, Nuitka + app icon)
         if: runner.os == 'macOS'
