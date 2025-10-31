@@ -19,23 +19,12 @@ jobs:
           - os: ubuntu-latest
             artifact_suffix: linux-x64
             archive_name: OpenccPurepyGui-${{ github.ref_name }}-linux-x64.tar.gz
-            pack_cmd: |
-              tar -czf "$archive_name" -C mainwindow.dist .
-            shell: bash
           - os: windows-latest
             artifact_suffix: win-x64
             archive_name: OpenccPurepyGui-${{ github.ref_name }}-win-x64.zip
-            pack_cmd: |
-              Compress-Archive -Path mainwindow.dist\* -DestinationPath $env:archive_name
-            shell: pwsh
           - os: macos-latest
             artifact_suffix: macos
             archive_name: OpenccPurepyGui-${{ github.ref_name }}-macos.zip
-            pack_cmd: |
-              cd mainwindow.dist
-              zip -r "../$archive_name" .
-              cd ..
-            shell: bash
 
     steps:
       - name: Checkout
@@ -89,11 +78,32 @@ jobs:
             --assume-yes-for-downloads \
             mainwindow.py
 
-      - name: Package artifact
-        shell: ${{ matrix.shell }}
+      # ---- Package per-OS (no dynamic shell usage) ----
+      - name: Package artifact (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
         env:
           archive_name: ${{ matrix.archive_name }}
-        run: ${{ matrix.pack_cmd }}
+        run: |
+          tar -czf "$archive_name" -C mainwindow.dist .
+
+      - name: Package artifact (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          archive_name: ${{ matrix.archive_name }}
+        run: |
+          Compress-Archive -Path mainwindow.dist\* -DestinationPath $env:archive_name
+
+      - name: Package artifact (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          archive_name: ${{ matrix.archive_name }}
+        run: |
+          cd mainwindow.dist
+          zip -r "../$archive_name" .
+          cd ..
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
