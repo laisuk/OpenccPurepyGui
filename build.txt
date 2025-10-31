@@ -1,0 +1,22 @@
+Linux:
+python3 -m nuitka \
+  --standalone \
+  --enable-plugin=pyside6 \
+  --include-package=opencc_purepy \
+  --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts \
+  --output-filename=OpenccPurepyGui \
+  --lto=yes \
+  --assume-yes-for-downloads \
+  mainwindow.py
+
+Windows:
+python -m nuitka `
+  --standalone `
+  --enable-plugin=pyside6 `
+  --include-package=opencc_purepy `
+  --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts `
+  --output-filename=OpenccPurepyGui.exe `
+  --lto=yes `
+  --assume-yes-for-downloads `
+  mainwindow.py
+
