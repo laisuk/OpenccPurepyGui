@@ -1,0 +1,39 @@
+=== Notes for Nuitka Windows 7 x64: ===
+Nuitka: pip install nuitka==0.6.16 (bugfix: 0.6.17~19)
+Python: 3.8
+PySide6: pip install PySide6==6.1.3
+
+Working command (If not in MSVC dev promt, default to GCC)
+python -m nuitka --standalone --enable-plugin=pyside6 --include-package=opencc_purepy --include-data-dir=o
+pencc_purepy/dicts=opencc_purepy/dicts --windows-icon-from-ico=resource/openccpurepygui.ico --windows-disable-console mainwindow.py
+
+
+=== ✅ Notes for Nuitka Windows 7 x64 Build ===
+Environment
+Python   : 3.8 (x64)
+Nuitka   : pip install nuitka==0.6.16   # (bugfix range: 0.6.17 ~ 0.6.19)
+PySide6  : pip install PySide6==6.1.3
+
+== Remarks ==
+Qt 6.1.3 is the last PySide6 version known to still run on Windows 7.
+Nuitka 0.6.16–0.6.19 are the last series compatible with PySide6 6.1.x.
+Works without MSVC Developer Prompt (defaulting to GCC toolchain).
+Working Command
+
+python -m nuitka ^
+  --standalone ^
+  --enable-plugin=pyside6 ^
+  --include-package=opencc_purepy ^
+  --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts ^
+  --windows-icon-from-ico=resource/openccpurepygui.ico ^
+  --windows-disable-console ^
+  mainwindow.py
+
+python -m nuitka `
+  --standalone `
+  --enable-plugin=pyside6 `
+  --include-package=opencc_purepy `
+  --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts `
+  --windows-icon-from-ico=resource/openccpurepygui.ico `
+  --windows-disable-console `
+  mainwindow.py

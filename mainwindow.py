@@ -124,7 +124,8 @@ class MainWindow(QMainWindow):
             self,
             "Open Text File",
             "",
-            "Text Files (*.txt);;Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;XML Files (*.xml *.ttml2);;All Files (*.*)"
+            "Text Files (*.txt);;Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;XML Files (*.xml *.ttml2);;All "
+            "Files (*.*)"
         )
         if not filename:
             return
