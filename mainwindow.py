@@ -6,7 +6,7 @@ import re
 import sys
 import time
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from PySide6.QtCore import Qt, Slot, QThread
 from PySide6.QtGui import QGuiApplication
@@ -43,8 +43,8 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
 
         self._pdf_thread: QThread | None = None
-        self._pdf_worker: PdfExtractWorker | None = None  # type: ignore
-        self._cancel_pdf_button: QPushButton | None = None  # type: ignore
+        self._pdf_worker: Optional[PdfExtractWorker] = None
+        self._cancel_pdf_button: Optional[QPushButton] = None
 
         self.ui.tabWidget.setCurrentIndex(0)
         self.ui.btnCopy.clicked.connect(self.btn_copy_click)
