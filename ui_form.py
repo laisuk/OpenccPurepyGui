@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'form.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.9.2
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -30,7 +30,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(990, 700)
+        MainWindow.resize(1036, 759)
         self.actionExit = QAction(MainWindow)
         self.actionExit.setObjectName(u"actionExit")
         self.actionExit.setMenuRole(QAction.MenuRole.NoRole)
@@ -40,6 +40,16 @@ class Ui_MainWindow(object):
         self.actionConvert_filename = QAction(MainWindow)
         self.actionConvert_filename.setObjectName(u"actionConvert_filename")
         self.actionConvert_filename.setCheckable(True)
+        self.actionAddPdfPageHeader = QAction(MainWindow)
+        self.actionAddPdfPageHeader.setObjectName(u"actionAddPdfPageHeader")
+        self.actionAddPdfPageHeader.setCheckable(True)
+        self.actionCompactPdfText = QAction(MainWindow)
+        self.actionCompactPdfText.setObjectName(u"actionCompactPdfText")
+        self.actionCompactPdfText.setCheckable(True)
+        self.actionUsePdfTextExtractWorker = QAction(MainWindow)
+        self.actionUsePdfTextExtractWorker.setObjectName(u"actionUsePdfTextExtractWorker")
+        self.actionUsePdfTextExtractWorker.setCheckable(True)
+        self.actionUsePdfTextExtractWorker.setChecked(True)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout_3 = QVBoxLayout(self.centralwidget)
@@ -178,6 +188,7 @@ class Ui_MainWindow(object):
         font3.setPointSize(12)
         font3.setBold(False)
         self.tbSource.setFont(font3)
+        self.tbSource.setToolTipDuration(-1)
         self.tbSource.setFrameShape(QFrame.Shape.Box)
         self.tbSource.setLineWidth(2)
         self.tbSource.setMidLineWidth(0)
@@ -241,12 +252,19 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_source.addWidget(self.lblCharCount)
 
-        self.btnClearTbSource = QPushButton(self.tab_main)
-        self.btnClearTbSource.setObjectName(u"btnClearTbSource")
-        self.btnClearTbSource.setMaximumSize(QSize(30, 16777215))
+        self.btnReflow = QPushButton(self.tab_main)
+        self.btnReflow.setObjectName(u"btnReflow")
+        self.btnReflow.setMaximumSize(QSize(30, 16777215))
         font4 = QFont()
         font4.setPointSize(10)
         font4.setBold(True)
+        self.btnReflow.setFont(font4)
+
+        self.horizontalLayout_source.addWidget(self.btnReflow)
+
+        self.btnClearTbSource = QPushButton(self.tab_main)
+        self.btnClearTbSource.setObjectName(u"btnClearTbSource")
+        self.btnClearTbSource.setMaximumSize(QSize(30, 16777215))
         self.btnClearTbSource.setFont(font4)
 
         self.horizontalLayout_source.addWidget(self.btnClearTbSource)
@@ -307,7 +325,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.addLayout(self.horizontalLayout_textbox_action)
 
         icon = QIcon()
-        icon.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Normal, QIcon.Off)
         self.tabWidget.addTab(self.tab_main, icon, "")
         self.tab_batch = QWidget()
         self.tab_batch.setObjectName(u"tab_batch")
@@ -376,7 +394,7 @@ class Ui_MainWindow(object):
         font7.setBold(False)
         self.btnPreview.setFont(font7)
         icon1 = QIcon()
-        icon1.addFile(u":/images/resource/icons8-preview-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon1.addFile(u":/images/resource/icons8-preview-48.png", QSize(), QIcon.Normal, QIcon.Off)
         self.btnPreview.setIcon(icon1)
         self.btnPreview.setIconSize(QSize(16, 16))
 
@@ -411,7 +429,7 @@ class Ui_MainWindow(object):
         self.btnOutDir.setMaximumSize(QSize(30, 16777215))
         self.btnOutDir.setFont(font4)
         icon2 = QIcon()
-        icon2.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon2.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Normal, QIcon.Off)
         self.btnOutDir.setIcon(icon2)
         self.btnOutDir.setIconSize(QSize(18, 18))
 
@@ -434,7 +452,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addLayout(self.horizontalLayout_listbox_action)
 
         icon3 = QIcon()
-        icon3.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon3.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Normal, QIcon.Off)
         self.tabWidget.addTab(self.tab_batch, icon3, "")
 
         self.verticalLayout_3.addWidget(self.tabWidget)
@@ -474,7 +492,7 @@ class Ui_MainWindow(object):
         font8.setBold(True)
         self.btnProcess.setFont(font8)
         icon4 = QIcon()
-        icon4.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon4.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Normal, QIcon.Off)
         self.btnProcess.setIcon(icon4)
         self.btnProcess.setIconSize(QSize(24, 24))
 
@@ -488,6 +506,13 @@ class Ui_MainWindow(object):
         self.horizontalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout_saveExit.addItem(self.horizontalSpacer)
+
+        self.cbSaveTarget = QComboBox(self.centralwidget)
+        self.cbSaveTarget.addItem("")
+        self.cbSaveTarget.addItem("")
+        self.cbSaveTarget.setObjectName(u"cbSaveTarget")
+
+        self.horizontalLayout_saveExit.addWidget(self.cbSaveTarget)
 
         self.btnSaveAs = QPushButton(self.centralwidget)
         self.btnSaveAs.setObjectName(u"btnSaveAs")
@@ -514,11 +539,10 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_3.addLayout(self.horizontalLayout_action_main)
 
-        self.verticalLayout_3.setStretch(2, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 990, 33))
+        self.menubar.setGeometry(QRect(0, 0, 1036, 33))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuHelp = QMenu(self.menubar)
@@ -537,11 +561,16 @@ class Ui_MainWindow(object):
         self.menuFile.addAction(self.actionExit)
         self.menuHelp.addAction(self.actionAbout)
         self.menuSettings.addAction(self.actionConvert_filename)
+        self.menuSettings.addSeparator()
+        self.menuSettings.addAction(self.actionAddPdfPageHeader)
+        self.menuSettings.addAction(self.actionCompactPdfText)
+        self.menuSettings.addAction(self.actionUsePdfTextExtractWorker)
 
         self.retranslateUi(MainWindow)
 
         self.cbManual.setCurrentIndex(0)
         self.tabWidget.setCurrentIndex(0)
+        self.cbSaveTarget.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -552,6 +581,9 @@ class Ui_MainWindow(object):
         self.actionExit.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.actionAbout.setText(QCoreApplication.translate("MainWindow", u"About", None))
         self.actionConvert_filename.setText(QCoreApplication.translate("MainWindow", u"Convert Filename (\u8f6c\u6362\u6587\u4ef6\u540d)", None))
+        self.actionAddPdfPageHeader.setText(QCoreApplication.translate("MainWindow", u"Add PDF Page Header", None))
+        self.actionCompactPdfText.setText(QCoreApplication.translate("MainWindow", u"Compact PDF Text", None))
+        self.actionUsePdfTextExtractWorker.setText(QCoreApplication.translate("MainWindow", u"Use  PDF Text Extract Worker", None))
         self.rbS2t.setText(QCoreApplication.translate("MainWindow", u"zh-Hans \uff08\u7b80\uff09 To zh-Hant \uff08\u7e41\uff09", None))
         self.rbT2s.setText(QCoreApplication.translate("MainWindow", u"zh-Hant \uff08\u7e41\uff09 To zh-Hans \uff08\u7b80\uff09", None))
         self.rbManual.setText(QCoreApplication.translate("MainWindow", u"Manual (\u81ea\u5b9a\u4e49) :", None))
@@ -581,6 +613,10 @@ class Ui_MainWindow(object):
         self.lblSourceCode.setText("")
         self.lblCharCount.setText("")
 #if QT_CONFIG(tooltip)
+        self.btnReflow.setToolTip(QCoreApplication.translate("MainWindow", u"Reflow PDF extracted CJK text", None))
+#endif // QT_CONFIG(tooltip)
+        self.btnReflow.setText(QCoreApplication.translate("MainWindow", u"RF", None))
+#if QT_CONFIG(tooltip)
         self.btnClearTbSource.setToolTip(QCoreApplication.translate("MainWindow", u"Clear source box contents", None))
 #endif // QT_CONFIG(tooltip)
         self.btnClearTbSource.setText(QCoreApplication.translate("MainWindow", u"AC", None))
@@ -605,6 +641,9 @@ class Ui_MainWindow(object):
         self.btnOpenFile.setText(QCoreApplication.translate("MainWindow", u"Open File", None))
         self.lblFilename.setText("")
         self.btnProcess.setText(QCoreApplication.translate("MainWindow", u"Process", None))
+        self.cbSaveTarget.setItemText(0, QCoreApplication.translate("MainWindow", u"Source", None))
+        self.cbSaveTarget.setItemText(1, QCoreApplication.translate("MainWindow", u"Destination", None))
+
         self.btnSaveAs.setText(QCoreApplication.translate("MainWindow", u"Save As", None))
         self.btnExit.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
