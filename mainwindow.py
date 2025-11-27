@@ -6,16 +6,16 @@ import re
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional, Any
+from typing import Optional
 
-import pymupdf  # PyMuPDF
 from PySide6.QtCore import Qt, Slot, QThread
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton
 
 from opencc_purepy import OpenCC
 from opencc_purepy.office_helper import OFFICE_FORMATS, convert_office_doc
-from pdf_extract_worker import PdfExtractWorker, build_progress_bar, get_progress_block
+from pdf_extract_worker import PdfExtractWorker
+from pdf_helper import build_progress_bar, reflow_cjk_paragraphs_core, extract_pdf_text_core
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
@@ -38,13 +38,27 @@ TITLE_HEADING_REGEX = re.compile(
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._cancel_pdf_extraction = None
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        # state
         self._pdf_thread: QThread | None = None
         self._pdf_worker: Optional[PdfExtractWorker] = None
         self._cancel_pdf_button: Optional[QPushButton] = None
+        self._cancel_pdf_extraction = None
+        self._pdf_sequential_active = False
+
+        # shared Cancel button (hidden by default)
+        self._cancel_pdf_button = QPushButton("Cancel", self)
+        self._cancel_pdf_button.setAutoDefault(False)
+        self._cancel_pdf_button.setDefault(False)
+        self._cancel_pdf_button.setFlat(True)
+        self._cancel_pdf_button.setStyleSheet(
+            "QPushButton { padding: 2px 8px; margin: 0px; }"
+        )
+        self._cancel_pdf_button.hide()
+        self._cancel_pdf_button.clicked.connect(self.on_pdf_cancel_clicked)  # type: ignore
+        self.statusBar().addPermanentWidget(self._cancel_pdf_button)
 
         self.ui.tabWidget.setCurrentIndex(0)
         self.ui.btnCopy.clicked.connect(self.btn_copy_click)
@@ -108,21 +122,8 @@ class MainWindow(QMainWindow):
 
         # Disable Reflow button while loading
         self.ui.btnReflow.setEnabled(False)
-
-        # Add Cancel button to the right side of the status bar
-        self._cancel_pdf_button = QPushButton("Cancel", self)
-        self._cancel_pdf_button.setAutoDefault(False)
-        self._cancel_pdf_button.setDefault(False)
-        self._cancel_pdf_button.setFlat(True)
-        self._cancel_pdf_button.setStyleSheet("""
-            QPushButton {
-                padding: 2px 8px;
-                margin: 0px;
-            }
-        """)
-        # IMPORTANT: connect to MainWindow slot, not directly to worker
-        self._cancel_pdf_button.clicked.connect(self.on_pdf_cancel_clicked)  # type: ignore
-        self.statusBar().addPermanentWidget(self._cancel_pdf_button)
+        # Show cancel button
+        self._cancel_pdf_button.show()
 
         # Start the background thread
         self.statusBar().showMessage("Loading PDF...")
@@ -142,11 +143,8 @@ class MainWindow(QMainWindow):
         """
         Extraction finished (success or cancelled). Runs in GUI thread.
         """
-        # Remove cancel button if present
-        if self._cancel_pdf_button is not None:
-            self.statusBar().removeWidget(self._cancel_pdf_button)
-            self._cancel_pdf_button.deleteLater()
-            self._cancel_pdf_button = None
+        # Hide cancel button if present
+        self._cancel_pdf_button.hide()
 
         # Re-enable Reflow button
         self.ui.btnReflow.setEnabled(True)
@@ -155,25 +153,21 @@ class MainWindow(QMainWindow):
         if text:
             self.ui.tbSource.setPlainText(text)
 
-        self.detect_source_text_info()
         # stash the original filename (even for PDF)
         self.ui.tbSource.content_filename = filename
+        self.detect_source_text_info()
 
         if cancelled:
-            self.statusBar().showMessage("PDF loading cancelled.")
+            self.statusBar().showMessage("❌ PDF loading cancelled: " + filename)
         else:
-            self.statusBar().showMessage("PDF loaded: " + filename)
+            self.statusBar().showMessage("✅ PDF loaded: " + filename)
 
     @Slot(str)
     def on_pdf_error(self, message: str) -> None:
         """
         Extraction encountered an error.
         """
-        if self._cancel_pdf_button is not None:
-            self.statusBar().removeWidget(self._cancel_pdf_button)
-            self._cancel_pdf_button.deleteLater()
-            self._cancel_pdf_button = None
-
+        self._cancel_pdf_button.hide()
         self.ui.btnReflow.setEnabled(True)
         self.statusBar().showMessage(f"Error loading PDF: {message}")
         # Optional: QMessageBox.critical(self, "PDF Error", message)
@@ -191,12 +185,19 @@ class MainWindow(QMainWindow):
     def on_pdf_cancel_clicked(self, _checked: bool = False) -> None:
         """
         Called when the Cancel button in the status bar is clicked.
-        Forwards the cancel request to the worker, if running.
+        Routes the cancel request to either:
+        - the PDF worker (async mode), or
+        - the sequential extractor (sync mode).
         """
         if self._pdf_worker is not None:
-            # Call the worker's slot; Qt will queue this into the worker thread
+            # Worker mode: queue cancel into worker thread
             self._pdf_worker.request_cancel()
-            self.statusBar().showMessage("Cancelling PDF loading...")
+            self.statusBar().showMessage("Cancelling PDF loading (worker)...")
+
+        elif getattr(self, "_pdf_sequential_active", False):
+            # Sequential mode: flip the flag checked by extract_pdf_text()
+            self._cancel_pdf_extraction = True
+            self.statusBar().showMessage("Cancelling PDF loading (sequential)...")
 
     def _on_tbSource_fileDropped(self, path: str):
         self.detect_source_text_info()
@@ -240,122 +241,164 @@ class MainWindow(QMainWindow):
         if filename:
             base = os.path.basename(filename)
             self.ui.lblFilename.setText(base)
-            self.statusBar().showMessage(f"File: {filename}")
+            # self.statusBar().showMessage(f"File: {filename}")
 
+    # def extract_pdf_text(self, filename: str) -> str:
+    #     """
+    #     Extracts text from a PDF using the core PDF helper.
+    #
+    #     - Shows a text-based progress bar in the status bar.
+    #     - Adds a temporary [Cancel] button on the right side.
+    #     - If Cancel is clicked, stops early and returns the pages extracted so far.
+    #     """
+    #     path = Path(filename)
+    #     if not path.is_file():
+    #         raise FileNotFoundError(f"PDF not found: {path}")
+    #
+    #     # --- Disable Reflow button during extraction ---
+    #     self.ui.btnReflow.setEnabled(False)
+    #
+    #     # --- Cancellation flag + button setup ---
+    #     self._cancel_pdf_extraction = False
+    #
+    #     cancel_button = QPushButton("Cancel")
+    #     cancel_button.setAutoDefault(False)
+    #     cancel_button.setDefault(False)
+    #     cancel_button.setFlat(True)
+    #     cancel_button.setStyleSheet(
+    #         """
+    #         QPushButton {
+    #             padding: 2px 8px;
+    #             margin: 0px;
+    #         }
+    #         """
+    #     )
+    #
+    #     def on_cancel_clicked() -> None:
+    #         self._cancel_pdf_extraction = True
+    #         # give immediate feedback
+    #         self.statusBar().showMessage("Cancelling PDF loading...")
+    #
+    #     cancel_button.clicked.connect(on_cancel_clicked)  # type: ignore[arg-type]
+    #
+    #     # Add the cancel button to the right side of the status bar
+    #     self.statusBar().addPermanentWidget(cancel_button)
+    #
+    #     # Track last progress for nicer "cancelled at page X/Y" message
+    #     last_page: int = 0
+    #     total_pages: int = 0
+    #
+    #     def on_progress(current: int, total: int) -> None:
+    #         nonlocal last_page, total_pages
+    #         last_page, total_pages = current, total
+    #
+    #         percent = int(current / total * 100)
+    #         bar = build_progress_bar(current, total, width=20)
+    #         self.statusBar().showMessage(f"Loading PDF {bar}  {percent}%")
+    #         QApplication.processEvents()
+    #
+    #     def is_cancelled() -> bool:
+    #         return bool(self._cancel_pdf_extraction)
+    #
+    #     try:
+    #         # Call the core helper (no PyMuPDF here)
+    #         text = extract_pdf_text_core(
+    #             filename,
+    #             add_pdf_page_header=self.ui.actionAddPdfPageHeader.isChecked(),
+    #             on_progress=on_progress,
+    #             is_cancelled=is_cancelled,
+    #         )
+    #
+    #         if self._cancel_pdf_extraction:
+    #             if last_page and total_pages:
+    #                 self.statusBar().showMessage(
+    #                     f"PDF loading cancelled at page {last_page}/{total_pages}."
+    #                 )
+    #             else:
+    #                 self.statusBar().showMessage("PDF loading cancelled.")
+    #         else:
+    #             if not text:
+    #                 self.statusBar().showMessage("PDF has no pages.")
+    #             else:
+    #                 self.statusBar().showMessage("PDF loaded.")
+    #
+    #         return text
+    #
+    #     finally:
+    #         # Always clean up button + reset flag
+    #         try:
+    #             self.statusBar().removeWidget(cancel_button)
+    #         except (RuntimeError, AttributeError):
+    #             # RuntimeError: underlying C++ object might already be deleted
+    #             # AttributeError: unexpected missing method
+    #             pass
+    #
+    #         cancel_button.deleteLater()
+    #         self.ui.btnReflow.setEnabled(True)
+    #         self._cancel_pdf_extraction = False
     def extract_pdf_text(self, filename: str) -> str:
         """
-        Extracts text from a PDF using PyMuPDF (pymupdf).
+        Extracts text from a PDF using the core PDF helper.
 
         - Shows a text-based progress bar in the status bar.
         - Adds a temporary [Cancel] button on the right side.
         - If Cancel is clicked, stops early and returns the pages extracted so far.
         """
-        path = Path(filename)
-        if not path.is_file():
-            raise FileNotFoundError(f"PDF not found: {path}")
-
-        # --- Disable Reflow button during extraction ---
+        self._pdf_sequential_active = True
+        self._cancel_pdf_extraction = False
+        self._cancel_pdf_button.show()
         self.ui.btnReflow.setEnabled(False)
 
-        # --- Cancellation flag + button setup ---
-        self._cancel_pdf_extraction = False
+        # Track last progress for nicer "cancelled at page X/Y" message
+        last_page: int = 0
+        total_pages: int = 0
 
-        cancel_button = QPushButton("Cancel")
-        cancel_button.setAutoDefault(False)
-        cancel_button.setDefault(False)
-        cancel_button.setFlat(True)
-        cancel_button.setStyleSheet(
-            """
-            QPushButton {
-                padding: 2px 8px;
-                margin: 0px;
-            }
-            """
-        )
+        def on_progress(current: int, total: int) -> None:
+            nonlocal last_page, total_pages
+            last_page, total_pages = current, total
+            percent = int(current / total * 100)
+            bar = build_progress_bar(current, total, width=20)
+            self.statusBar().showMessage(f"Loading PDF {bar}  {percent}%")
+            QApplication.processEvents()
 
-        def on_cancel_clicked() -> None:
-            self._cancel_pdf_extraction = True
-            # give immediate feedback
-            self.statusBar().showMessage("Cancelling PDF loading...")
-
-        cancel_button.clicked.connect(on_cancel_clicked)  # type: ignore[arg-type]
-
-        # Add the cancel button to the right side of the status bar
-        self.statusBar().addPermanentWidget(cancel_button)
-
-        # --- Open PDF with PyMuPDF ---
-        try:
-            doc = pymupdf.open(str(path))
-        except Exception as e:
-            # Clean up button & re-enable UI before raising
-            try:
-                self.statusBar().removeWidget(cancel_button)
-            except (RuntimeError, AttributeError):
-                pass
-            cancel_button.deleteLater()
-            self.ui.btnReflow.setEnabled(True)
-            self._cancel_pdf_extraction = False
-            raise RuntimeError(f"Failed to load PDF: {filename} ({e})") from e
+        def is_cancelled() -> bool:
+            return bool(self._cancel_pdf_extraction)
 
         try:
-            page_count = doc.page_count
-            if page_count <= 0:
-                self.statusBar().showMessage("PDF has no pages.")
-                return ""
-
-            parts: List[str] = []
-
-            block = get_progress_block(page_count)
-
-            for i in range(page_count):
-                # Check for cancel request
-                if getattr(self, "_cancel_pdf_extraction", False):
+            text = extract_pdf_text_core(
+                filename,
+                add_pdf_page_header=self.ui.actionAddPdfPageHeader.isChecked(),
+                on_progress=on_progress,
+                is_cancelled=is_cancelled,
+            )
+            # Decide final status message
+            if self._cancel_pdf_extraction:
+                if last_page and total_pages:
+                    # Normal: cancelled after reading some pages
                     self.statusBar().showMessage(
-                        f"PDF loading cancelled at page {i}/{page_count}."
+                        f"❌ PDF loading cancelled at page {last_page}/{total_pages} - {filename}."
                     )
-                    break
-
-                # load page & extract text
-                page: Any = doc[i]  # same as doc.load_page(i)
-                page_text = page.get_text("text") or ""
-
-                if self.ui.actionAddPdfPageHeader.isChecked():
-                    parts.append(f"\n\n=== [Page {i + 1}/{page_count}] ===\n\n")
-
-                parts.append(page_text)
-
-                current = i + 1
-
-                # Adaptive status update (like C#)
-                if current % block == 0 or current == 1 or current == page_count:
-                    percent = int(current / page_count * 100)
-                    bar = build_progress_bar(current, page_count, width=20)
+                elif text:
+                    # Rare case: partial text but no progress callback fired
                     self.statusBar().showMessage(
-                        f"Loading PDF {bar}  {percent}%"
+                        f"❌ PDF loading cancelled (partial text extracted). ({filename})"
                     )
-                    QApplication.processEvents()
+                else:
+                    # Cancelled immediately before loading page 1
+                    self.statusBar().showMessage(f"❌ PDF loading cancelled - {filename}.")
+            else:
+                # Not cancelled
+                if not text:
+                    self.statusBar().showMessage("❌ PDF has no pages.")
+                else:
+                    self.statusBar().showMessage("✅ PDF loaded successfully.")
 
-            # Only show "loaded" if not cancelled
-            if not getattr(self, "_cancel_pdf_extraction", False):
-                self.statusBar().showMessage("PDF loaded.")
-
-            return "".join(parts)
-
+            return text
         finally:
-            # Always clean up button + reset flag
-            try:
-                self.statusBar().removeWidget(cancel_button)
-            except (RuntimeError, AttributeError):
-                # RuntimeError: underlying C++ object might already be deleted
-                # AttributeError: unexpected missing method
-                pass
-            cancel_button.deleteLater()
-            self.ui.btnReflow.setEnabled(True)
+            self._pdf_sequential_active = False
             self._cancel_pdf_extraction = False
-            try:
-                doc.close()
-            except (RuntimeError, AttributeError):
-                pass
+            self._cancel_pdf_button.hide()
+            self.ui.btnReflow.setEnabled(True)
 
     def reflow_cjk_paragraphs(self) -> None:
         """
@@ -376,119 +419,7 @@ class MainWindow(QMainWindow):
         compact = self.ui.actionCompactPdfText.isChecked()
         add_pdf_page_header = self.ui.actionAddPdfPageHeader.isChecked()
 
-        if not text.strip():
-            return
-
-        # Normalize line endings for cross-platform stability
-        text = text.replace("\r\n", "\n").replace("\r", "\n")
-
-        lines = text.split("\n")
-        segments: List[str] = []
-        buffer = ""
-
-        def is_heading_like(s: str) -> bool:
-            """Heuristic: short, mostly CJK, no punctuation, not page marker."""
-            s = s.strip()
-            if not s:
-                return False
-
-            # keep page markers intact
-            if s.startswith("=== ") and s.endswith("==="):
-                return False
-
-            # if ends with CJK punctuation, it's not a heading
-            if any(ch in CJK_PUNCT_END for ch in s):
-                return False
-
-            # short + mostly CJK = heading/title
-            if len(s) <= 8 and any(ord(ch) > 0x7F for ch in s):
-                return True
-
-            return False
-
-        for raw_line in lines:
-            stripped = raw_line.rstrip()
-            stripped_left = stripped.lstrip()
-
-            # Title detection (e.g. 前言 / 第X章 / 番外 ...)
-            is_title_heading = bool(TITLE_HEADING_REGEX.search(stripped_left))
-
-            # Collapse style-layer repeated titles
-            if is_title_heading:
-                stripped = collapse_repeated_segments(stripped)
-
-            # 1) Empty line
-            if not stripped:
-                if (not add_pdf_page_header) and buffer:
-                    last_char = buffer[-1]
-                    # Page-break-like blank line without ending punctuation → skip
-                    if last_char not in CJK_PUNCT_END:
-                        continue
-
-                # End of a paragraph → flush buffer, do NOT add an empty segment
-                if buffer:
-                    segments.append(buffer)
-                    buffer = ""
-                continue
-
-            # 2) Page markers like "=== [Page 1/20] ==="
-            if stripped.startswith("=== ") and stripped.endswith("==="):
-                if buffer:
-                    segments.append(buffer)
-                    buffer = ""
-                segments.append(stripped)
-                continue
-
-            # 3) Title heading (chapter, 前言, 番外, etc.)
-            if is_title_heading:
-                if buffer:
-                    segments.append(buffer)
-                    buffer = ""
-                segments.append(stripped)
-                continue
-
-            # 4) First line of a new paragraph
-            if not buffer:
-                buffer = stripped
-                continue
-
-            buffer_text = buffer
-
-            # 5) Buffer ends with CJK punctuation → new paragraph
-            if buffer_text[-1] in CJK_PUNCT_END:
-                segments.append(buffer_text)
-                buffer = stripped
-                continue
-
-            # 6) Previous buffer looks like a heading-like short title
-            if is_heading_like(buffer_text):
-                segments.append(buffer_text)
-                buffer = stripped
-                continue
-
-            # 7) Indentation → new paragraph
-            if re.match(r"^\s{2,}", raw_line):
-                segments.append(buffer_text)
-                buffer = stripped
-                continue
-
-            # 8) Chapter-like endings: 章 / 节 / 部 / 卷 (with possible trailing brackets)
-            if len(buffer_text) <= 15 and re.search(r"([章节部卷])[】》〗〕〉」』）]*$", buffer_text):
-                segments.append(buffer_text)
-                buffer = stripped
-                continue
-
-            # 9) Default merge (soft line break)
-            buffer += stripped
-
-        # Flush last buffer
-        if buffer:
-            segments.append(buffer)
-
-        # Formatting:
-        # compact → "p1\np2\np3"
-        # novel   → "p1\n\np2\n\np3"
-        result = "\n".join(segments) if compact else "\n\n".join(segments)
+        result = reflow_cjk_paragraphs_core(text, add_pdf_page_header=add_pdf_page_header, compact=compact)
 
         self.ui.tbSource.setPlainText(result)
         self.statusBar().showMessage("Reflow complete (CJK-aware)")
@@ -545,9 +476,16 @@ class MainWindow(QMainWindow):
                     self.start_pdf_extraction(filename)
                 else:
                     contents = self.extract_pdf_text(filename)
-            else:
-                with open(filename, "r", encoding="utf-8") as f:
-                    contents = f.read()
+                    # Only update the editor + metadata here, but DO NOT override the status bar
+                    self.ui.tbSource.setPlainText(contents)
+                    self.ui.tbSource.content_filename = filename
+                    self.detect_source_text_info()
+
+                return
+
+            # --- Non-PDF branch ---
+            with open(filename, "r", encoding="utf-8") as f:
+                contents = f.read()
         except Exception as e:
             QMessageBox.critical(self, "Open Error", f"Failed to open/parse file:\n{e}")
             return
@@ -772,59 +710,6 @@ class MainWindow(QMainWindow):
 
     def cb_manual_activated(self):
         self.ui.rbManual.setChecked(True)
-
-
-def collapse_repeated_segments(line: str) -> str:
-    """
-    Split a line into tokens by whitespace and collapse each token separately.
-    Equivalent to the C# CollapseRepeatedSegments.
-    """
-    if not line:
-        return line
-
-    # Split on whitespace into manageable parts
-    parts = re.split(r"[ \t]+", line.strip())
-    if not parts:
-        return line
-
-    collapsed_parts = [collapse_repeated_token(tok) for tok in parts]
-
-    # Rejoin using a single space (same behavior as C#)
-    return " ".join(collapsed_parts)
-
-
-def collapse_repeated_token(token: str) -> str:
-    """
-    Collapse repeated subunit patterns inside a token.
-
-    Python port of the C# CollapseRepeatedToken:
-    - Ignore very short (<4) or very long (>200) tokens.
-    - Try repeating unit lengths between 2 and 20.
-    - Detect tokens made entirely of repeated units.
-    - Collapse to a single unit.
-    """
-    length = len(token)
-
-    # Very short or very large tokens are not treated as repeated patterns
-    if length < 4 or length > 200:
-        return token
-
-    # Try unit sizes between 2 and 20 chars
-    for unit_len in range(2, 21):
-        if unit_len > length // 2:
-            break
-
-        if length % unit_len != 0:
-            continue
-
-        unit = token[:unit_len]
-        # Check if token is made entirely of repeated unit
-        repeat_count = length // unit_len
-
-        if unit * repeat_count == token:
-            return unit  # collapse
-
-    return token
 
 
 def btn_exit_click():

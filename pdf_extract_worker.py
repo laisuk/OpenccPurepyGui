@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Any
 
-import pymupdf
 from PySide6.QtCore import QObject, Signal, Slot
+
+from pdf_helper import extract_pdf_text_core  # adjust import path as needed
 
 
 class PdfExtractWorker(QObject):
@@ -13,15 +13,15 @@ class PdfExtractWorker(QObject):
     from a PDF using PyMuPDF (pymupdf).
     """
 
-    progress = Signal(int, int)          # (current_page, total_pages)
-    finished = Signal(str, str, bool)    # (text, filename, cancelled)
-    error = Signal(str)                  # error message
+    progress = Signal(int, int)  # (current_page, total_pages)
+    finished = Signal(str, str, bool)  # (text, filename, cancelled)
+    error = Signal(str)  # error message
 
     def __init__(
-        self,
-        filename: str,
-        add_pdf_page_header: bool,
-        parent: QObject | None = None,
+            self,
+            filename: str,
+            add_pdf_page_header: bool,
+            parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._filename = filename
@@ -33,6 +33,7 @@ class PdfExtractWorker(QObject):
         """
         Main worker entry point. Runs entirely in the worker thread.
         """
+        # Keep the "file not found" behaviour identical to old version
         path = Path(self._filename)
         if not path.is_file():
             self.error.emit(f"PDF not found: {path}")
@@ -41,50 +42,24 @@ class PdfExtractWorker(QObject):
             return
 
         try:
-            # Open PDF with PyMuPDF
-            doc = pymupdf.open(str(path))
-        except Exception as e:
-            self.error.emit(f"Failed to load PDF: {path} ({e})")
+            text = extract_pdf_text_core(
+                self._filename,
+                add_pdf_page_header=self._add_pdf_page_header,
+                on_progress=lambda cur, total: self.progress.emit(cur, total),
+                is_cancelled=lambda: self._cancel_requested,
+            )
+        except FileNotFoundError as e:
+            # Redundant with pre-check, but kept for safety
+            self.error.emit(str(e))
+            self.finished.emit("", self._filename, False)
+            return
+        except Exception as e:  # noqa: BLE001
+            # Match old behaviour: emit error, no finished() on load/other errors
+            self.error.emit(str(e))
             return
 
-        try:
-            # You can use either doc.page_count or len(doc)
-            page_count = doc.page_count
-
-            if page_count <= 0:
-                # No pages → finished with empty text, not cancelled
-                self.finished.emit("", self._filename, False)
-                return
-
-            parts: List[str] = []
-            block = get_progress_block(page_count)
-            cancelled = False
-
-            for i in range(page_count):
-                if self._cancel_requested:
-                    cancelled = True
-                    break
-
-                # load page
-                page: Any = doc[i]  # same as doc.load_page(i)
-                page_text = page.get_text("text") or ""
-
-                if self._add_pdf_page_header:
-                    parts.append(f"\n\n=== [Page {i + 1}/{page_count}] ===\n\n")
-
-                parts.append(page_text)
-
-                current = i + 1
-                if current % block == 0 or current == 1 or current == page_count:
-                    self.progress.emit(current, page_count)
-
-            text = "".join(parts)
-            self.finished.emit(text, self._filename, cancelled)
-
-        except Exception as e:
-            self.error.emit(str(e))
-        finally:
-            doc.close()
+        cancelled = self._cancel_requested
+        self.finished.emit(text, self._filename, cancelled)
 
     @Slot()
     def request_cancel(self) -> None:
@@ -93,29 +68,3 @@ class PdfExtractWorker(QObject):
         This slot runs in the worker thread (queued connection).
         """
         self._cancel_requested = True
-
-
-def get_progress_block(total_pages: int) -> int:
-    """
-    Adaptive progress update interval (port of C# GetProgressBlock).
-    """
-    if total_pages <= 20:
-        return 1  # every page
-    if total_pages <= 100:
-        return 3  # every 3 pages
-    if total_pages <= 300:
-        return 5  # every 5 pages
-    # large PDFs: ~5% intervals
-    return max(1, total_pages // 20)
-
-
-def build_progress_bar(current: int, total: int, width: int = 20) -> str:
-    """
-    Simple text progress bar like [██████░░░░░░░░░░].
-    """
-    if total <= 0:
-        return "[" + "░" * width + "]"
-    ratio = current / total
-    filled = int(ratio * width)
-    filled = max(0, min(width, filled))
-    return "[" + "█" * filled + "░" * (width - filled) + "]"
