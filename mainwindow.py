@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import os
-import re
 import sys
 import time
 from pathlib import Path
@@ -21,18 +20,6 @@ from pdf_helper import build_progress_bar, reflow_cjk_paragraphs_core, extract_p
 #     pyside6-uic form.ui -o ui_form.py, or
 #     pyside2-uic form.ui -o ui_form.py
 from ui_form import Ui_MainWindow
-
-# Put this somewhere global (or wherever you keep CJK_PUNCT_END)
-CJK_PUNCT_END = (
-    '。', '！', '？', '；', '：', '…', '—', '”', '」', '’', '』',
-    '）', '】', '》', '〗', '〕', '〉', '］', '｝', '章', '节', '部', '卷', '節'
-)
-
-# Title heading detection (same semantics as your C# TitleHeadingRegex)
-TITLE_HEADING_REGEX = re.compile(
-    r"^(?=.{0,60}$)"
-    r"(前言|序章|终章|尾声|后记|番外|尾聲|後記|第.{0,10}?([章节部卷節]))"
-)
 
 
 class MainWindow(QMainWindow):
@@ -145,10 +132,8 @@ class MainWindow(QMainWindow):
         """
         # Hide cancel button if present
         self._cancel_pdf_button.hide()
-
         # Re-enable Reflow button
         self.ui.btnReflow.setEnabled(True)
-
         # Put extracted text into tbSource (even if partially cancelled)
         if text:
             self.ui.tbSource.setPlainText(text)
@@ -203,6 +188,8 @@ class MainWindow(QMainWindow):
         self.detect_source_text_info()
         if not path:
             self.statusBar().showMessage("Text contents dropped")
+        else:
+            self.statusBar().showMessage("File dropped: " + path)
 
     def action_about_triggered(self):
         QMessageBox.about(self, "About", "OpenccPurepyGui version 1.0.0 (c) 2025 Laisuk")
@@ -243,99 +230,6 @@ class MainWindow(QMainWindow):
             self.ui.lblFilename.setText(base)
             # self.statusBar().showMessage(f"File: {filename}")
 
-    # def extract_pdf_text(self, filename: str) -> str:
-    #     """
-    #     Extracts text from a PDF using the core PDF helper.
-    #
-    #     - Shows a text-based progress bar in the status bar.
-    #     - Adds a temporary [Cancel] button on the right side.
-    #     - If Cancel is clicked, stops early and returns the pages extracted so far.
-    #     """
-    #     path = Path(filename)
-    #     if not path.is_file():
-    #         raise FileNotFoundError(f"PDF not found: {path}")
-    #
-    #     # --- Disable Reflow button during extraction ---
-    #     self.ui.btnReflow.setEnabled(False)
-    #
-    #     # --- Cancellation flag + button setup ---
-    #     self._cancel_pdf_extraction = False
-    #
-    #     cancel_button = QPushButton("Cancel")
-    #     cancel_button.setAutoDefault(False)
-    #     cancel_button.setDefault(False)
-    #     cancel_button.setFlat(True)
-    #     cancel_button.setStyleSheet(
-    #         """
-    #         QPushButton {
-    #             padding: 2px 8px;
-    #             margin: 0px;
-    #         }
-    #         """
-    #     )
-    #
-    #     def on_cancel_clicked() -> None:
-    #         self._cancel_pdf_extraction = True
-    #         # give immediate feedback
-    #         self.statusBar().showMessage("Cancelling PDF loading...")
-    #
-    #     cancel_button.clicked.connect(on_cancel_clicked)  # type: ignore[arg-type]
-    #
-    #     # Add the cancel button to the right side of the status bar
-    #     self.statusBar().addPermanentWidget(cancel_button)
-    #
-    #     # Track last progress for nicer "cancelled at page X/Y" message
-    #     last_page: int = 0
-    #     total_pages: int = 0
-    #
-    #     def on_progress(current: int, total: int) -> None:
-    #         nonlocal last_page, total_pages
-    #         last_page, total_pages = current, total
-    #
-    #         percent = int(current / total * 100)
-    #         bar = build_progress_bar(current, total, width=20)
-    #         self.statusBar().showMessage(f"Loading PDF {bar}  {percent}%")
-    #         QApplication.processEvents()
-    #
-    #     def is_cancelled() -> bool:
-    #         return bool(self._cancel_pdf_extraction)
-    #
-    #     try:
-    #         # Call the core helper (no PyMuPDF here)
-    #         text = extract_pdf_text_core(
-    #             filename,
-    #             add_pdf_page_header=self.ui.actionAddPdfPageHeader.isChecked(),
-    #             on_progress=on_progress,
-    #             is_cancelled=is_cancelled,
-    #         )
-    #
-    #         if self._cancel_pdf_extraction:
-    #             if last_page and total_pages:
-    #                 self.statusBar().showMessage(
-    #                     f"PDF loading cancelled at page {last_page}/{total_pages}."
-    #                 )
-    #             else:
-    #                 self.statusBar().showMessage("PDF loading cancelled.")
-    #         else:
-    #             if not text:
-    #                 self.statusBar().showMessage("PDF has no pages.")
-    #             else:
-    #                 self.statusBar().showMessage("PDF loaded.")
-    #
-    #         return text
-    #
-    #     finally:
-    #         # Always clean up button + reset flag
-    #         try:
-    #             self.statusBar().removeWidget(cancel_button)
-    #         except (RuntimeError, AttributeError):
-    #             # RuntimeError: underlying C++ object might already be deleted
-    #             # AttributeError: unexpected missing method
-    #             pass
-    #
-    #         cancel_button.deleteLater()
-    #         self.ui.btnReflow.setEnabled(True)
-    #         self._cancel_pdf_extraction = False
     def extract_pdf_text(self, filename: str) -> str:
         """
         Extracts text from a PDF using the core PDF helper.
@@ -419,8 +313,11 @@ class MainWindow(QMainWindow):
         compact = self.ui.actionCompactPdfText.isChecked()
         add_pdf_page_header = self.ui.actionAddPdfPageHeader.isChecked()
 
-        result = reflow_cjk_paragraphs_core(text, add_pdf_page_header=add_pdf_page_header, compact=compact)
-
+        result = reflow_cjk_paragraphs_core(
+            text,
+            add_pdf_page_header=add_pdf_page_header,
+            compact=compact
+        )
         self.ui.tbSource.setPlainText(result)
         self.statusBar().showMessage("Reflow complete (CJK-aware)")
 
@@ -617,16 +514,16 @@ class MainWindow(QMainWindow):
                 self.ui.statusbar.showMessage("Process completed")
 
     def btn_savefile_click(self):
+        target = self.ui.cbSaveTarget.currentText()
         filename = QFileDialog.getSaveFileName(
             self,
             "Save Text File",
-            f"{self.ui.cbSaveTarget.currentText()}.txt",
+            f"{target}.txt",
             "Text File (*.txt);;All Files (*.*)")
 
         if not filename[0]:
             return
 
-        target = self.ui.cbSaveTarget.currentText()
         with open(filename[0], "w", encoding="utf-8") as f:
             if self.ui.cbSaveTarget.currentIndex() == 0:
                 f.write(self.ui.tbSource.toPlainText())
