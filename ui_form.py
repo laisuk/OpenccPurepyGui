@@ -259,6 +259,10 @@ class Ui_MainWindow(object):
         font4.setPointSize(10)
         font4.setBold(True)
         self.btnReflow.setFont(font4)
+        icon = QIcon()
+        icon.addFile(u":/images/resource/icons8-refresh-48.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.btnReflow.setIcon(icon)
+        self.btnReflow.setIconSize(QSize(18, 18))
 
         self.horizontalLayout_source.addWidget(self.btnReflow)
 
@@ -324,9 +328,9 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addLayout(self.horizontalLayout_textbox_action)
 
-        icon = QIcon()
-        icon.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.tabWidget.addTab(self.tab_main, icon, "")
+        icon1 = QIcon()
+        icon1.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.tabWidget.addTab(self.tab_main, icon1, "")
         self.tab_batch = QWidget()
         self.tab_batch.setObjectName(u"tab_batch")
         self.verticalLayout = QVBoxLayout(self.tab_batch)
@@ -393,9 +397,9 @@ class Ui_MainWindow(object):
         font7.setPointSize(9)
         font7.setBold(False)
         self.btnPreview.setFont(font7)
-        icon1 = QIcon()
-        icon1.addFile(u":/images/resource/icons8-preview-48.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.btnPreview.setIcon(icon1)
+        icon2 = QIcon()
+        icon2.addFile(u":/images/resource/icons8-preview-48.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.btnPreview.setIcon(icon2)
         self.btnPreview.setIconSize(QSize(16, 16))
 
         self.horizontalLayout_listbox_buttons.addWidget(self.btnPreview)
@@ -428,9 +432,9 @@ class Ui_MainWindow(object):
         self.btnOutDir.setSizePolicy(sizePolicy)
         self.btnOutDir.setMaximumSize(QSize(30, 16777215))
         self.btnOutDir.setFont(font4)
-        icon2 = QIcon()
-        icon2.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.btnOutDir.setIcon(icon2)
+        icon3 = QIcon()
+        icon3.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.btnOutDir.setIcon(icon3)
         self.btnOutDir.setIconSize(QSize(18, 18))
 
         self.horizontalLayout_preview.addWidget(self.btnOutDir)
@@ -451,9 +455,9 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout_listbox_action)
 
-        icon3 = QIcon()
-        icon3.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.tabWidget.addTab(self.tab_batch, icon3, "")
+        icon4 = QIcon()
+        icon4.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.tabWidget.addTab(self.tab_batch, icon4, "")
 
         self.verticalLayout_3.addWidget(self.tabWidget)
 
@@ -491,9 +495,9 @@ class Ui_MainWindow(object):
         font8.setPointSize(12)
         font8.setBold(True)
         self.btnProcess.setFont(font8)
-        icon4 = QIcon()
-        icon4.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.btnProcess.setIcon(icon4)
+        icon5 = QIcon()
+        icon5.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.btnProcess.setIcon(icon5)
         self.btnProcess.setIconSize(QSize(24, 24))
 
         self.horizontalLayout_process.addWidget(self.btnProcess)
@@ -615,7 +619,7 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(tooltip)
         self.btnReflow.setToolTip(QCoreApplication.translate("MainWindow", u"Reflow PDF extracted CJK text", None))
 #endif // QT_CONFIG(tooltip)
-        self.btnReflow.setText(QCoreApplication.translate("MainWindow", u"RF", None))
+        self.btnReflow.setText("")
 #if QT_CONFIG(tooltip)
         self.btnClearTbSource.setToolTip(QCoreApplication.translate("MainWindow", u"Clear source box contents", None))
 #endif // QT_CONFIG(tooltip)

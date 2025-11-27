@@ -6,11 +6,11 @@ import re
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Any
 
+import pymupdf  # PyMuPDF
 from PySide6.QtCore import Qt, Slot, QThread
 from PySide6.QtGui import QGuiApplication
-from PySide6.QtPdf import QPdfDocument
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton
 
 from opencc_purepy import OpenCC
@@ -211,10 +211,12 @@ class MainWindow(QMainWindow):
             self.ui.btnOpenFile.setEnabled(True)
             self.ui.lblFilename.setEnabled(True)
             self.ui.btnSaveAs.setEnabled(True)
+            self.ui.cbSaveTarget.setEnabled(True)
         elif index == 1:
             self.ui.btnOpenFile.setEnabled(False)
             self.ui.lblFilename.setEnabled(False)
             self.ui.btnSaveAs.setEnabled(False)
+            self.ui.cbSaveTarget.setEnabled(False)
 
     def update_char_count(self):
         self.ui.lblCharCount.setText(f"[ {len(self.ui.tbSource.document().toPlainText()):,} chars ]")
@@ -242,7 +244,7 @@ class MainWindow(QMainWindow):
 
     def extract_pdf_text(self, filename: str) -> str:
         """
-        Extracts text from a PDF using QPdfDocument (Qt PDF).
+        Extracts text from a PDF using PyMuPDF (pymupdf).
 
         - Shows a text-based progress bar in the status bar.
         - Adds a temporary [Cancel] button on the right side.
@@ -254,6 +256,7 @@ class MainWindow(QMainWindow):
 
         # --- Disable Reflow button during extraction ---
         self.ui.btnReflow.setEnabled(False)
+
         # --- Cancellation flag + button setup ---
         self._cancel_pdf_extraction = False
 
@@ -261,31 +264,41 @@ class MainWindow(QMainWindow):
         cancel_button.setAutoDefault(False)
         cancel_button.setDefault(False)
         cancel_button.setFlat(True)
-        cancel_button.setStyleSheet("""
+        cancel_button.setStyleSheet(
+            """
             QPushButton {
                 padding: 2px 8px;
                 margin: 0px;
             }
-        """)
+            """
+        )
 
-        def on_cancel_clicked():
+        def on_cancel_clicked() -> None:
             self._cancel_pdf_extraction = True
             # give immediate feedback
             self.statusBar().showMessage("Cancelling PDF loading...")
 
-        cancel_button.clicked.connect(on_cancel_clicked)  # type: ignore
+        cancel_button.clicked.connect(on_cancel_clicked)  # type: ignore[arg-type]
 
         # Add the cancel button to the right side of the status bar
         self.statusBar().addPermanentWidget(cancel_button)
 
-        doc = QPdfDocument(self)
-        err = doc.load(str(path))
+        # --- Open PDF with PyMuPDF ---
+        try:
+            doc = pymupdf.open(str(path))
+        except Exception as e:
+            # Clean up button & re-enable UI before raising
+            try:
+                self.statusBar().removeWidget(cancel_button)
+            except (RuntimeError, AttributeError):
+                pass
+            cancel_button.deleteLater()
+            self.ui.btnReflow.setEnabled(True)
+            self._cancel_pdf_extraction = False
+            raise RuntimeError(f"Failed to load PDF: {filename} ({e})") from e
 
         try:
-            if err != QPdfDocument.Error.None_:
-                raise RuntimeError(f"Failed to load PDF: {filename} (error={err})")
-
-            page_count = doc.pageCount()
+            page_count = doc.page_count
             if page_count <= 0:
                 self.statusBar().showMessage("PDF has no pages.")
                 return ""
@@ -302,8 +315,9 @@ class MainWindow(QMainWindow):
                     )
                     break
 
-                selection = doc.getAllText(i)
-                page_text = selection.text() if selection is not None else ""
+                # load page & extract text
+                page: Any = doc[i]  # same as doc.load_page(i)
+                page_text = page.get_text("text") or ""
 
                 if self.ui.actionAddPdfPageHeader.isChecked():
                     parts.append(f"\n\n=== [Page {i + 1}/{page_count}] ===\n\n")
@@ -336,10 +350,12 @@ class MainWindow(QMainWindow):
                 # AttributeError: unexpected missing method
                 pass
             cancel_button.deleteLater()
-            # --- Re-enable Reflow button ---
             self.ui.btnReflow.setEnabled(True)
             self._cancel_pdf_extraction = False
-            doc.close()
+            try:
+                doc.close()
+            except (RuntimeError, AttributeError):
+                pass
 
     def reflow_cjk_paragraphs(self) -> None:
         """

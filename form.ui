@@ -463,7 +463,17 @@
                <string>Reflow PDF extracted CJK text</string>
               </property>
               <property name="text">
-               <string>RF</string>
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="resource.qrc">
+                <normaloff>:/images/resource/icons8-refresh-48.png</normaloff>:/images/resource/icons8-refresh-48.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>18</width>
+                <height>18</height>
+               </size>
               </property>
              </widget>
             </item>

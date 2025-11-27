@@ -1,23 +1,28 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List
+from typing import List, Any
 
+import pymupdf
 from PySide6.QtCore import QObject, Signal, Slot
-from PySide6.QtPdf import QPdfDocument
 
 
 class PdfExtractWorker(QObject):
     """
     Worker object that runs in a background QThread and extracts text
-    from a PDF using QPdfDocument.
+    from a PDF using PyMuPDF (pymupdf).
     """
 
-    progress = Signal(int, int)      # (current_page, total_pages)
-    finished = Signal(str, str, bool)   # (text, filename, cancelled)
-    error = Signal(str)             # error message
+    progress = Signal(int, int)          # (current_page, total_pages)
+    finished = Signal(str, str, bool)    # (text, filename, cancelled)
+    error = Signal(str)                  # error message
 
-    def __init__(self, filename: str, add_pdf_page_header: bool, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        filename: str,
+        add_pdf_page_header: bool,
+        parent: QObject | None = None,
+    ) -> None:
         super().__init__(parent)
         self._filename = filename
         self._add_pdf_page_header = add_pdf_page_header
@@ -31,21 +36,24 @@ class PdfExtractWorker(QObject):
         path = Path(self._filename)
         if not path.is_file():
             self.error.emit(f"PDF not found: {path}")
-            return
-
-        doc = QPdfDocument()
-        err = doc.load(str(path))
-
-        if err != QPdfDocument.Error.None_:
-            self.error.emit(f"Failed to load PDF: {path} (error={err})")
-            doc.close()
+            # finished with empty text, not cancelled
+            self.finished.emit("", self._filename, False)
             return
 
         try:
-            page_count = doc.pageCount()
+            # Open PDF with PyMuPDF
+            doc = pymupdf.open(str(path))
+        except Exception as e:
+            self.error.emit(f"Failed to load PDF: {path} ({e})")
+            return
+
+        try:
+            # You can use either doc.page_count or len(doc)
+            page_count = doc.page_count
+
             if page_count <= 0:
                 # No pages → finished with empty text, not cancelled
-                self.finished.emit("", False)
+                self.finished.emit("", self._filename, False)
                 return
 
             parts: List[str] = []
@@ -57,8 +65,9 @@ class PdfExtractWorker(QObject):
                     cancelled = True
                     break
 
-                selection = doc.getAllText(i)
-                page_text = selection.text() if selection is not None else ""
+                # load page
+                page: Any = doc[i]  # same as doc.load_page(i)
+                page_text = page.get_text("text") or ""
 
                 if self._add_pdf_page_header:
                     parts.append(f"\n\n=== [Page {i + 1}/{page_count}] ===\n\n")
@@ -84,6 +93,7 @@ class PdfExtractWorker(QObject):
         This slot runs in the worker thread (queued connection).
         """
         self._cancel_requested = True
+
 
 def get_progress_block(total_pages: int) -> int:
     """
