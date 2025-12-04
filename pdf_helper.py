@@ -91,6 +91,25 @@ def collapse_repeated_token(token: str) -> str:
     return token
 
 
+INVISIBLE_CHARS = (
+    "\u200b",  # ZERO WIDTH SPACE
+    "\ufeff",  # BOM / ZERO WIDTH NO-BREAK SPACE
+    "\u200e",  # LEFT-TO-RIGHT MARK
+    "\u200f",  # RIGHT-TO-LEFT MARK
+    "\u202a",  # LRE
+    "\u202b",  # RLE
+    "\u202c",  # PDF
+    "\u202d",  # LRO
+    "\u202e",  # RLO
+)
+
+
+def sanitize_invisible(text: str) -> str:
+    for ch in INVISIBLE_CHARS:
+        text = text.replace(ch, "")
+    return text
+
+
 # ---------------------------------------------------------------------------
 # Progress block (ported from your worker / C#)
 # ---------------------------------------------------------------------------

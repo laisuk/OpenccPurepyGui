@@ -5,7 +5,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Callable
 
 from PySide6.QtCore import Qt, Slot, QThread
 from PySide6.QtGui import QGuiApplication, QTextCursor
@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBo
 from opencc_purepy import OpenCC
 from opencc_purepy.office_helper import OFFICE_FORMATS, convert_office_doc
 from pdf_extract_worker import PdfExtractWorker
-from pdf_helper import build_progress_bar, reflow_cjk_paragraphs_core, extract_pdf_text_core
+from pdf_helper import build_progress_bar, reflow_cjk_paragraphs_core, extract_pdf_text_core, sanitize_invisible
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
@@ -78,42 +78,68 @@ class MainWindow(QMainWindow):
 
     def start_pdf_extraction(self, filename: str) -> None:
         """
-        Kick off PDF text extraction in a background QThread.
+        Interactive single-PDF extraction entry point.
+        Uses the core wiring and adds UI behaviour.
         """
-        # If an extraction is already running, you may want to ignore or cancel it
+        # Guard: only one PDF extraction at a time in interactive mode
         if self._pdf_thread is not None:
-            # optional: show a message / ignore
             self.statusBar().showMessage("PDF extraction already in progress.")
             return
 
         add_header = self.ui.actionAddPdfPageHeader.isChecked()
 
+        # UI-specific bits
+        self.ui.btnReflow.setEnabled(False)
+        self._cancel_pdf_button.show()
+        self.statusBar().showMessage("Loading PDF...")
+
+        # Reuse the core
+        self.start_pdf_extraction_core(
+            filename=filename,
+            add_header=add_header,
+            on_progress=self.on_pdf_progress,
+            on_finished=self.on_pdf_finished,
+            on_error=self.on_pdf_error,
+        )
+
+    def start_pdf_extraction_core(
+            self,
+            filename: str,
+            add_header: bool,
+            on_progress: Callable[[int, int], None],
+            on_finished: Callable[[str, str, bool], None],
+            on_error: Callable[[str], None],
+    ) -> None:
+        """
+        Core wiring for PDF extraction in a background QThread.
+
+        - No direct UI logic (no statusBar, no buttons).
+        - Caller decides which slots to connect.
+        - Reusable for both single-file UI and batch processing.
+        """
         # Create worker + thread
         self._pdf_thread = QThread(self)
         self._pdf_worker = PdfExtractWorker(filename, add_header)
         self._pdf_worker.moveToThread(self._pdf_thread)
 
-        # Wire thread start → worker.run
+        # Thread start → worker.run
         self._pdf_thread.started.connect(self._pdf_worker.run)  # type: ignore
 
-        # Worker signals → MainWindow slots
-        self._pdf_worker.progress.connect(self.on_pdf_progress)
-        self._pdf_worker.finished.connect(self.on_pdf_finished)
-        self._pdf_worker.error.connect(self.on_pdf_error)
+        # Connect worker signals → caller-provided handlers
+        if on_progress is not None:
+            self._pdf_worker.progress.connect(on_progress)
+        if on_finished is not None:
+            self._pdf_worker.finished.connect(on_finished)
+        if on_error is not None:
+            self._pdf_worker.error.connect(on_error)
 
-        # Cleanup connections
+        # Cleanup
         self._pdf_worker.finished.connect(self._pdf_thread.quit)
         self._pdf_worker.error.connect(self._pdf_thread.quit)
         self._pdf_thread.finished.connect(self._pdf_worker.deleteLater)  # type: ignore
         self._pdf_thread.finished.connect(self._on_pdf_thread_finished)  # type: ignore
 
-        # Disable Reflow button while loading
-        self.ui.btnReflow.setEnabled(False)
-        # Show cancel button
-        self._cancel_pdf_button.show()
-
-        # Start the background thread
-        self.statusBar().showMessage("Loading PDF...")
+        # Start background thread
         self._pdf_thread.start()
 
     @Slot(int, int)
@@ -134,6 +160,12 @@ class MainWindow(QMainWindow):
         self._cancel_pdf_button.hide()
         # Re-enable Reflow button
         self.ui.btnReflow.setEnabled(True)
+        if self.ui.actionAutoReflow.isChecked():
+            addPageHeader = self.ui.actionAddPdfPageHeader.isChecked()
+            compact = self.ui.actionCompactPdfText.isChecked()
+            text = reflow_cjk_paragraphs_core(text,
+                                              add_pdf_page_header=addPageHeader,
+                                              compact=compact)
         # Put extracted text into tbSource (even if partially cancelled)
         if text:
             self.ui.tbSource.setPlainText(text)
@@ -145,7 +177,8 @@ class MainWindow(QMainWindow):
         if cancelled:
             self.statusBar().showMessage("❌ PDF loading cancelled: " + filename)
         else:
-            self.statusBar().showMessage("✅ PDF loaded: " + filename)
+            self.statusBar().showMessage(
+                f"✅ PDF loaded{(' (Auto-Reflowed)' if self.ui.actionAutoReflow.isChecked() else '')}: " + filename)
 
     @Slot(str)
     def on_pdf_error(self, message: str) -> None:
@@ -487,64 +520,142 @@ class MainWindow(QMainWindow):
                 msg.exec()
                 self.ui.lineEditDir.setFocus()
                 self.ui.statusbar.showMessage("Invalid output directory.")
-            else:
-                self.ui.tbPreview.clear()
-                out_dir = Path(self.ui.lineEditDir.text())
-                for index in range(self.ui.listSource.count()):
-                    file_path = Path(self.ui.listSource.item(index).text())
-                    # For single extension behavior (like splitext):
-                    base = file_path.stem  # 'basename'
-                    ext = file_path.suffix.lower()  # '.txt' or ''
-                    ext_no_dot = ext.lstrip(".")
+                return
 
-                    # If we want to preserve multipart extensions like .tar.gz, use:
-                    # ext = ''.join(s.lower() for s in file_path.suffixes)
+            self.ui.tbPreview.clear()
+            out_dir = Path(out_dir)
 
-                    basename = (
-                        self.converter.convert(base, is_punctuation)
-                        if self.ui.actionConvert_filename.isChecked()
-                        else base
+            total = self.ui.listSource.count()
+
+            for index in range(total):
+                file_path = Path(self.ui.listSource.item(index).text())
+                base = file_path.stem
+                ext = file_path.suffix.lower()
+                ext_no_dot = ext.lstrip(".")
+
+                basename = (
+                    self.converter.convert(base, is_punctuation)
+                    if self.ui.actionConvert_filename.isChecked()
+                    else base
+                )
+
+                if not file_path.exists():
+                    self.ui.tbPreview.appendPlainText(f"{index + 1}: {file_path} -> File not found.")
+                    continue
+
+                out_dir.mkdir(parents=True, exist_ok=True)
+                input_filename = str(file_path)
+
+                # --------------------------
+                # 1) PDF branch (new)
+                # --------------------------
+                if ext_no_dot == "pdf":
+                    # booleans from your UI (adapt names to your actual widgets)
+                    add_header = self.ui.actionAddPdfPageHeader.isChecked()
+                    auto_reflow = self.ui.actionAutoReflow.isChecked()
+                    compact = self.ui.actionCompactPdfText.isChecked()
+
+                    output = out_dir / f"{basename}_{config}.txt"
+
+                    self.ui.tbPreview.appendPlainText(
+                        f"Processing PDF ({index + 1}/{total})... Please wait..."
+                    )
+                    QApplication.processEvents()
+
+                    try:
+                        # Synchronous extraction in batch
+                        raw_text = extract_pdf_text_core(
+                            input_filename,
+                            add_pdf_page_header=add_header,
+                            on_progress=None,  # no per-page UI updates in batch
+                            is_cancelled=lambda: False,  # no cancellation in this simple version
+                        )
+                    except Exception as e:  # noqa: BLE001
+                        self.ui.tbPreview.appendPlainText(
+                            f"{index + 1}: {input_filename} -> Skip: PDF error: {e}"
+                        )
+                        QApplication.processEvents()
+                        continue
+
+                    if not raw_text:
+                        self.ui.tbPreview.appendPlainText(
+                            f"{index + 1}: {input_filename} -> Skip: Empty or non-text PDF."
+                        )
+                        QApplication.processEvents()
+                        continue
+
+                    raw_text = sanitize_invisible(raw_text)
+
+                    # Optional: reflow CJK paragraphs
+                    if auto_reflow:
+                        # Replace with your actual reflow helper
+                        # raw_text = reflow_cjk_paragraphs(raw_text, compact=compact)
+                        raw_text = reflow_cjk_paragraphs_core(raw_text, compact=compact,
+                                                              add_pdf_page_header=add_header)  # example method
+
+                    # OpenCC conversion
+                    converted_text = self.converter.convert(
+                        raw_text,
+                        self.ui.cbPunct.isChecked()
                     )
 
-                    if file_path.exists():
-                        out_dir.mkdir(parents=True, exist_ok=True)  # make sure dir exists
-                        output = out_dir / f"{basename}_{config}{ext}"
-                        input_filename = str(file_path)
-                        output_filename = str(output)
+                    with open(output, "w", encoding="utf-8") as f:
+                        f.write(converted_text)
 
-                        if ext_no_dot in OFFICE_FORMATS:
-                            # Convert Office documents
-                            success, message = convert_office_doc(input_filename, output_filename, ext_no_dot,
-                                                                  self.converter,
-                                                                  is_punctuation, True)
-                            if success:
-                                self.ui.tbPreview.appendPlainText(
-                                    f"{index + 1}: {output_filename} -> {message} -> Done.")
-                            else:
-                                self.ui.tbPreview.appendPlainText(f"{index + 1}: {input_filename} -> Skip: {message}.")
-                            continue
+                    self.ui.tbPreview.appendPlainText(f"{index + 1}: {output} -> Done.")
+                    QApplication.processEvents()
+                    continue
 
-                        else:
-                            # Convert plain text files
-                            input_text = ""
-                            try:
-                                with open(file_path, "r", encoding="utf-8") as f:
-                                    input_text = f.read()
-                            except UnicodeDecodeError:
-                                input_text = ""
+                # ---------------------------------
+                # 2) Office documents (unchanged)
+                # ---------------------------------
+                output = out_dir / f"{basename}_{config}{ext}"
 
-                            if input_text:
-                                converted_text = self.converter.convert(input_text, self.ui.cbPunct.isChecked())
-
-                                with open(output_filename, "w", encoding="utf-8") as f:
-                                    f.write(converted_text)
-                                self.ui.tbPreview.appendPlainText(f"{index + 1}: {output_filename} -> Done.")
-                            else:
-                                self.ui.tbPreview.appendPlainText(
-                                    f"{index + 1}: {input_filename} -> Skip: Not text or valid file.")
+                if ext_no_dot in OFFICE_FORMATS:
+                    success, message = convert_office_doc(
+                        input_filename,
+                        str(output),
+                        ext_no_dot,
+                        self.converter,
+                        is_punctuation,
+                        True,
+                    )
+                    if success:
+                        self.ui.tbPreview.appendPlainText(
+                            f"{index + 1}: {output} -> {message} -> Done."
+                        )
                     else:
-                        self.ui.tbPreview.appendPlainText(f"{index + 1}: {file_path} -> File not found.")
-                self.ui.statusbar.showMessage("Process completed")
+                        self.ui.tbPreview.appendPlainText(
+                            f"{index + 1}: {input_filename} -> Skip: {message}."
+                        )
+                    QApplication.processEvents()
+                    continue
+
+                # ---------------------------------
+                # 3) Plain text files (unchanged)
+                # ---------------------------------
+                input_text = ""
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        input_text = f.read()
+                except UnicodeDecodeError:
+                    input_text = ""
+
+                if input_text:
+                    converted_text = self.converter.convert(
+                        input_text,
+                        self.ui.cbPunct.isChecked()
+                    )
+                    with open(output, "w", encoding="utf-8") as f:
+                        f.write(converted_text)
+                    self.ui.tbPreview.appendPlainText(f"{index + 1}: {output} -> Done.")
+                else:
+                    self.ui.tbPreview.appendPlainText(
+                        f"{index + 1}: {input_filename} -> Skip: Not text or valid file."
+                    )
+                QApplication.processEvents()
+
+            self.ui.statusbar.showMessage("Process completed")
 
     def btn_savefile_click(self):
         target = self.ui.cbSaveTarget.currentText()
@@ -569,18 +680,42 @@ class MainWindow(QMainWindow):
             self,
             "Add Files",
             "",
-            "Text Files (*.txt);;Office Files (*.docx *.xlsx *.pptx *.odt *.ods *.odp *.epub);;All Files (*.*)"
+            "Text Files (*.txt);;"
+            "Office Files (*.docx *.xlsx *.pptx *.odt *.ods *.odp *.epub);;"
+            "PDF Files (*.pdf);;"
+            "All Files (*.*)"
         )
         if files:
             self.display_file_list(files)
             self.ui.statusbar.showMessage("File(s) added.")
 
     def display_file_list(self, files):
-        existing = {self.ui.listSource.item(i).text() for i in range(self.ui.listSource.count())}
+        # 1) Collect existing items
+        all_paths = []
+        existing = set()
+
+        for i in range(self.ui.listSource.count()):
+            path = self.ui.listSource.item(i).text()
+            all_paths.append(path)
+            existing.add(path)
+
+        # 2) Add new files (deduplicated)
         for file in files:
             if file not in existing:
-                self.ui.listSource.addItem(file)
+                all_paths.append(file)
                 existing.add(file)
+
+        # 3) Re-group: non-PDF first, PDFs at bottom
+        def is_pdf(pth: str) -> bool:
+            return pth.lower().endswith(".pdf")
+
+        non_pdfs = [p for p in all_paths if not is_pdf(p)]
+        pdfs = [p for p in all_paths if is_pdf(p)]
+
+        # 4) Rebuild the list widget
+        self.ui.listSource.clear()
+        for path in non_pdfs + pdfs:
+            self.ui.listSource.addItem(path)
 
     def btn_remove_clicked(self):
         selected_items = self.ui.listSource.selectedItems()
