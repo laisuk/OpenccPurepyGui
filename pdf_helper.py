@@ -20,7 +20,6 @@ CancelCallback = Callable[[], bool]  # return True => cancel requested
 CJK_PUNCT_END = (
     '。', '！', '？', '；', '：', '…', '—', '”', '」', '’', '』',
     '）', '】', '》', '〗', '〕', '〉', '］', '｝',
-    # '章', '节', '部', '卷', '節',
     '.', '!', '?', ')'
 )
 
@@ -262,23 +261,6 @@ def reflow_cjk_paragraphs_core(
     """
     Reflows CJK text extracted from PDFs by merging artificial line breaks
     while preserving intentional paragraph / heading / dialog boundaries.
-
-    Parameters
-    ----------
-    text : str
-        Raw text (usually extracted from PDF) to be reflowed.
-    add_pdf_page_header : bool
-        If False, try to skip page-break-like blank lines that are not
-        preceded by CJK punctuation (layout gaps between pages).
-        If True, keep those gaps.
-    compact : bool
-        If True, join paragraphs with a single newline ("p1\\np2\\np3").
-        If False, join with blank lines ("p1\\n\\np2\\n\\np3").
-
-    Returns
-    -------
-    str
-        Reflowed text.
     """
     if not text.strip():
         return text
@@ -289,7 +271,7 @@ def reflow_cjk_paragraphs_core(
     lines = text.split("\n")
     segments: List[str] = []
     buffer = ""
-    dialog_state = DialogState()  # track dialog for current buffer (still useful)
+    dialog_state = DialogState()  # track dialog for current buffer
 
     def is_dialog_start(s: str) -> bool:
         """
@@ -303,12 +285,15 @@ def reflow_cjk_paragraphs_core(
         """
         Heuristic for detecting heading-like or emphasis lines in CJK text.
 
-        Rules:
+        Rules (aligned with C#/Java versions):
           - Keep page markers intact (=== Page ===)
-          - Reject lines containing CJK 'end punctuation' (。、！？”」 etc.)
-          - Reject short lines that have an unmatched opening bracket
-          - Rule A: short (≤15) lines containing CJK are treated as emphasis
-          - Rule B: short (≤15) pure-ASCII lines with letters are treated as emphasis
+          - Reject lines whose *last char* is a CJK end punctuation
+            (。、！？：…」』 etc.)
+          - Reject short lines with unclosed brackets
+          - Rule C: short (≤15) pure-ASCII digit lines → heading (e.g. "1", "007")
+          - Rule A: short (≤15) lines containing any non-ASCII (CJK/mixed),
+                    and not ending with comma → heading
+          - Rule B: short (≤15) pure-ASCII lines with letters → heading
         """
         s = s.strip()
         if not s:
@@ -318,42 +303,60 @@ def reflow_cjk_paragraphs_core(
         if s.startswith("=== ") and s.endswith("==="):
             return False
 
-        # If contains CJK end punctuation anywhere, not heading/emphasis
-        if any(ch in CJK_PUNCT_END for ch in s):
+        last = s[-1]
+        # If *ends* with CJK end punctuation → not heading
+        if last in CJK_PUNCT_END:
             return False
 
-        # If line has an opening bracket but no closing bracket,
-        # it's most likely a broken parenthetical, NOT a standalone heading.
+        # Simple unclosed bracket detection:
+        # if it has an opening bracket but no closing bracket at all, reject.
         if any(ch in OPEN_BRACKETS for ch in s) and not any(
                 ch in CLOSE_BRACKETS for ch in s
         ):
             return False
 
-        # Rule A: short CJK or mixed lines (≤15)
-        if (
-                len(s) <= 15
-                and any(ord(ch) > 0x7F for ch in s)  # contains at least one CJK
-                and s[-1] not in ("，", ",")  # no trailing comma
-        ):
-            return True
+        length = len(s)
+        if length <= 15:
+            has_non_ascii = False
+            all_ascii = True
+            has_letter = False
+            all_ascii_digits = True
 
-        # Rule B: short pure-Latin emphasis (≤15)
-        # must contain at least one letter; no CJK allowed
-        if (
-                len(s) <= 15
-                and all(ord(ch) <= 0x7F for ch in s)  # pure ASCII
-                and any(ch.isalpha() for ch in s)  # contains letter
-        ):
-            return True
+            for ch in s:
+                if ord(ch) > 0x7F:
+                    has_non_ascii = True
+                    all_ascii = False
+                    all_ascii_digits = False
+                    continue
+
+                if not ch.isdigit():
+                    all_ascii_digits = False
+
+                if ch.isalpha():
+                    has_letter = True
+
+            # Rule C: pure ASCII digits (1, 007, 23, 128 ...) → heading
+            if all_ascii_digits:
+                return True
+
+            # Rule A: short CJK/mixed line, not ending with comma
+            if has_non_ascii and last not in ("，", ","):
+                return True
+
+            # Rule B: short pure ASCII line with at least one letter
+            if all_ascii and has_letter:
+                return True
 
         return False
 
     for raw_line in lines:
         stripped = raw_line.rstrip()
+        # logical probe for title detection (no left indent)
         stripped_left = stripped.lstrip()
 
         # Title detection (e.g. 前言 / 第X章 / 番外 ...)
         is_title_heading = bool(TITLE_HEADING_REGEX.search(stripped_left))
+        is_short_heading = is_heading_like(stripped)
 
         # Collapse style-layer repeated titles
         if is_title_heading:
@@ -383,7 +386,7 @@ def reflow_cjk_paragraphs_core(
             segments.append(stripped)
             continue
 
-        # 3) Title heading (chapter, 前言, 番外, etc.)
+        # 3) 強制 TitleHeading
         if is_title_heading:
             if buffer:
                 segments.append(buffer)
@@ -391,6 +394,24 @@ def reflow_cjk_paragraphs_core(
                 dialog_state.reset()
             segments.append(stripped)
             continue
+
+        # 3b) 弱 heading-like
+        if is_short_heading:
+            if buffer:
+                bt = buffer.rstrip()
+                if bt and bt[-1] in ("，", ","):
+                    # 逗號結尾 → 視作續句
+                    pass
+                else:
+                    segments.append(buffer)
+                    buffer = stripped
+                    dialog_state.reset()
+                    dialog_state.update(stripped)
+                    continue
+            else:
+                # 無前文 → 直接當 heading
+                segments.append(stripped)
+                continue
 
         current_is_dialog_start = is_dialog_start(stripped)
 
@@ -414,10 +435,12 @@ def reflow_cjk_paragraphs_core(
 
         # Colon + dialog continuation:
         # e.g. "她写了一行字：" + "「如果连自己都不相信……」"
-        if buffer_text.endswith(("：", ":")) and stripped.startswith(DIALOG_OPENERS):
-            buffer += stripped
-            dialog_state.update(stripped)
-            continue
+        if buffer_text.endswith(("：", ":")):
+            after_indent = stripped.lstrip(" \u3000")
+            if after_indent and after_indent[0] in DIALOG_OPENERS:
+                buffer += stripped
+                dialog_state.update(stripped)
+                continue
 
         # 5) Ends with CJK punctuation → new paragraph,
         #    but only if we are NOT inside an unclosed dialog.
@@ -428,13 +451,9 @@ def reflow_cjk_paragraphs_core(
             dialog_state.update(stripped)
             continue
 
-        # 6) Previous buffer looks like a heading-like short title
-        if is_heading_like(buffer_text):
-            segments.append(buffer_text)
-            buffer = stripped
-            dialog_state.reset()
-            dialog_state.update(stripped)
-            continue
+        # 6) (old "previous is heading-like" rule REMOVED)
+        #    Now all heading-like detection is done on the *current* line
+        #    above, via: is_title_heading or is_heading_like(stripped).
 
         # 7) Indentation → new paragraph
         if re.match(r"^\s{2,}", raw_line):
@@ -445,7 +464,7 @@ def reflow_cjk_paragraphs_core(
             continue
 
         # 8) Chapter-like endings: 章 / 节 / 部 / 卷 (with possible trailing brackets)
-        if len(buffer_text) <= 15 and re.search(
+        if len(buffer_text) <= 12 and re.search(
                 r"([章节部卷節])[】》〗〕〉」』）]*$", buffer_text
         ):
             segments.append(buffer_text)

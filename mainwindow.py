@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 from PySide6.QtCore import Qt, Slot, QThread
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QGuiApplication, QTextCursor
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton
 
 from opencc_purepy import OpenCC
@@ -299,26 +299,59 @@ class MainWindow(QMainWindow):
         Reflows CJK text extracted from PDFs by merging artificial line breaks
         while preserving intentional paragraph / heading boundaries.
 
-        Variables
+        Behavior
+        --------
+        - If there is a selection in tbSource, only the selected text is reflowed.
+        - If there is no selection, the entire document is reflowed.
+        - The change is wrapped in a single edit block, so one Undo restores the
+          pre-reflow state.
+
+        Parameters
         ----------
-        add_pdf_page_header : bool
+        self.add_pdf_page_header : bool
             If False, try to skip page-break-like blank lines that are not
             preceded by CJK punctuation (i.e., layout gaps between pages).
             If True, keep those gaps.
-        compact : bool
+        self.compact : bool
             If True, join paragraphs with a single newline ("p1\\np2\\np3").
             If False (default), join with blank lines ("p1\\n\\np2\\n\\np3").
         """
-        text = self.ui.tbSource.toPlainText()
+        edit = self.ui.tbSource
+        cursor = edit.textCursor()
+        has_selection = cursor.hasSelection()
+
+        if has_selection:
+            src = cursor.selection().toPlainText()
+        else:
+            src = edit.toPlainText()
+
+        if not src.strip():
+            self.statusBar().showMessage("Source text is empty. Nothing to reflow.")
+            return
+
         compact = self.ui.actionCompactPdfText.isChecked()
         add_pdf_page_header = self.ui.actionAddPdfPageHeader.isChecked()
 
         result = reflow_cjk_paragraphs_core(
-            text,
+            src,
             add_pdf_page_header=add_pdf_page_header,
-            compact=compact
+            compact=compact,
         )
-        self.ui.tbSource.setPlainText(result)
+
+        if has_selection:
+            # Replace only the selected range, as one undoable step
+            cursor.beginEditBlock()
+            cursor.insertText(result)  # replaces selection
+            cursor.endEditBlock()
+            edit.setTextCursor(cursor)
+        else:
+            # Replace the entire document, also as one undoable step
+            doc_cursor = QTextCursor(edit.document())
+            doc_cursor.beginEditBlock()
+            doc_cursor.select(QTextCursor.Document)
+            doc_cursor.insertText(result)
+            doc_cursor.endEditBlock()
+
         self.statusBar().showMessage("Reflow complete (CJK-aware)")
 
     def std_hk_select(self):
