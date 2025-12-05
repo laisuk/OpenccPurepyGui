@@ -11,10 +11,10 @@ from PySide6.QtCore import Qt, Slot, QThread
 from PySide6.QtGui import QGuiApplication, QTextCursor
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton
 
+from batch_worker import BatchWorker
 from opencc_purepy import OpenCC
-from opencc_purepy.office_helper import OFFICE_FORMATS, convert_office_doc
 from pdf_extract_worker import PdfExtractWorker
-from pdf_helper import build_progress_bar, reflow_cjk_paragraphs_core, extract_pdf_text_core, sanitize_invisible
+from pdf_helper import build_progress_bar, reflow_cjk_paragraphs_core, extract_pdf_text_core
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
@@ -25,27 +25,29 @@ from ui_form import Ui_MainWindow
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._batch_worker = None
+        self._batch_thread = None
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
         # state
         self._pdf_thread: QThread | None = None
         self._pdf_worker: Optional[PdfExtractWorker] = None
-        self._cancel_pdf_button: Optional[QPushButton] = None
+        self._cancel_button: Optional[QPushButton] = None
         self._cancel_pdf_extraction = None
         self._pdf_sequential_active = False
 
         # shared Cancel button (hidden by default)
-        self._cancel_pdf_button = QPushButton("Cancel", self)
-        self._cancel_pdf_button.setAutoDefault(False)
-        self._cancel_pdf_button.setDefault(False)
-        self._cancel_pdf_button.setFlat(True)
-        self._cancel_pdf_button.setStyleSheet(
+        self._cancel_button = QPushButton("Cancel", self)
+        self._cancel_button.setAutoDefault(False)
+        self._cancel_button.setDefault(False)
+        self._cancel_button.setFlat(True)
+        self._cancel_button.setStyleSheet(
             "QPushButton { padding: 2px 8px; margin: 0px; }"
         )
-        self._cancel_pdf_button.hide()
-        self._cancel_pdf_button.clicked.connect(self.on_pdf_cancel_clicked)  # type: ignore
-        self.statusBar().addPermanentWidget(self._cancel_pdf_button)
+        self._cancel_button.hide()
+        # self._cancel_pdf_button.clicked.connect(self.on_pdf_cancel_clicked)  # type: ignore
+        self.statusBar().addPermanentWidget(self._cancel_button)
 
         self.ui.tabWidget.setCurrentIndex(0)
         self.ui.btnCopy.clicked.connect(self.btn_copy_click)
@@ -76,6 +78,39 @@ class MainWindow(QMainWindow):
 
         self.converter = OpenCC()
 
+    def show_cancel_button(self, handler):
+        """Show Cancel button and connect to the given handler."""
+        try:
+            self._cancel_button.clicked.disconnect()  # type: ignore
+        except Exception():
+            pass  # ok if nothing connected yet
+
+        self._cancel_button.clicked.connect(handler)  # type: ignore
+        self._cancel_button.show()
+
+    def hide_cancel_button(self):
+        """Hide Cancel button and remove handlers."""
+        try:
+            self._cancel_button.clicked.disconnect()  # type: ignore
+        except Exception():
+            pass
+
+        self._cancel_button.hide()
+
+    def disable_process_ui(self):
+        """Disable processing controls to prevent re-entry."""
+        self.ui.btnProcess.setEnabled(False)
+        self.ui.btnReflow.setEnabled(False)  # optional
+        # self.ui.tabWidget.setEnabled(False)  # optional — prevents switching tabs mid-process
+
+    def enable_process_ui(self):
+        """Re-enable processing controls after batch or PDF task is finished."""
+        self.ui.btnProcess.setEnabled(True)
+        self.ui.btnReflow.setEnabled(True)
+        # self.ui.tabWidget.setEnabled(True)
+
+    # ====== Main Worker ======
+
     def start_pdf_extraction(self, filename: str) -> None:
         """
         Interactive single-PDF extraction entry point.
@@ -90,7 +125,9 @@ class MainWindow(QMainWindow):
 
         # UI-specific bits
         self.ui.btnReflow.setEnabled(False)
-        self._cancel_pdf_button.show()
+        # self._cancel_pdf_button.show()
+        self.show_cancel_button(self.on_pdf_cancel_clicked)
+        self.disable_process_ui()
         self.statusBar().showMessage("Loading PDF...")
 
         # Reuse the core
@@ -157,7 +194,9 @@ class MainWindow(QMainWindow):
         Extraction finished (success or cancelled). Runs in GUI thread.
         """
         # Hide cancel button if present
-        self._cancel_pdf_button.hide()
+        # self._cancel_pdf_button.hide()
+        self.enable_process_ui()
+        self.hide_cancel_button()
         # Re-enable Reflow button
         self.ui.btnReflow.setEnabled(True)
         if self.ui.actionAutoReflow.isChecked():
@@ -185,7 +224,9 @@ class MainWindow(QMainWindow):
         """
         Extraction encountered an error.
         """
-        self._cancel_pdf_button.hide()
+        # self._cancel_pdf_button.hide()
+        self.enable_process_ui()
+        self.hide_cancel_button()
         self.ui.btnReflow.setEnabled(True)
         self.statusBar().showMessage(f"Error loading PDF: {message}")
         # Optional: QMessageBox.critical(self, "PDF Error", message)
@@ -216,6 +257,40 @@ class MainWindow(QMainWindow):
             # Sequential mode: flip the flag checked by extract_pdf_text()
             self._cancel_pdf_extraction = True
             self.statusBar().showMessage("Cancelling PDF loading (sequential)...")
+
+    # ====== Main Worker End ======
+
+    # ====== Batch Processing ======
+
+    def on_batch_progress(self, current: int, total: int) -> None:
+        self.ui.statusbar.showMessage(f"Processing {current}/{total}...")
+
+    def on_batch_error(self, msg: str) -> None:
+        self.ui.tbPreview.appendPlainText(f"[Error] {msg}")
+        self.ui.statusbar.showMessage(msg)
+        self.hide_cancel_button()
+        self.enable_process_ui()
+
+    def on_batch_finished(self, cancelled: bool) -> None:
+        if cancelled:
+            self.ui.tbPreview.appendPlainText("❌ Batch cancelled.")
+            self.ui.statusbar.showMessage("❌ Batch cancelled.")
+        else:
+            self.ui.tbPreview.appendPlainText("✅ Batch conversion done.")
+            self.ui.statusbar.showMessage("Batch completed.")
+        self.hide_cancel_button()
+        self.enable_process_ui()
+
+    def _on_batch_thread_finished(self) -> None:
+        self._batch_thread = None
+        self._batch_worker = None
+
+    def on_batch_cancel_clicked(self):
+        if self._batch_worker is not None:
+            self._batch_worker.request_cancel()
+            self.ui.statusbar.showMessage("Cancelling batch...")
+
+    # ====== Batch Processing End ======
 
     def _on_tbSource_fileDropped(self, path: str):
         self.detect_source_text_info()
@@ -273,7 +348,7 @@ class MainWindow(QMainWindow):
         """
         self._pdf_sequential_active = True
         self._cancel_pdf_extraction = False
-        self._cancel_pdf_button.show()
+        self._cancel_button.show()
         self.ui.btnReflow.setEnabled(False)
 
         # Track last progress for nicer "cancelled at page X/Y" message
@@ -324,7 +399,7 @@ class MainWindow(QMainWindow):
         finally:
             self._pdf_sequential_active = False
             self._cancel_pdf_extraction = False
-            self._cancel_pdf_button.hide()
+            self._cancel_button.hide()
             self.ui.btnReflow.setEnabled(True)
 
     def reflow_cjk_paragraphs(self) -> None:
@@ -479,183 +554,130 @@ class MainWindow(QMainWindow):
 
         return "s2tw"
 
-    def btn_process_click(self):
+    def btn_process_click(self) -> None:
+        """
+        Shell / entry point for the Process button.
+        Decides which processing mode to run based on the selected tab.
+        """
         config = self.get_current_config()
         is_punctuation = self.ui.cbPunct.isChecked()
         self.converter.set_config(config)
 
-        if self.ui.tabWidget.currentIndex() == 0:
-            self.ui.tbDestination.clear()
-            if not self.ui.tbSource.document().toPlainText():
-                self.ui.statusbar.showMessage("Nothing to convert: Empty content.")
-                return
-            input_text = self.ui.tbSource.document().toPlainText()
+        current_tab = self.ui.tabWidget.currentIndex()
+        if current_tab == 0:
+            self.main_process(config, is_punctuation)
+        elif current_tab == 1:
+            self.batch_process(config, is_punctuation)
+        else:
+            # Just in case more tabs are added in future
+            self.ui.statusbar.showMessage("Unsupported tab for processing.")
 
-            start_time = time.perf_counter()
-            converted_text = self.converter.convert(input_text, is_punctuation)
-            elapsed_ms = (time.perf_counter() - start_time) * 1000  # in milliseconds
+    def main_process(self, config: str, is_punctuation: bool) -> None:
+        """
+        Single-text conversion (Tab 0).
+        Converts the content of tbSource into tbDestination.
+        """
+        self.ui.tbDestination.clear()
 
-            self.ui.tbDestination.document().setPlainText(converted_text)
+        input_text = self.ui.tbSource.document().toPlainText()
+        if not input_text:
+            self.ui.statusbar.showMessage("Nothing to convert: Empty content.")
+            return
 
-            if self.ui.rbManual.isChecked():
-                self.ui.lblDestinationCode.setText(self.ui.cbManual.currentText())
-            else:
-                if "Non" not in self.ui.lblSourceCode.text():
-                    self.ui.lblDestinationCode.setText(
-                        "zh-Hant (繁体)" if self.ui.rbS2t.isChecked() else "zh-Hans (简体)")
-                else:
-                    self.ui.lblDestinationCode.setText(self.ui.lblSourceCode.text())
+        start_time = time.perf_counter()
+        converted_text = self.converter.convert(input_text, is_punctuation)
+        elapsed_ms = (time.perf_counter() - start_time) * 1000.0  # ms
 
-            self.ui.statusbar.showMessage(f"Process completed in {elapsed_ms:.1f} ms ( {config} )")
+        self.ui.tbDestination.document().setPlainText(converted_text)
 
-        if self.ui.tabWidget.currentIndex() == 1:
-            if self.ui.listSource.count() == 0:
-                self.ui.statusbar.showMessage("Nothing to convert: Empty file list.")
-                return
-
-            out_dir = self.ui.lineEditDir.text()
-            if not os.path.exists(out_dir):
-                msg = QMessageBox(QMessageBox.Icon.Information, "Attention", "Invalid output directory.")
-                msg.setInformativeText("Output directory:\n" + out_dir + "\nnot found.")
-                msg.exec()
-                self.ui.lineEditDir.setFocus()
-                self.ui.statusbar.showMessage("Invalid output directory.")
-                return
-
-            self.ui.tbPreview.clear()
-            out_dir = Path(out_dir)
-
-            total = self.ui.listSource.count()
-
-            for index in range(total):
-                file_path = Path(self.ui.listSource.item(index).text())
-                base = file_path.stem
-                ext = file_path.suffix.lower()
-                ext_no_dot = ext.lstrip(".")
-
-                basename = (
-                    self.converter.convert(base, is_punctuation)
-                    if self.ui.actionConvert_filename.isChecked()
-                    else base
+        # Update destination language label
+        if self.ui.rbManual.isChecked():
+            self.ui.lblDestinationCode.setText(self.ui.cbManual.currentText())
+        else:
+            if "Non" not in self.ui.lblSourceCode.text():
+                self.ui.lblDestinationCode.setText(
+                    "zh-Hant (繁体)" if self.ui.rbS2t.isChecked() else "zh-Hans (简体)"
                 )
+            else:
+                self.ui.lblDestinationCode.setText(self.ui.lblSourceCode.text())
 
-                if not file_path.exists():
-                    self.ui.tbPreview.appendPlainText(f"{index + 1}: {file_path} -> File not found.")
-                    continue
+        self.ui.statusbar.showMessage(
+            f"Process completed in {elapsed_ms:.1f} ms ( {config} )"
+        )
 
-                out_dir.mkdir(parents=True, exist_ok=True)
-                input_filename = str(file_path)
+    def batch_process(self, config: str, is_punctuation: bool) -> None:
+        """
+        Batch file conversion (Tab 1).
+        Starts a BatchWorker in a QThread to process all files in listSource.
+        """
+        if self.ui.listSource.count() == 0:
+            self.ui.statusbar.showMessage("Nothing to convert: Empty file list.")
+            return
 
-                # --------------------------
-                # 1) PDF branch (new)
-                # --------------------------
-                if ext_no_dot == "pdf":
-                    # booleans from your UI (adapt names to your actual widgets)
-                    add_header = self.ui.actionAddPdfPageHeader.isChecked()
-                    auto_reflow = self.ui.actionAutoReflow.isChecked()
-                    compact = self.ui.actionCompactPdfText.isChecked()
+        out_dir = self.ui.lineEditDir.text()
+        if not os.path.exists(out_dir):
+            msg = QMessageBox(
+                QMessageBox.Icon.Information,
+                "Attention",
+                "Invalid output directory.",
+            )
+            msg.setInformativeText(
+                "Output directory:\n" + out_dir + "\nnot found."
+            )
+            msg.exec()
+            self.ui.lineEditDir.setFocus()
+            self.ui.statusbar.showMessage("Invalid output directory.")
+            return
 
-                    output = out_dir / f"{basename}_{config}.txt"
+        out_path = Path(out_dir)
 
-                    self.ui.tbPreview.appendPlainText(
-                        f"Processing PDF ({index + 1}/{total})... Please wait..."
-                    )
-                    QApplication.processEvents()
+        # Collect file list from ListBox
+        files = [
+            self.ui.listSource.item(i).text()
+            for i in range(self.ui.listSource.count())
+        ]
 
-                    try:
-                        # Synchronous extraction in batch
-                        raw_text = extract_pdf_text_core(
-                            input_filename,
-                            add_pdf_page_header=add_header,
-                            on_progress=None,  # no per-page UI updates in batch
-                            is_cancelled=lambda: False,  # no cancellation in this simple version
-                        )
-                    except Exception as e:  # noqa: BLE001
-                        self.ui.tbPreview.appendPlainText(
-                            f"{index + 1}: {input_filename} -> Skip: PDF error: {e}"
-                        )
-                        QApplication.processEvents()
-                        continue
+        # Snapshot PDF-related and filename options
+        add_header = self.ui.actionAddPdfPageHeader.isChecked()
+        auto_reflow = self.ui.actionAutoReflow.isChecked()
+        compact = self.ui.actionCompactPdfText.isChecked()
+        convert_filename = self.ui.actionConvert_filename.isChecked()
 
-                    if not raw_text:
-                        self.ui.tbPreview.appendPlainText(
-                            f"{index + 1}: {input_filename} -> Skip: Empty or non-text PDF."
-                        )
-                        QApplication.processEvents()
-                        continue
+        self.ui.tbPreview.clear()
+        self.ui.statusbar.showMessage("Starting batch conversion...")
 
-                    raw_text = sanitize_invisible(raw_text)
+        self.disable_process_ui()
+        self.show_cancel_button(self.on_batch_cancel_clicked)
 
-                    # Optional: reflow CJK paragraphs
-                    if auto_reflow:
-                        # Replace with your actual reflow helper
-                        # raw_text = reflow_cjk_paragraphs(raw_text, compact=compact)
-                        raw_text = reflow_cjk_paragraphs_core(raw_text, compact=compact,
-                                                              add_pdf_page_header=add_header)  # example method
+        # Create thread + worker
+        self._batch_thread = QThread(self)
+        self._batch_worker = BatchWorker(
+            files=files,
+            out_dir=out_path,
+            converter=self.converter,
+            config=config,
+            is_punctuation=is_punctuation,
+            add_pdf_page_header=add_header,
+            auto_reflow_pdf=auto_reflow,
+            compact_pdf=compact,
+            convert_filename=convert_filename,
+            parent=None,  # worker is thread-owned; no need to parent to MainWindow
+        )
+        self._batch_worker.moveToThread(self._batch_thread)
 
-                    # OpenCC conversion
-                    converted_text = self.converter.convert(
-                        raw_text,
-                        self.ui.cbPunct.isChecked()
-                    )
+        # Connections
+        self._batch_thread.started.connect(self._batch_worker.run)  # type: ignore
+        self._batch_worker.log.connect(self.ui.tbPreview.appendPlainText)
+        self._batch_worker.progress.connect(self.on_batch_progress)
+        self._batch_worker.error.connect(self.on_batch_error)
+        self._batch_worker.finished.connect(self.on_batch_finished)
 
-                    with open(output, "w", encoding="utf-8") as f:
-                        f.write(converted_text)
+        # Cleanup
+        self._batch_worker.finished.connect(self._batch_thread.quit)
+        self._batch_thread.finished.connect(self._batch_worker.deleteLater)  # type: ignore
+        self._batch_thread.finished.connect(self._on_batch_thread_finished)  # type: ignore
 
-                    self.ui.tbPreview.appendPlainText(f"{index + 1}: {output} -> Done.")
-                    QApplication.processEvents()
-                    continue
-
-                # ---------------------------------
-                # 2) Office documents (unchanged)
-                # ---------------------------------
-                output = out_dir / f"{basename}_{config}{ext}"
-
-                if ext_no_dot in OFFICE_FORMATS:
-                    success, message = convert_office_doc(
-                        input_filename,
-                        str(output),
-                        ext_no_dot,
-                        self.converter,
-                        is_punctuation,
-                        True,
-                    )
-                    if success:
-                        self.ui.tbPreview.appendPlainText(
-                            f"{index + 1}: {output} -> {message} -> Done."
-                        )
-                    else:
-                        self.ui.tbPreview.appendPlainText(
-                            f"{index + 1}: {input_filename} -> Skip: {message}."
-                        )
-                    QApplication.processEvents()
-                    continue
-
-                # ---------------------------------
-                # 3) Plain text files (unchanged)
-                # ---------------------------------
-                input_text = ""
-                try:
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        input_text = f.read()
-                except UnicodeDecodeError:
-                    input_text = ""
-
-                if input_text:
-                    converted_text = self.converter.convert(
-                        input_text,
-                        self.ui.cbPunct.isChecked()
-                    )
-                    with open(output, "w", encoding="utf-8") as f:
-                        f.write(converted_text)
-                    self.ui.tbPreview.appendPlainText(f"{index + 1}: {output} -> Done.")
-                else:
-                    self.ui.tbPreview.appendPlainText(
-                        f"{index + 1}: {input_filename} -> Skip: Not text or valid file."
-                    )
-                QApplication.processEvents()
-
-            self.ui.statusbar.showMessage("Process completed")
+        self._batch_thread.start()
 
     def btn_savefile_click(self):
         target = self.ui.cbSaveTarget.currentText()
