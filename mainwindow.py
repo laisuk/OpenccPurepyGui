@@ -82,7 +82,7 @@ class MainWindow(QMainWindow):
         """Show Cancel button and connect to the given handler."""
         try:
             self._cancel_button.clicked.disconnect()  # type: ignore
-        except Exception():
+        except (ValueError, RuntimeError, Exception):
             pass  # ok if nothing connected yet
 
         self._cancel_button.clicked.connect(handler)  # type: ignore
@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
         """Hide Cancel button and remove handlers."""
         try:
             self._cancel_button.clicked.disconnect()  # type: ignore
-        except Exception():
+        except (ValueError, RuntimeError, Exception):
             pass
 
         self._cancel_button.hide()
@@ -185,7 +185,7 @@ class MainWindow(QMainWindow):
         Called from worker thread via signal: update status bar.
         """
         percent = int(current / total * 100)
-        bar = build_progress_bar(current, total, width=20)
+        bar = build_progress_bar(current, total, width=10)
         self.statusBar().showMessage(f"Loading PDF {bar}  {percent}%")
 
     @Slot(str, str, bool)

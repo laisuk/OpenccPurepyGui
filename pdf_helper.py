@@ -134,16 +134,22 @@ def get_progress_block(total_pages: int) -> int:
     return max(1, total_pages // 20)
 
 
-def build_progress_bar(current: int, total: int, width: int = 20) -> str:
+def build_progress_bar(current: int, total: int, width: int = 10) -> str:
     """
-    Simple text progress bar like [██████░░░░░░░░░░].
+    Emoji-based progress bar, stable full-width squares.
+
+    Example:
+        [🟩🟩🟩🟩🟨🟨🟨🟨🟨🟨]
     """
     if total <= 0:
-        return "[" + "░" * width + "]"
-    ratio = current / total
-    filled = int(ratio * width)
+        return "[" + "🟨" * width + "]"
+
+    filled = current * width // total
     filled = max(0, min(width, filled))
-    return "[" + "█" * filled + "░" * (width - filled) + "]"
+
+    # return "[" + "█" * filled + "░" * (width - filled) + "]"
+    # return "[" + "🟩" * filled + "⬜" * (width - filled) + "]"
+    return "[" + "🟩" * filled + "🟨" * (width - filled) + "]"
 
 
 # ---------------------------------------------------------------------------
