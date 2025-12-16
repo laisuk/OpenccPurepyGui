@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
-
+from typing import Optional
 from PySide6.QtCore import QObject, Signal, Slot
-
 from opencc_purepy.office_helper import OFFICE_FORMATS, convert_office_doc
 # reuse your existing helpers
 from pdf_helper import extract_pdf_text_core, reflow_cjk_paragraphs_core, sanitize_invisible
@@ -26,7 +25,7 @@ class BatchWorker(QObject):
             auto_reflow_pdf: bool,
             compact_pdf: bool,
             convert_filename: bool,
-            parent: QObject | None = None,
+            parent: Optional[QObject] = None,
     ) -> None:
         super().__init__(parent)
         self._files = [Path(p) for p in files]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
 from PySide6.QtCore import QObject, Signal, Slot
 
@@ -21,7 +22,7 @@ class PdfExtractWorker(QObject):
             self,
             filename: str,
             add_pdf_page_header: bool,
-            parent: QObject | None = None,
+            parent: Optional[QObject] = None,
     ) -> None:
         super().__init__(parent)
         self._filename = filename
@@ -33,11 +34,11 @@ class PdfExtractWorker(QObject):
         """
         Main worker entry point. Runs entirely in the worker thread.
         """
-        # Keep the "file not found" behaviour identical to old version
+        # Keep the "file not found" behavior identical to old version
         path = Path(self._filename)
         if not path.is_file():
             self.error.emit(f"PDF not found: {path}")
-            # finished with empty text, not cancelled
+            # finished with empty text, not canceled
             self.finished.emit("", self._filename, False)
             return
 
@@ -54,7 +55,7 @@ class PdfExtractWorker(QObject):
             self.finished.emit("", self._filename, False)
             return
         except Exception as e:  # noqa: BLE001
-            # Match old behaviour: emit error, no finished() on load/other errors
+            # Match old behavior: emit error, no finished() on load/other errors
             self.error.emit(str(e))
             return
 

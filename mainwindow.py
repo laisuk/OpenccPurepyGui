@@ -31,7 +31,8 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
 
         # state
-        self._pdf_thread: QThread | None = None
+        # self._pdf_thread: QThread | None = None
+        self._pdf_thread: Optional[QThread] = None
         self._pdf_worker: Optional[PdfExtractWorker] = None
         self._cancel_button: Optional[QPushButton] = None
         self._cancel_pdf_extraction = None
@@ -75,6 +76,7 @@ class MainWindow(QMainWindow):
         self.ui.actionAbout.triggered.connect(self.action_about_triggered)
         self.ui.actionExit.triggered.connect(btn_exit_click)
         self.ui.tbSource.fileDropped.connect(self._on_tbSource_fileDropped)
+        self.ui.tbSource.pdfDropped.connect(self._on_tbSource_pdfDropped)
 
         self.converter = OpenCC()
 
@@ -114,7 +116,7 @@ class MainWindow(QMainWindow):
     def start_pdf_extraction(self, filename: str) -> None:
         """
         Interactive single-PDF extraction entry point.
-        Uses the core wiring and adds UI behaviour.
+        Uses the core wiring and adds UI behavior.
         """
         # Guard: only one PDF extraction at a time in interactive mode
         if self._pdf_thread is not None:
@@ -191,7 +193,7 @@ class MainWindow(QMainWindow):
     @Slot(str, str, bool)
     def on_pdf_finished(self, text: str, filename: str, cancelled: bool) -> None:
         """
-        Extraction finished (success or cancelled). Runs in GUI thread.
+        Extraction finished (success or canceled). Runs in GUI thread.
         """
         # Hide cancel button if present
         # self._cancel_pdf_button.hide()
@@ -205,7 +207,7 @@ class MainWindow(QMainWindow):
             text = reflow_cjk_paragraphs_core(text,
                                               add_pdf_page_header=addPageHeader,
                                               compact=compact)
-        # Put extracted text into tbSource (even if partially cancelled)
+        # Put extracted text into tbSource (even if partially canceled)
         if text:
             self.ui.tbSource.setPlainText(text)
 
@@ -276,7 +278,7 @@ class MainWindow(QMainWindow):
             self.ui.tbPreview.appendPlainText("❌ Batch cancelled.")
             self.ui.statusbar.showMessage("❌ Batch cancelled.")
         else:
-            self.ui.tbPreview.appendPlainText("✅ Batch conversion done.")
+            self.ui.tbPreview.appendPlainText("✅ Batch conversion completed.")
             self.ui.statusbar.showMessage("Batch completed.")
         self.hide_cancel_button()
         self.enable_process_ui()
@@ -298,6 +300,19 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Text contents dropped")
         else:
             self.statusBar().showMessage("File dropped: " + path)
+
+    def _on_tbSource_pdfDropped(self, filename: str):
+        try:
+            if self.ui.actionUsePdfTextExtractWorker.isChecked():
+                self.start_pdf_extraction(filename)
+            else:
+                contents = self.extract_pdf_text(filename)
+                # Only update the editor + metadata here, but DO NOT override the status bar
+                self.ui.tbSource.setPlainText(contents)
+                self.ui.tbSource.content_filename = filename
+                self.detect_source_text_info()
+        except Exception as e:
+            QMessageBox.critical(self, "Open Error", f"Failed to open/parse file:\n{e}")
 
     def action_about_triggered(self):
         QMessageBox.about(self, "About", "OpenccPurepyGui version 1.0.0 (c) 2025 Laisuk")
@@ -376,7 +391,7 @@ class MainWindow(QMainWindow):
             # Decide final status message
             if self._cancel_pdf_extraction:
                 if last_page and total_pages:
-                    # Normal: cancelled after reading some pages
+                    # Normal: canceled after reading some pages
                     self.statusBar().showMessage(
                         f"❌ PDF loading cancelled at page {last_page}/{total_pages} - {filename}."
                     )
@@ -386,10 +401,10 @@ class MainWindow(QMainWindow):
                         f"❌ PDF loading cancelled (partial text extracted). ({filename})"
                     )
                 else:
-                    # Cancelled immediately before loading page 1
+                    # Canceled immediately before loading page 1
                     self.statusBar().showMessage(f"❌ PDF loading cancelled - {filename}.")
             else:
-                # Not cancelled
+                # Not canceled
                 if not text:
                     self.statusBar().showMessage("❌ PDF has no pages.")
                 else:
@@ -456,7 +471,7 @@ class MainWindow(QMainWindow):
             # Replace the entire document, also as one undoable step
             doc_cursor = QTextCursor(edit.document())
             doc_cursor.beginEditBlock()
-            doc_cursor.select(QTextCursor.Document)
+            doc_cursor.select(QTextCursor.SelectionType.Document)
             doc_cursor.insertText(result)
             doc_cursor.endEditBlock()
 
