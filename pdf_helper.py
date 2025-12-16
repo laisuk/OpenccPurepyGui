@@ -787,12 +787,15 @@ def reflow_cjk_paragraphs_core(
 
     for raw_line in lines:
         # 1) Visual form: trim right-side whitespace only
-        stripped = raw_line.rstrip()
+        visual = raw_line.rstrip()
 
-        # 2) Remove half-width indent but keep full-width indent (for output/layout)
-        stripped = strip_half_width_indent_keep_fullwidth(stripped)
+        # 2) Remove half-width indent but keep full-width indent
+        stripped = strip_half_width_indent_keep_fullwidth(visual)
 
-        # --- PROBE (no left indent at all) for structural detection ---
+        # 3) Collapse style-layer repeats (per line)
+        stripped = collapse_repeated_segments(stripped)
+
+        # 4) Probe (no left indent at all, incl. full-width) for detection
         probe = strip_all_left_indent_for_probe(stripped)
 
         # 2.5) Visual divider line → ALWAYS force paragraph break
@@ -801,20 +804,13 @@ def reflow_cjk_paragraphs_core(
                 segments.append(buffer)
                 buffer = ""
                 dialog_state.reset()
-            # keep divider as its own segment (optional; you can also drop it)
-            segments.append(probe if probe else stripped)
+            segments.append(probe)
             continue
 
-        # 3) Collapse style-layer repeated segments (per line)
-        stripped = collapse_repeated_segments(stripped)
-
-        # logical probe for title detection (no left indent)
-        stripped_left = stripped.lstrip()
-
-        # Title detection (e.g. 前言 / 第X章 / 番外 ...)
-        is_title_heading = bool(TITLE_HEADING_REGEX.search(stripped_left))
+        # Title detection
+        is_title_heading = bool(TITLE_HEADING_REGEX.search(probe))
         is_short_heading = is_heading_like(stripped)
-        is_metadata = is_metadata_line(stripped)
+        is_metadata = is_metadata_line(probe)
 
         # 1) Empty line
         if not stripped:
