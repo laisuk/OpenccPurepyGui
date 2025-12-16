@@ -8,7 +8,7 @@
 
 **OpenccPurepyGui** is a Chinese text conversion application built with PySide6 and the Qt design framework. It
 leverages
-the [opencc-purepy](https://github.com/laisuk/opencc-purepy) Python module to provide simplified and traditional
+the [opencc-purepy](https://github.com/laisuk/opencc_purepy) Python module to provide simplified and traditional
 Chinese conversion.
 
 ---
