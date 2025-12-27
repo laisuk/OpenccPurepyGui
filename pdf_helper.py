@@ -64,10 +64,10 @@ def sanitize_invisible(text: str) -> str:
 # ---------------------------------------------------------------------------
 
 def extract_pdf_text_core(
-    filename: str,
-    add_pdf_page_header: bool = False,
-    on_progress: Optional[ProgressCallback] = None,
-    is_cancelled: Optional[CancelCallback] = None,
+        filename: str,
+        add_pdf_page_header: bool = False,
+        on_progress: Optional[ProgressCallback] = None,
+        is_cancelled: Optional[CancelCallback] = None,
 ) -> str:
     path = Path(filename)
     if not path.is_file():
@@ -137,16 +137,16 @@ def collapse_consecutive_duplicate_lines(text: str) -> str:
 
 CJK_PUNCT_END = (
     "。", "！", "？", "；", "：", "…", "—", "”", "」", "’", "』",
-    "）", "】", "》", "〗", "〕", "〉", "］", "｝",
+    "）", "】", "》", "〗", "〕", "〉", "］", "｝", "＞",
     ".", "!", "?", ")", ":"
 )
 
-OPEN_BRACKETS = "([{（【《〈｛"
-CLOSE_BRACKETS = ")]}）】》〉｝"
+OPEN_BRACKETS = "([{（【《〈｛〔［＜"
+CLOSE_BRACKETS = ")]}）】》〉｝〕］＞"
 
 TITLE_HEADING_REGEX = re.compile(
-    r"^(?=.{0,50}$)"
-    r".{0,10}?(前言|序章|终章|尾声|后记|番外.{0,15}?|尾聲|後記|第.{0,5}?([章节部卷節回][^分合]).{0,20}?)"
+    r"^(?!.*[,，])(?=.{0,50}$)"
+    r".{0,10}?(前言|序章|终章|尾声|后记|番外.{0,15}?|尾聲|後記|第.{0,5}?([章节部卷節回][^分合的])|[卷章][一二三四五六七八九十](?:$|.{0,20}?))"
 )
 
 DIALOG_OPEN_TO_CLOSE = {
@@ -165,7 +165,7 @@ def is_dialog_opener(ch: str) -> bool:
     return ch in DIALOG_OPENERS
 
 
-METADATA_SEPARATORS = ("：", ":", "　")
+METADATA_SEPARATORS = ("：", ":", "　", "·", "・")
 METADATA_KEYS = {
     "書名", "书名",
     "作者",
@@ -208,6 +208,25 @@ METADATA_KEYS = {
     "ISBN",
 }
 
+_BRACKET_PAIRS = {
+    '（': '）',
+    '(': ')',
+    '[': ']',
+    '【': '】',
+    '《': '》',
+    '｛': '｝',
+    '〈': '〉',
+    '〔': '〕',
+    '〖': '〗',
+    '［': '］',
+    '＜': '＞',
+    '<': '>',
+}
+
+
+def is_matching_bracket(open_ch: str, close_ch: str) -> bool:
+    return _BRACKET_PAIRS.get(open_ch) == close_ch
+
 
 # =============================================================================
 # Low-level helpers (indent / CJK / box line / repeats)
@@ -222,20 +241,128 @@ def is_all_ascii(s: str) -> bool:
 
 def is_cjk(ch: str) -> bool:
     c = ord(ch)
+    # CJK Unified Ideographs + Extension A (BMP)
     if 0x3400 <= c <= 0x4DBF:
         return True
     if 0x4E00 <= c <= 0x9FFF:
         return True
+    # Compatibility Ideographs (BMP)
     return 0xF900 <= c <= 0xFAFF
 
 
-def is_all_cjk(s: str) -> bool:
+def is_all_ascii_digits(s: str) -> bool:
+    """
+    Match C# IsAllAsciiDigits:
+    - ASCII space ' ' is neutral (allowed)
+    - ASCII digits '0'..'9' allowed
+    - FULLWIDTH digits '０'..'９' allowed
+    - Anything else rejects
+    - Must contain at least one digit (ASCII or fullwidth)
+    """
+    has_digit = False
+    for ch in s:
+        if ch == " ":
+            continue
+        o = ord(ch)
+        if 0x30 <= o <= 0x39:  # '0'..'9'
+            has_digit = True
+            continue
+        if 0xFF10 <= o <= 0xFF19:  # '０'..'９'
+            has_digit = True
+            continue
+        return False
+    return has_digit
+
+
+def is_mixed_cjk_ascii(s: str) -> bool:
+    """
+    Match C# IsMixedCjkAscii:
+    - Neutral ASCII allowed but does not count as ASCII content: ' ', '-', '/', ':', '.'
+    - ASCII letters/digits count as ASCII content, other ASCII punctuation rejects
+    - FULLWIDTH digits count as ASCII content
+    - CJK chars count as CJK content
+    - Any other non-ASCII non-CJK rejects
+    - Early return True once both seen
+    """
+    has_cjk = False
+    has_ascii = False
+
+    for ch in s:
+        # Neutral ASCII
+        if ch in (" ", "-", "/", ":", "."):
+            continue
+
+        o = ord(ch)
+        if o <= 0x7F:
+            # Only ASCII letters/digits are allowed (and count)
+            if ("0" <= ch <= "9") or ("A" <= ch <= "Z") or ("a" <= ch <= "z"):
+                has_ascii = True
+            else:
+                return False
+        elif 0xFF10 <= o <= 0xFF19:  # FULLWIDTH digits
+            has_ascii = True
+        elif is_cjk(ch):
+            has_cjk = True
+        else:
+            return False
+
+        if has_cjk and has_ascii:
+            return True
+
+    return False
+
+
+def is_mostly_cjk(s: str) -> bool:
+    cjk = 0
+    ascii_ = 0
+
+    for ch in s:
+        # Neutral: whitespace
+        if ch.isspace():
+            continue
+
+        o = ord(ch)
+
+        # Neutral: ASCII digits
+        if 0x30 <= o <= 0x39:
+            continue
+
+        # Neutral: FULLWIDTH digits
+        if 0xFF10 <= o <= 0xFF19:
+            continue
+
+        if is_cjk(ch):
+            cjk += 1
+        elif o <= 0x7F and ch.isalpha():
+            ascii_ += 1
+        # else: symbols / punctuation → neutral (ignored)
+
+    return cjk > 0 and cjk >= ascii_
+
+
+def is_all_cjk_no_whitespace(s: str) -> bool:
+    # C# returns s.Length > 0 and rejects any whitespace
     if not s:
         return False
     for ch in s:
         if ch.isspace():
             return False
         if not is_cjk(ch):
+            return False
+    return True
+
+
+def is_all_cjk_ignoring_whitespace(s: str) -> bool:
+    """
+    Match C# IsAllCjkIgnoringWhitespace:
+    - Ignore any Unicode whitespace
+    - If any non-whitespace ASCII is present => false
+    - Otherwise true (even if empty / whitespace-only)
+    """
+    for ch in s:
+        if ch.isspace():
+            continue
+        if ord(ch) <= 0x7F:
             return False
     return True
 
@@ -443,8 +570,15 @@ def is_heading_like(s: str) -> bool:
         return False
 
     length = len(s)
-    max_len = 18 if is_all_ascii(s) else 8
+    if length < 2:
+        return False
+
     last_ch = s[-1]
+
+    if is_matching_bracket(s[0], last_ch):
+        return True
+
+    max_len = 18 if is_all_ascii(s) or is_mixed_cjk_ascii(s) else 8
 
     # Short circuit for item title-like: "物品准备："
     if (last_ch == ":" or last_ch == "：") and length <= max_len and is_dialog_start(s[:-1]):
@@ -491,37 +625,45 @@ def is_heading_like(s: str) -> bool:
 def is_metadata_line(line: str) -> bool:
     """
     Port of C# IsMetadataLine().
-    Note: caller should pass the probe (left indent removed).
+    Caller should pass the probe (left indent removed).
     """
-    if not line or line.strip() == "":
+    if not line:
         return False
 
-    stripped_line = line.strip()
-
-    if len(stripped_line) > 30:
+    s = line.strip()
+    if not s:
         return False
 
-    idx = min(
-        (stripped_line.find(sep) for sep in METADATA_SEPARATORS if stripped_line.find(sep) >= 0),
-        default=-1,
-    )
-    if idx <= 0 or idx > 10:
+    # Fast length gate
+    if len(s) > 30:
         return False
 
-    key = stripped_line[:idx].strip()
+    # Find the earliest separator among allowed ones, only once each.
+    # Also enforce idx in (0..10) like your C# logic.
+    idx = -1
+    for sep in METADATA_SEPARATORS:
+        i = s.find(sep)
+        if 0 < i <= 10 and (idx < 0 or i < idx):
+            idx = i
+
+    if idx < 0:
+        return False
+
+    # Key must match exactly after trimming (small slice, unavoidable)
+    key = s[:idx].strip()
     if key not in METADATA_KEYS:
         return False
 
+    # Skip whitespace after separator (no str() needed in Py)
+    n = len(s)
     j = idx + 1
-    while j < len(stripped_line) and stripped_line[j].isspace():
+    while j < n and s[j].isspace():
         j += 1
-    if j >= len(stripped_line):
+    if j >= n:
         return False
 
-    if is_dialog_opener(stripped_line[j]):
-        return False
-
-    return True
+    # Reject dialogue opener right after "Key: "
+    return not is_dialog_opener(s[j])
 
 
 # =============================================================================
@@ -529,10 +671,10 @@ def is_metadata_line(line: str) -> bool:
 # =============================================================================
 
 def reflow_cjk_paragraphs_core(
-    text: str,
-    *,
-    add_pdf_page_header: bool,
-    compact: bool,
+        text: str,
+        *,
+        add_pdf_page_header: bool,
+        compact: bool,
 ) -> str:
     if not text.strip():
         return text
@@ -612,14 +754,7 @@ def reflow_cjk_paragraphs_core(
 
         # 3c) Weak heading-like (your C# port)
         if is_short_heading:
-            all_cjk = True
-            for ch in stripped:
-                if ch.isspace():
-                    continue
-                if ord(ch) > 0x7F:
-                    continue
-                all_cjk = False
-                break
+            all_cjk = is_all_cjk_ignoring_whitespace(stripped)
 
             if buffer:
                 buf_text = buffer
