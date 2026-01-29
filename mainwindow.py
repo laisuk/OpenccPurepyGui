@@ -47,6 +47,7 @@ class MainWindow(QMainWindow):
             "QPushButton { padding: 2px 8px; margin: 0px; }"
         )
         self._cancel_button.hide()
+        self._cancel_click_handler = None  # type: Optional[object]
         # self._cancel_pdf_button.clicked.connect(self.on_pdf_cancel_clicked)  # type: ignore
         self.statusBar().addPermanentWidget(self._cancel_button)
 
@@ -75,27 +76,38 @@ class MainWindow(QMainWindow):
         self.ui.cbManual.activated.connect(self.cb_manual_activated)
         self.ui.actionAbout.triggered.connect(self.action_about_triggered)
         self.ui.actionExit.triggered.connect(btn_exit_click)
-        self.ui.tbSource.fileDropped.connect(self._on_tbSource_fileDropped)
-        self.ui.tbSource.pdfDropped.connect(self._on_tbSource_pdfDropped)
+        self.ui.tbSource.fileDropped.connect(self._on_tb_source_file_dropped)
+        self.ui.tbSource.pdfDropped.connect(self._on_tb_source_pdf_dropped)
 
         self.converter = OpenCC()
 
-    def show_cancel_button(self, handler):
-        """Show Cancel button and connect to the given handler."""
-        try:
-            self._cancel_button.clicked.disconnect()  # type: ignore
-        except (ValueError, RuntimeError, Exception):
-            pass  # ok if nothing connected yet
+    def show_cancel_button(self, handler) -> None:
+        """Show Cancel button and connect to the given handler (no warnings)."""
+        if self._cancel_button is None:
+            return
 
+        # Disconnect previous handler if we had one
+        if getattr(self, "_cancel_click_handler", None) is not None:
+            try:
+                self._cancel_button.clicked.disconnect(self._cancel_click_handler)  # type: ignore
+            except (TypeError, RuntimeError):
+                pass
+
+        self._cancel_click_handler = handler
         self._cancel_button.clicked.connect(handler)  # type: ignore
         self._cancel_button.show()
 
-    def hide_cancel_button(self):
-        """Hide Cancel button and remove handlers."""
-        try:
-            self._cancel_button.clicked.disconnect()  # type: ignore
-        except (ValueError, RuntimeError, Exception):
-            pass
+    def hide_cancel_button(self) -> None:
+        """Hide Cancel button and remove current handler (no warnings)."""
+        if self._cancel_button is None:
+            return
+
+        if getattr(self, "_cancel_click_handler", None) is not None:
+            try:
+                self._cancel_button.clicked.disconnect(self._cancel_click_handler)  # type: ignore
+            except (TypeError, RuntimeError):
+                pass
+            self._cancel_click_handler = None
 
         self._cancel_button.hide()
 
@@ -128,7 +140,7 @@ class MainWindow(QMainWindow):
         # UI-specific bits
         self.ui.btnReflow.setEnabled(False)
         # self._cancel_pdf_button.show()
-        self.show_cancel_button(self.on_pdf_cancel_clicked)
+        self.show_cancel_button(self._on_pdf_cancel_clicked)
         self.disable_process_ui()
         self.statusBar().showMessage("Loading PDF...")
 
@@ -136,9 +148,9 @@ class MainWindow(QMainWindow):
         self.start_pdf_extraction_core(
             filename=filename,
             add_header=add_header,
-            on_progress=self.on_pdf_progress,
-            on_finished=self.on_pdf_finished,
-            on_error=self.on_pdf_error,
+            on_progress=self._on_pdf_progress,
+            on_finished=self._on_pdf_finished,
+            on_error=self._on_pdf_error,
         )
 
     def start_pdf_extraction_core(
@@ -182,7 +194,7 @@ class MainWindow(QMainWindow):
         self._pdf_thread.start()
 
     @Slot(int, int)
-    def on_pdf_progress(self, current: int, total: int) -> None:
+    def _on_pdf_progress(self, current: int, total: int) -> None:
         """
         Called from worker thread via signal: update status bar.
         """
@@ -191,7 +203,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Loading PDF {bar}  {percent}%")
 
     @Slot(str, str, bool)
-    def on_pdf_finished(self, text: str, filename: str, cancelled: bool) -> None:
+    def _on_pdf_finished(self, text: str, filename: str, cancelled: bool) -> None:
         """
         Extraction finished (success or canceled). Runs in GUI thread.
         """
@@ -202,10 +214,10 @@ class MainWindow(QMainWindow):
         # Re-enable Reflow button
         self.ui.btnReflow.setEnabled(True)
         if self.ui.actionAutoReflow.isChecked():
-            addPageHeader = self.ui.actionAddPdfPageHeader.isChecked()
+            add_page_header = self.ui.actionAddPdfPageHeader.isChecked()
             compact = self.ui.actionCompactPdfText.isChecked()
             text = reflow_cjk_paragraphs_core(text,
-                                              add_pdf_page_header=addPageHeader,
+                                              add_pdf_page_header=add_page_header,
                                               compact=compact)
         # Put extracted text into tbSource (even if partially canceled)
         if text:
@@ -222,7 +234,7 @@ class MainWindow(QMainWindow):
                 f"✅ PDF loaded{(' (Auto-Reflowed)' if self.ui.actionAutoReflow.isChecked() else '')}: " + filename)
 
     @Slot(str)
-    def on_pdf_error(self, message: str) -> None:
+    def _on_pdf_error(self, message: str) -> None:
         """
         Extraction encountered an error.
         """
@@ -243,7 +255,7 @@ class MainWindow(QMainWindow):
         self._pdf_worker = None
 
     @Slot(bool)
-    def on_pdf_cancel_clicked(self, _checked: bool = False) -> None:
+    def _on_pdf_cancel_clicked(self, _checked: bool = False) -> None:
         """
         Called when the Cancel button in the status bar is clicked.
         Routes the cancel request to either:
@@ -294,14 +306,14 @@ class MainWindow(QMainWindow):
 
     # ====== Batch Processing End ======
 
-    def _on_tbSource_fileDropped(self, path: str):
+    def _on_tb_source_file_dropped(self, path: str):
         self.detect_source_text_info()
         if not path:
             self.statusBar().showMessage("Text contents dropped")
         else:
             self.statusBar().showMessage("File dropped: " + path)
 
-    def _on_tbSource_pdfDropped(self, filename: str):
+    def _on_tb_source_pdf_dropped(self, filename: str):
         try:
             if self.ui.actionUsePdfTextExtractWorker.isChecked():
                 self.start_pdf_extraction(filename)
