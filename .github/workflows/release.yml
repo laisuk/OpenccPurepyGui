@@ -69,12 +69,15 @@ jobs:
       - name: Build (Linux, Nuitka)
         if: runner.os == 'Linux'
         shell: bash
+        env:
+          PDFIUM_PLAT: linux-x64
         run: |
           python -m nuitka \
             --standalone \
             --enable-plugin=pyside6 \
             --include-package=opencc_purepy \
             --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts \
+            --include-raw-dir=pdf_module/pdfium/${PDFIUM_PLAT}=pdf_module/pdfium/${PDFIUM_PLAT} \
             --output-filename=OpenccPurepyGui \
             --lto=yes \
             --assume-yes-for-downloads \
@@ -89,6 +92,11 @@ jobs:
             $iconFlag = "--windows-icon-from-ico=resource/openccpurepygui.ico"
           }
 
+          $pdfiumFlag = ""
+          if (Test-Path "pdf_module/pdfium/win-x64/pdfium.dll") {
+            $pdfiumFlag = "--include-raw-dir=pdf_module/pdfium/win-x64=pdf_module/pdfium/win-x64"
+          }
+
           python -m nuitka `
             --standalone `
             --enable-plugin=pyside6 `
@@ -98,6 +106,7 @@ jobs:
             --windows-console-mode=disable `
             --lto=yes `
             --assume-yes-for-downloads `
+            $pdfiumFlag `
             $iconFlag `
             mainwindow.py      
 
@@ -109,6 +118,16 @@ jobs:
           if [ -f "resource/openccpurepygui.icns" ]; then
             ICON_FLAG="--macos-app-icon=resource/openccpurepygui.icns"
           fi
+          
+          ARCH="$(uname -m)"
+          PDFIUM_PLAT="macos-x64"
+          if [ "$ARCH" = "arm64" ]; then PDFIUM_PLAT="macos-arm64"; fi
+          
+          PDFIUM_FLAG=""
+          if [ -d "pdf_module/pdfium/$PDFIUM_PLAT" ]; then
+            PDFIUM_FLAG="--include-raw-dir=pdf_module/pdfium/$PDFIUM_PLAT=pdf_module/pdfium/$PDFIUM_PLAT"
+          fi
+          
           python -m nuitka \
             --standalone \
             --enable-plugin=pyside6 \
@@ -117,6 +136,7 @@ jobs:
             --output-filename=OpenccPurepyGui \
             --lto=yes \
             --assume-yes-for-downloads \
+            ${PDFIUM_FLAG} \
             ${ICON_FLAG} \
             mainwindow.py
 
