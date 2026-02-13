@@ -20,3 +20,87 @@ python -m nuitka `
   --assume-yes-for-downloads `
   mainwindow.py
 
+  python -m nuitka `
+  --standalone `
+  --enable-plugin=pyside6 `
+  --include-package=opencc_purepy `
+  --include-package=pymupdf `
+  --include-package-data=pymupdf `
+  --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts `
+  --output-filename=OpenccPurepyGui.exe `
+  --lto=yes `
+  --assume-yes-for-downloads `
+  mainwindow.py
+
+python -m nuitka `
+  --standalone `
+  --enable-plugin=pyside6 `
+  --include-package=opencc_purepy `
+  --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts `
+  --output-filename=OpenccPurepyGui.exe `
+  --lto=yes `
+  --jobs=$env:NUMBER_OF_PROCESSORS `
+  --show-progress `
+  --show-memory `
+  --assume-yes-for-downloads `
+  mainwindow.py
+
+🚀 Fast Dev Build
+--standalone
+--enable-plugin=pyside6
+--include-package=opencc_purepy
+--include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts
+--jobs=$env:NUMBER_OF_PROCESSORS
+--lto=no
+
+📦 Final Release Build
+--standalone
+--enable-plugin=pyside6
+--include-package=opencc_purepy
+--include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts
+--jobs=$env:NUMBER_OF_PROCESSORS
+--lto=yes
+
+python -m nuitka `
+  --standalone `
+  --enable-plugin=pyside6 `
+  --include-package=opencc_purepy `
+  --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts `
+  --include-package=pymupdf `
+  --include-package-data=pymupdf `
+  --jobs=$env:NUMBER_OF_PROCESSORS `
+  --show-progress `
+  --show-memory `
+  --assume-yes-for-downloads `
+  --lto=no `
+  mainwindow.py
+
+python -m nuitka `
+  --standalone `
+  --enable-plugin=pyside6 `
+  --include-package=opencc_purepy `
+  --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts `
+  --output-filename=OpenccPurepyGui.exe `
+  --lto=no `
+  --jobs=$env:NUMBER_OF_PROCESSORS `
+  --show-progress `
+  --assume-yes-for-downloads `
+  --nofollow-import-to=pymupdf `
+  --nofollow-import-to=fitz `
+  mainwindow.py
+
+  python -m nuitka `
+  --standalone `
+  --enable-plugin=pyside6 `
+  --include-package=opencc_purepy `
+  --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts `
+  --include-package=pymupdf `
+  --include-package-data=pymupdf `
+  --output-filename=OpenccPurepyGui.exe `
+  --lto=no `
+  --jobs=$env:NUMBER_OF_PROCESSORS `
+  --show-progress `
+  --assume-yes-for-downloads `
+  --nofollow-import-to=pymupdf `
+  --nofollow-import-to=fitz `
+  mainwindow.py

@@ -11,10 +11,11 @@ from PySide6.QtCore import Qt, Slot, QThread
 from PySide6.QtGui import QGuiApplication, QTextCursor
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton
 
-from helper.batch_worker import BatchWorker
+from services.batch_worker import BatchWorker
 from opencc_purepy import OpenCC
 from pdf_module.pdf_extract_worker import PdfExtractWorker
-from pdf_module.pdf_helper import build_progress_bar, reflow_cjk_paragraphs_core, extract_pdf_text_core
+from pdf_module.pdf_helper import build_progress_bar, extract_pdf_text_core
+from pdf_module.reflow_helper import reflow_cjk_paragraphs_core
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
@@ -367,7 +368,7 @@ class MainWindow(QMainWindow):
 
     def extract_pdf_text(self, filename: str) -> str:
         """
-        Extracts text from a PDF using the core PDF helper.
+        Extracts text from a PDF using the core PDF services.
 
         - Shows a text-based progress bar in the status bar.
         - Adds a temporary [Cancel] button on the right side.

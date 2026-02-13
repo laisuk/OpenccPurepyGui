@@ -5,8 +5,6 @@ from typing import Optional
 
 from PySide6.QtCore import QObject, Signal, Slot
 
-from pdf_module.pdf_helper import extract_pdf_text_core  # adjust import path as needed
-
 
 class PdfExtractWorker(QObject):
     """
@@ -35,6 +33,7 @@ class PdfExtractWorker(QObject):
         Main worker entry point. Runs entirely in the worker thread.
         """
         # Keep the "file not found" behavior identical to old version
+        from pdf_module.pdf_helper import extract_pdf_text_core
         path = Path(self._filename)
         if not path.is_file():
             self.error.emit(f"PDF not found: {path}")

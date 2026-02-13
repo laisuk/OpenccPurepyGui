@@ -1,7 +1,7 @@
 """
 OpenCC-based Office and EPUB document converter.
 
-This module provides helper functions to convert and repackage Office documents and EPUBs,
+This module provides services functions to convert and repackage Office documents and EPUBs,
 supporting optional font preservation.
 
 Supported formats: docx, xlsx, pptx, odt, ods, odp, epub.

@@ -197,7 +197,7 @@ class DictRefs:
                 - If a round is ``None`` or empty, it is normalized to
                   ``([], 0)``.
                 - Subsequent calls reuse the cached ``self._norm`` value.
-                - Internal helper ``_as_slots_and_cap`` performs the actual
+                - Internal services ``_as_slots_and_cap`` performs the actual
                   unpacking and maximum-length calculation.
 
             Example:

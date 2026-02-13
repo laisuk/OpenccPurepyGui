@@ -8,9 +8,9 @@ from opencc_purepy import OpenCC
 
 # Platform clipboard backends
 if platform.system() == 'Windows':
-    from helper.clipboard_win import get_clipboard_text, set_clipboard_text
+    from services.clipboard_win import get_clipboard_text, set_clipboard_text
 elif platform.system() == 'Linux':
-    from helper.clipboard_linux import get_clipboard_text, set_clipboard_text
+    from services.clipboard_linux import get_clipboard_text, set_clipboard_text
 else:
     # If you have a macOS backend, import it here.
     # from clipboard_darwin import get_clipboard_text, set_clipboard_text

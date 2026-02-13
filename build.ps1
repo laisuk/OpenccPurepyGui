@@ -31,14 +31,37 @@ if ($Clean)
     } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 }
 
+# Detect PDFium platform folder (match pdfium_loader.py convention)
+function Get-PdfiumPlatformFolder {
+    # Windows-only in this script (you're building on Windows)
+    $is64 = [Environment]::Is64BitProcess
+    if ($is64) { return "win-x64" } else { return "win-x86" }
+}
+
 # Common Nuitka args
 $common = @(
     "--enable-plugin=pyside6",
     "--include-package=opencc_purepy",
     "--include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts",
+
     "--msvc=latest",
     "--output-filename=$OutputName"
 )
+
+# Bundle PDFium native if present
+$pdfiumPlat = Get-PdfiumPlatformFolder
+$pdfiumDir  = "pdf_module/pdfium/$pdfiumPlat"
+$pdfiumDll  = Join-Path $pdfiumDir "pdfium.dll"
+
+if (Test-Path $pdfiumDll)
+{
+    $common += @("--include-raw-dir=$pdfiumDir=$pdfiumDir")
+    Write-Host "PDFium: bundling natives from '$pdfiumDir'"
+}
+else
+{
+    Write-Warning "PDFium: missing '$pdfiumDll' (PDF will be disabled in this build)"
+}
 
 # (Optional) include GUI resources; uncomment if you have a /resource folder to ship
 # $common += @("--include-data-dir=resource=resource")
