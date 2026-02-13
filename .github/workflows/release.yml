@@ -19,12 +19,20 @@ jobs:
           - os: ubuntu-latest
             artifact_suffix: linux-x64
             archive_name: OpenccPurepyGui-${{ github.ref_name }}-linux-x64.tar.gz
+
           - os: windows-latest
             artifact_suffix: win-x64
             archive_name: OpenccPurepyGui-${{ github.ref_name }}-win-x64.zip
+
+          - os: macos-15-intel
+            artifact_suffix: macos-x64
+            archive_name: OpenccPurepyGui-${{ github.ref_name }}-macos-x64.zip
+            pdfium_plat: macos-x64
+
           - os: macos-latest
-            artifact_suffix: macos
-            archive_name: OpenccPurepyGui-${{ github.ref_name }}-macos.zip
+            artifact_suffix: macos-arm64
+            archive_name: OpenccPurepyGui-${{ github.ref_name }}-macos-arm64.zip
+            pdfium_plat: macos-arm64
 
     steps:
       - name: Checkout
@@ -118,16 +126,16 @@ jobs:
           if [ -f "resource/openccpurepygui.icns" ]; then
             ICON_FLAG="--macos-app-icon=resource/openccpurepygui.icns"
           fi
-          
-          ARCH="$(uname -m)"
-          PDFIUM_PLAT="macos-x64"
-          if [ "$ARCH" = "arm64" ]; then PDFIUM_PLAT="macos-arm64"; fi
-          
+
+          PDFIUM_PLAT="${{ matrix.pdfium_plat }}"
+
           PDFIUM_FLAG=""
           if [ -d "pdf_module/pdfium/$PDFIUM_PLAT" ]; then
             PDFIUM_FLAG="--include-raw-dir=pdf_module/pdfium/$PDFIUM_PLAT=pdf_module/pdfium/$PDFIUM_PLAT"
+          else
+            echo "PDFium folder missing: pdf_module/pdfium/$PDFIUM_PLAT"
           fi
-          
+
           python -m nuitka \
             --standalone \
             --enable-plugin=pyside6 \
