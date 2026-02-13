@@ -11,10 +11,10 @@ from PySide6.QtCore import Qt, Slot, QThread
 from PySide6.QtGui import QGuiApplication, QTextCursor
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton
 
-from batch_worker import BatchWorker
+from helper.batch_worker import BatchWorker
 from opencc_purepy import OpenCC
-from pdf_extract_worker import PdfExtractWorker
-from pdf_helper import build_progress_bar, reflow_cjk_paragraphs_core, extract_pdf_text_core
+from pdf_module.pdf_extract_worker import PdfExtractWorker
+from pdf_module.pdf_helper import build_progress_bar, reflow_cjk_paragraphs_core, extract_pdf_text_core
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or

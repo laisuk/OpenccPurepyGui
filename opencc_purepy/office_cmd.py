@@ -13,6 +13,7 @@ Author:
 import os
 import sys
 
+from pathlib import Path
 from opencc_purepy import OpenCC
 from opencc_purepy.office_helper import convert_office_doc, OFFICE_FORMATS
 
@@ -56,12 +57,21 @@ def main(args):
 
     # If output file is not specified, generate one based on input file
     if not output_file:
-        input_name = os.path.splitext(os.path.basename(input_file))[0]
-        input_dir = os.path.dirname(input_file) or os.getcwd()
-        ext = f".{office_format}" if auto_ext and office_format and office_format in OFFICE_FORMATS else \
-            os.path.splitext(input_file)[1]
-        output_file = os.path.join(input_dir, f"{input_name}_converted{ext}")
-        print(f"ℹ️  Output file not specified. Using: {output_file}", file=sys.stderr)
+        input_path = Path(input_file)
+
+        input_name = input_path.stem
+        input_ext = input_path.suffix
+        input_dir = input_path.parent if input_path.parent != Path("") else Path.cwd()
+
+        if auto_ext and office_format in OFFICE_FORMATS:
+            ext = f".{office_format}"
+        else:
+            ext = input_ext
+
+        output_path = input_dir / f"{input_name}_converted{ext}"
+        output_file = str(output_path)
+
+        print(f"ℹ️  Output file not specified. Using: {output_path}", file=sys.stderr)
 
     # Determine office format from file extension if not provided
     if not office_format:

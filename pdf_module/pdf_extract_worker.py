@@ -5,7 +5,7 @@ from typing import Optional
 
 from PySide6.QtCore import QObject, Signal, Slot
 
-from pdf_helper import extract_pdf_text_core  # adjust import path as needed
+from pdf_module.pdf_helper import extract_pdf_text_core  # adjust import path as needed
 
 
 class PdfExtractWorker(QObject):

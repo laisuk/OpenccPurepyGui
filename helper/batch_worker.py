@@ -5,7 +5,7 @@ from typing import Optional
 from PySide6.QtCore import QObject, Signal, Slot
 from opencc_purepy.office_helper import OFFICE_FORMATS, convert_office_doc
 # reuse your existing helpers
-from pdf_helper import extract_pdf_text_core, reflow_cjk_paragraphs_core, sanitize_invisible
+from pdf_module.pdf_helper import extract_pdf_text_core, reflow_cjk_paragraphs_core, sanitize_invisible
 
 
 class BatchWorker(QObject):

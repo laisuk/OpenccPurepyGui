@@ -243,15 +243,25 @@ def create_epub_zip_with_spec(source_dir: Path, output_path: Path) -> Tuple[bool
     mime_path = source_dir / "mimetype"
 
     try:
-        with zipfile.ZipFile(output_path, "w") as epub:
-            if mime_path.is_file():
-                epub.write(mime_path, "mimetype", compress_type=zipfile.ZIP_STORED)
-            else:
-                return False, "❌ 'mimetype' file is missing. EPUB requires it as the first entry."
+        if not mime_path.is_file():
+            return False, "❌ 'mimetype' file is missing. EPUB requires it as the first entry."
 
-            for file in source_dir.rglob("*"):
-                if file.is_file() and not file.samefile(mime_path):
-                    epub.write(file, file.relative_to(source_dir).as_posix(), compress_type=zipfile.ZIP_DEFLATED)
+        with zipfile.ZipFile(output_path, "w") as epub:
+            # 1) Write mimetype first (must be uncompressed per EPUB spec)
+            epub.write(mime_path, "mimetype", compress_type=zipfile.ZIP_STORED)
+
+            # 2) Write remaining files deterministically
+            for file in sorted(source_dir.rglob("*")):
+                if not file.is_file():
+                    continue
+
+                arc_name = file.relative_to(source_dir).as_posix()
+
+                # Skip mimetype (already written)
+                if arc_name == "mimetype":
+                    continue
+
+                epub.write(file, arc_name, compress_type=zipfile.ZIP_DEFLATED)
 
         return True, "✅ EPUB archive created successfully."
     except Exception as ex:
