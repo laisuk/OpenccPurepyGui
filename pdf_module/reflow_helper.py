@@ -628,24 +628,35 @@ class DialogState:
     __slots__ = ("counts",)
 
     def __init__(self) -> None:
-        self.counts = dict.fromkeys(DIALOG_OPEN_TO_CLOSE.keys(), 0)
+        # counts per opener
+        self.counts = dict.fromkeys(DIALOG_OPEN_TO_CLOSE, 0)
 
     def reset(self) -> None:
-        for k in self.counts:
-            self.counts[k] = 0
+        counts = self.counts
+        for k in counts:
+            counts[k] = 0
 
     def update(self, s: str) -> None:
-        for ch in s:
-            if ch in DIALOG_OPEN_TO_CLOSE:
-                self.counts[ch] += 1
-            elif ch in DIALOG_CLOSE_TO_OPEN:
-                open_ch = DIALOG_CLOSE_TO_OPEN[ch]
-                if self.counts[open_ch] > 0:
-                    self.counts[open_ch] -= 1
+        counts = self.counts
+        open_to_close = DIALOG_OPEN_TO_CLOSE
+        close_to_open = DIALOG_CLOSE_TO_OPEN
 
-    @property
+        for ch in s:
+            if ch in open_to_close:
+                counts[ch] += 1
+            else:
+                open_ch = close_to_open.get(ch)
+                if open_ch is not None:
+                    v = counts[open_ch]
+                    if v > 0:
+                        counts[open_ch] = v - 1
+
     def is_unclosed(self) -> bool:
-        return any(v > 0 for v in self.counts.values())
+        # Hot-path; avoid generator+any overhead
+        for v in self.counts.values():
+            if v > 0:
+                return True
+        return False
 
 
 # =============================================================================
@@ -1064,81 +1075,92 @@ def reflow_cjk_paragraphs_core(
     buffer = ""
     dialog_state = DialogState()
 
+    # Hoist hot callables (outside loop, before `for raw_line in lines:`)
+    append_seg = segments.append
+    title_search = TITLE_HEADING_REGEX.search
+    # chapter_search = re.compile(r"([章节部卷節])[】》〗〕〉」』）]*$").search  # compile once if possible
+
+    is_unclosed = dialog_state.is_unclosed
+    d_reset = dialog_state.reset
+    d_update = dialog_state.update
+
+    strip_half = strip_half_width_indent_keep_fullwidth
+    collapse_rep = collapse_repeated_segments
+    strip_probe = strip_all_left_indent_for_probe
+
+    is_divider = is_visual_divider_line
+    is_meta = is_metadata_line
+    is_heading = is_heading_like
+
     for raw_line in lines:
         visual = raw_line.rstrip()
-        # 1) Remove half-width indent but keep full-width indent
-        stripped = strip_half_width_indent_keep_fullwidth(visual)
-        # 2) Collapse style-layer repeats (per line)
-        stripped = collapse_repeated_segments(stripped)
-        # 3) Probe for detection (remove all indent, incl. full-width)
-        probe = strip_all_left_indent_for_probe(stripped)
+        stripped = strip_half(visual)
+        stripped = collapse_rep(stripped)
+        probe = strip_probe(stripped)
 
         # Divider line → ALWAYS force paragraph break
-        if is_visual_divider_line(probe):
+        if is_divider(probe):
             if buffer:
-                segments.append(buffer)
+                append_seg(buffer)
                 buffer = ""
-                dialog_state.reset()
-            segments.append(probe)
+                d_reset()
+            append_seg(probe)
             continue
 
         # Title / heading / metadata detection
-        is_title_heading = bool(TITLE_HEADING_REGEX.search(probe))
-        is_short_heading = is_heading_like(stripped)
-        is_metadata = is_metadata_line(probe)
+        is_title_heading = bool(title_search(probe))
+        is_short_heading = is_heading(stripped)
+        is_metadata = is_meta(probe)
 
-        buffer_has_unclosed_bracket = has_unclosed_bracket(buffer)
-        dialog_unclosed = dialog_state.is_unclosed
+        # Dialog state snapshot (bool!)
+        dialog_unclosed = is_unclosed()
+
+        # Buffer bracket snapshot (only meaningful if buffer exists)
+        buffer_has_unclosed_bracket = has_unclosed_bracket(buffer) if buffer else False
 
         # 4) Empty line
         if not stripped:
             if (not add_pdf_page_header) and buffer:
-
-                # NEW: If dialog or brackets are unclosed, blank line is treated as soft wrap.
-                # Never flush mid-enclosure.
+                # If dialog or brackets are unclosed, blank line is treated as soft wrap.
                 if dialog_unclosed or buffer_has_unclosed_bracket:
                     continue
 
                 # LIGHT rule: only flush on blank line if buffer ends with STRONG sentence end.
                 last_ch = last_non_whitespace(buffer)
-                ends_strong = (last_ch is not None) and is_strong_sentence_end(last_ch)
-
-                if not ends_strong:
-                    # Soft cross-page blank line: keep accumulating
+                if (last_ch is None) or (not is_strong_sentence_end(last_ch)):
                     continue
 
-            # End paragraph → flush buffer (do not emit empty segments)
             if buffer:
-                segments.append(buffer)
+                append_seg(buffer)
                 buffer = ""
-                dialog_state.reset()
+                d_reset()
             continue
 
         # Page markers like "=== [Page 1/20] ==="
         if stripped.startswith("=== ") and stripped.endswith("==="):
             if buffer:
-                segments.append(buffer)
+                append_seg(buffer)
                 buffer = ""
-                dialog_state.reset()
-            segments.append(stripped)
+                d_reset()
+            append_seg(stripped)
             continue
 
         # Strong headings (TitleHeadingRegex)
         if is_title_heading:
             if buffer:
-                segments.append(buffer)
+                append_seg(buffer)
                 buffer = ""
-                dialog_state.reset()
-            segments.append(stripped)
+                d_reset()
+            append_seg(stripped)
             continue
 
         # Metadata lines
         if is_metadata:
             if buffer:
-                segments.append(buffer)
+                append_seg(buffer)
                 buffer = ""
-                dialog_state.reset()
-            segments.append(stripped)
+                d_reset()
+            append_seg(stripped)
             continue
 
         # Weak heading-like (heuristic)
@@ -1152,164 +1174,119 @@ def reflow_cjk_paragraphs_core(
 
             if not buffer:
                 split_as_heading = True
+            elif buffer_has_unclosed_bracket:
+                split_as_heading = False
             else:
-                if buffer_has_unclosed_bracket:
-                    split_as_heading = False
+                bt = buffer.rstrip()
+                if not bt:
+                    split_as_heading = True
                 else:
-                    bt = buffer.rstrip()
-                    if bt:
-                        last = bt[-1]
-                        if is_comma_like(last):
-                            split_as_heading = False
-                        elif current_looks_like_cont_marker and (not is_clause_or_end_punct(last)):
-                            split_as_heading = False
-                        else:
-                            split_as_heading = True
+                    last = bt[-1]
+                    if is_comma_like(last):
+                        split_as_heading = False
+                    elif current_looks_like_cont_marker and (not is_clause_or_end_punct(last)):
+                        split_as_heading = False
                     else:
                         split_as_heading = True
 
             if split_as_heading:
                 if buffer:
-                    segments.append(buffer)
+                    append_seg(buffer)
                     buffer = ""
-                    dialog_state.reset()
-
-                segments.append(stripped)
+                    d_reset()
+                append_seg(stripped)
                 continue
 
-        # Final strong line punct ending check for line text
+        # Final strong line punct ending check for current line text
         if buffer and (not dialog_unclosed) and (not buffer_has_unclosed_bracket):
             last = last_non_whitespace(stripped)
             if (last is not None) and is_strong_sentence_end(last):
-                # Merge current line into buffer, then flush immediately as a paragraph
                 buffer += stripped
-                segments.append(buffer)
+                append_seg(buffer)
                 buffer = ""
-
-                dialog_state.reset()
-                dialog_state.update(stripped)
+                d_reset()
+                d_update(stripped)
                 continue
 
         # First line of a new paragraph
         if not buffer:
             buffer = stripped
-            dialog_state.reset()
-            dialog_state.update(stripped)
+            d_reset()
+            d_update(stripped)
             continue
 
         current_is_dialog_start = begins_with_dialog_opener(stripped)
+
         # If previous line ends with comma, do NOT flush even if new line starts dialog
         if current_is_dialog_start:
-            trimmed_buffer = buffer.rstrip()
-
-            if trimmed_buffer:
-                last = trimmed_buffer[-1]
-
-                # Rust: if !is_comma_like(ch) && !is_cjk_bmp(ch) { flush }
-                if (not is_comma_like(last)) and (not is_cjk(last)):
-                    segments.append(buffer)
-                    buffer = ""
-                    buffer += stripped
-
-                    dialog_state.reset()
-                    dialog_state.update(stripped)
+            tb = buffer.rstrip()
+            if tb:
+                last = tb[-1]
+                if (not is_comma_like(last)) and (not is_cjk(last)):  # <-- FIX: is_cjk_bmp
+                    append_seg(buffer)
+                    buffer = stripped
+                    d_reset()
+                    d_update(stripped)
                     continue
             else:
                 # Buffer is whitespace-only → treat like empty and flush
-                segments.append(buffer)
-                buffer = ""
-                buffer += stripped
-
-                dialog_state.reset()
-                dialog_state.update(stripped)
+                append_seg(buffer)
+                buffer = stripped
+                d_reset()
+                d_update(stripped)
                 continue
 
         # 🔸 9b) Dialog end line: ends with dialog closer.
-        # Flush when the char before closer is strong end,
-        # and bracket safety is satisfied (with a narrow typo override).
         last2 = last_two_non_whitespace(stripped)
         if last2 is not None:
             last_ch, prev_ch = last2
-
             if is_dialog_closer(last_ch):
-                # Check punctuation right before the closer (e.g., “？” / “。”)
                 punct_before_closer_is_strong = is_clause_or_end_punct(prev_ch)
 
                 # Snapshot bracket safety BEFORE appending current line
                 buffer_has_bracket_issue = buffer_has_unclosed_bracket
                 line_has_bracket_issue = has_unclosed_bracket(stripped)
 
-                # Append current line into buffer, then update dialog state
                 buffer += stripped
-                dialog_state.update(stripped)
+                d_update(stripped)
 
-                # Allow flush if:
-                # - dialog is closed after this line
-                # - punctuation before closer is a strong end
-                # - and either:
-                #   (a) buffer has no bracket issue, OR
-                #   (b) buffer has bracket issue but this line itself is the culprit (OCR/typo)
-                if (not dialog_unclosed) and punct_before_closer_is_strong and (
+                # dialog_unclosed might have changed after update; re-check like Rust
+                if (not is_unclosed()) and punct_before_closer_is_strong and (
                         (not buffer_has_bracket_issue) or line_has_bracket_issue
                 ):
-                    segments.append(buffer)
+                    append_seg(buffer)
                     buffer = ""
-                    dialog_state.reset()
+                    d_reset()
 
                 continue
 
-        # Colon + dialog continuation
-        # if buffer.endswith(("：", ":")):
-        #     after_indent = stripped.lstrip(" \u3000")
-        #     if after_indent and after_indent[0] in DIALOG_OPENERS:
-        #         buffer += stripped
-        #         dialog_state.update(stripped)
-        #         continue
-
         # 8a) Strong sentence boundary (handles 。！？, OCR . / :, “.”)
-        if (not dialog_unclosed) and (not buffer_has_unclosed_bracket) and ends_with_sentence_boundary(
-                buffer):
-            segments.append(buffer)
+        if (not dialog_unclosed) and (not buffer_has_unclosed_bracket) and ends_with_sentence_boundary(buffer):
+            append_seg(buffer)
             buffer = stripped
-            dialog_state.reset()
-            dialog_state.update(stripped)
+            d_reset()
+            d_update(stripped)
             continue
 
         # 8b) Balanced CJK bracket boundary: （完）, 【番外】, 《後記》
         if (not dialog_unclosed) and ends_with_cjk_bracket_boundary(buffer):
-            segments.append(buffer)
+            append_seg(buffer)
             buffer = stripped
-            dialog_state.reset()
-            dialog_state.update(stripped)
+            d_reset()
+            d_update(stripped)
             continue
-
-        # Ends with CJK punctuation → new paragraph (only if not inside unclosed dialog)
-        # if buffer[-1] in CJK_PUNCT_END and not dialog_unclosed:
-        #     segments.append(buffer)
-        #     buffer = stripped
-        #     dialog_state.reset()
-        #     dialog_state.update(stripped)
-        #     continue
-
-        # Indentation → new paragraph (raw line based)
-        # if _INDENT_RE.match(raw_line):
-        #     segments.append(buffer)
-        #     buffer = stripped
-        #     dialog_state.reset()
-        #     dialog_state.update(stripped)
-        #     continue
 
         # Chapter-like endings
-        if len(buffer) <= 12 and re.search(r"([章节部卷節])[】》〗〕〉」』）]*$", buffer):
-            segments.append(buffer)
-            buffer = stripped
-            dialog_state.reset()
-            dialog_state.update(stripped)
-            continue
+        # if len(buffer) <= 12 and chapter_search(buffer):
+        #     append_seg(buffer)
+        #     buffer = stripped
+        #     d_reset()
+        #     d_update(stripped)
+        #     continue
 
         # Default merge
         buffer += stripped
-        dialog_state.update(stripped)
+        d_update(stripped)
 
     if buffer:
         segments.append(buffer)
