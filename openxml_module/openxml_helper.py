@@ -23,8 +23,8 @@ def is_docx(path: str) -> bool:
     try:
         with ZipFile(p, "r") as zf:
             return (
-                _zip_has(zf, "word/document.xml")
-                and _zip_has(zf, "[Content_Types].xml")
+                    _zip_has(zf, "word/document.xml")
+                    and _zip_has(zf, "[Content_Types].xml")
             )
     except OSError:
         return False
@@ -65,11 +65,11 @@ def _zip_has(zf: ZipFile, name: str) -> bool:
 # =============================================================================
 
 def extract_docx_all_text(
-    docx_path: str,
-    *,
-    include_part_headings: bool = False,
-    normalize_newlines: bool = True,
-    include_numbering: bool = True,
+        docx_path: str,
+        *,
+        include_part_headings: bool = False,
+        normalize_newlines: bool = True,
+        include_numbering: bool = True,
 ) -> str:
     """
     C#-equivalent of OpenXmlHelper.ExtractDocxAllText().
@@ -570,10 +570,10 @@ class NumberingContext:
     # ---- resolve + next prefix ----
 
     def resolve_num(
-        self,
-        direct_num_id: Optional[int],
-        direct_ilvl: Optional[int],
-        style_id: Optional[str],
+            self,
+            direct_num_id: Optional[int],
+            direct_ilvl: Optional[int],
+            style_id: Optional[str],
     ) -> Tuple[Optional[int], Optional[int]]:
         if direct_num_id is not None and direct_ilvl is not None:
             return direct_num_id, direct_ilvl
@@ -686,20 +686,9 @@ class NumberingContext:
                             current_lvl = ilvl
                             self._abstract_levels[current_abs].setdefault(ilvl, _LevelDef())
 
-                elif name == "abstractNumId":
-                    # belongs to a <w:num> subtree; map numId -> abstractNumId
-                    val = _w_attr(elem, "val") or ""
-                    try:
-                        abs_id = int(val)
-                    except ValueError:
-                        abs_id = None
 
-                    parent_num_id = getattr(elem, "_openxmlhelper_numid", None)
-                    # ElementTree doesn't keep parent pointers; we handle this mapping in a simpler way below:
-                    # we instead map at end by reading text/attr during parsing. However, abstractNumId is an empty element
-                    # with attribute, so we need the numId from the current <w:num>.
-                    #
-                    # To keep it reliable, we do a second pass parsing using a state variable:
+                elif name == "abstractNumId":
+                    # handled in second pass (_parse_num_to_abstract)
                     pass
 
                 elif name == "numFmt":

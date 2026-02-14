@@ -48,11 +48,11 @@ def _zip_has(zf: ZipFile, name: str) -> bool:
 # =============================================================================
 
 def extract_epub_all_text(
-    epub_path: str,
-    *,
-    include_part_headings: bool = False,
-    normalize_newlines: bool = True,
-    skip_nav_documents: bool = True,
+        epub_path: str,
+        *,
+        include_part_headings: bool = False,
+        normalize_newlines: bool = True,
+        skip_nav_documents: bool = True,
 ) -> str:
     """
     C# EpubHelper.ExtractEpubAllText equivalent.
@@ -302,7 +302,7 @@ def _extract_xhtml_text(xhtml_bytes: bytes) -> str:
 
     text = "".join(sb)
     # C# post-fixes
-    text = text.replace("\u00AD", "")   # soft hyphen
+    text = text.replace("\u00AD", "")  # soft hyphen
     text = text.replace("\u00A0", " ")  # nbsp
     return text
 
