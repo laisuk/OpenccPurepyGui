@@ -475,11 +475,20 @@ class MainWindow(QMainWindow):
         )
 
         if has_selection:
-            # Replace only the selected range, as one undoable step
+            # Save selection info BEFORE replacement
+            sel_start = cursor.selectionStart()
+            # sel_end = cursor.selectionEnd()
+
             cursor.beginEditBlock()
-            cursor.insertText(result)  # replaces selection
+            # Replace selected text
+            cursor.insertText(result)
+            # Re-select the newly inserted text
+            cursor.setPosition(sel_start, QTextCursor.MoveMode.MoveAnchor)
+            cursor.setPosition(sel_start + len(result), QTextCursor.MoveMode.KeepAnchor)
             cursor.endEditBlock()
+
             edit.setTextCursor(cursor)
+            edit.ensureCursorVisible()
         else:
             # Replace the entire document, also as one undoable step
             doc_cursor = QTextCursor(edit.document())
