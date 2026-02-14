@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import os
+import platform
 import sys
 import time
 from pathlib import Path
 from typing import Optional, Callable
 
+import PySide6
 from PySide6.QtCore import Qt, Slot, QThread
 from PySide6.QtGui import QGuiApplication, QTextCursor
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton
@@ -16,11 +18,31 @@ from opencc_purepy import OpenCC
 from pdf_module.pdf_extract_worker import PdfExtractWorker
 from pdf_module.pdf_helper import build_progress_bar, extract_pdf_text_core
 from pdf_module.reflow_helper import reflow_cjk_paragraphs_core
+from openxml_module.openxml_helper import (
+    is_docx,
+    is_odt,
+    extract_docx_all_text,
+    extract_odt_all_text,
+)
+from openxml_module.epub_helper import (
+    is_epub,
+    extract_epub_all_text,
+)
+
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
 #     pyside2-uic form.ui -o ui_form.py
 from ui_form import Ui_MainWindow
+
+
+def _read_text_file(filename: str) -> str:
+    try:
+        with open(filename, "r", encoding="utf-8-sig") as f:
+            return f.read()
+    except UnicodeDecodeError:
+        with open(filename, "r", encoding="utf-8", errors="replace") as f:
+            return f.read()
 
 
 class MainWindow(QMainWindow):
@@ -79,6 +101,7 @@ class MainWindow(QMainWindow):
         self.ui.actionExit.triggered.connect(btn_exit_click)
         self.ui.tbSource.fileDropped.connect(self._on_tb_source_file_dropped)
         self.ui.tbSource.pdfDropped.connect(self._on_tb_source_pdf_dropped)
+        self.ui.tbSource.openXmlDropped.connect(self._on_tb_source_non_pdf_dropped)
 
         self.converter = OpenCC()
 
@@ -314,6 +337,9 @@ class MainWindow(QMainWindow):
         else:
             self.statusBar().showMessage("File dropped: " + path)
 
+    def _on_tb_source_non_pdf_dropped(self, filename: str) -> None:
+        self._load_file_to_editor(filename)
+
     def _on_tb_source_pdf_dropped(self, filename: str):
         try:
             if self.ui.actionUsePdfTextExtractWorker.isChecked():
@@ -328,7 +354,33 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Open Error", f"Failed to open/parse file:\n{e}")
 
     def action_about_triggered(self):
-        QMessageBox.about(self, "About", "OpenccPurepyGui version 1.0.0 (c) 2025 Laisuk")
+        # QMessageBox.about(self, "About", "OpenccPurepyGui version 1.0.0 (c) 2025 Laisuk")
+        self.show_about()
+
+    def show_about(self) -> None:
+        from about_dialog import AboutDialog, AboutInfo
+
+        details = "\n".join([
+            f"Python: {platform.python_version()}",
+            f"Qt: {PySide6.__version__}",
+            f"Config: {self.get_current_config()}",
+            f"PDF Engine: Pdfium (native)",
+        ])
+
+        dlg = AboutDialog(
+            AboutInfo(
+                app_name="OpenccPurepyGui",
+                version="1.2.0",
+                author="Laisuk",
+                year="2026",
+                description="Open Chinese Simplified / Traditional Converter\nPowered by OpenCC Pure Python + Pdfium",
+                website_url="https://github.com/laisuk/OpenccPurepyGui",
+                license_url="https://opensource.org/licenses/MIT",
+                details=details,
+            ),
+            parent=self,
+        )
+        dlg.exec()
 
     def tab_bar_changed(self, index: int) -> None:
         if index == 0:
@@ -527,46 +579,83 @@ class MainWindow(QMainWindow):
         QGuiApplication.clipboard().setText(text)
         self.ui.statusbar.showMessage("Contents copied to clipboard")
 
-    def btn_openfile_click(self):
+    def btn_openfile_click(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
             self,
             "Open File",
             "",
             (
                 "Text Files (*.txt);;"
-                "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;"
-                "XML Files (*.xml *.ttml2);;"
+                "Word Documents (*.docx);;"
+                "OpenDocument Text (*.odt);;"
+                "EPUB Books (*.epub);;"
                 "PDF Files (*.pdf);;"
                 "All Files (*.*)"
             ),
         )
+
         if not filename:
             return
+        self._load_file_to_editor(filename)
 
-        contents = ""
-
+    def _load_file_to_editor(self, filename: str) -> None:
         try:
+            # =========================================================
+            # PDF
+            # =========================================================
             if filename.lower().endswith(".pdf"):
                 if self.ui.actionUsePdfTextExtractWorker.isChecked():
                     self.start_pdf_extraction(filename)
                 else:
                     contents = self.extract_pdf_text(filename)
-                    # Only update the editor + metadata here, but DO NOT override the status bar
                     self.ui.tbSource.setPlainText(contents)
                     self.ui.tbSource.content_filename = filename
                     self.detect_source_text_info()
-
                 return
 
-            # --- Non-PDF branch ---
-            with open(filename, "r", encoding="utf-8") as f:
-                contents = f.read()
-        except Exception as e:
-            QMessageBox.critical(self, "Open Error", f"Failed to open/parse file:\n{e}")
-            return
+            # =========================================================
+            # DOCX (real detection, not only extension)
+            # =========================================================
+            if is_docx(filename):
+                contents = extract_docx_all_text(
+                    filename,
+                    include_part_headings=False,
+                    include_numbering=True,  # switchable
+                )
+                self._load_text_to_editor(filename, contents)
+                return
 
+            # =========================================================
+            # ODT (real detection)
+            # =========================================================
+            if is_odt(filename):
+                contents = extract_odt_all_text(filename)
+                self._load_text_to_editor(filename, contents)
+                return
+
+            # =========================================================
+            # EPUB (real detection)
+            # =========================================================
+            if is_epub(filename):
+                contents = extract_epub_all_text(
+                    filename,
+                    include_part_headings=False,
+                    skip_nav_documents=True,
+                )
+                self._load_text_to_editor(filename, contents)
+                return
+
+            # =========================================================
+            # TXT fallback
+            # =========================================================
+            contents = _read_text_file(filename)
+            self._load_text_to_editor(filename, contents)
+
+        except (OSError, UnicodeError, ValueError) as e:
+            QMessageBox.critical(self, "Open Error", f"Failed to open/parse file:\n{e}")
+
+    def _load_text_to_editor(self, filename: str, contents: str) -> None:
         self.ui.tbSource.setPlainText(contents)
-        # stash the original filename (even for PDF)
         self.ui.tbSource.content_filename = filename
         self.detect_source_text_info()
         self.statusBar().showMessage(f"File: {filename}")

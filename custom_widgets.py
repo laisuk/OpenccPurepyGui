@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import QPlainTextEdit, QListWidget, QAbstractItemView, QListWidgetItem
@@ -7,6 +9,7 @@ class TextEditWidget(QPlainTextEdit):
     # Emit file path on file drop; emit "" when plain text is dropped
     fileDropped = Signal(str)
     pdfDropped = Signal(str)
+    openXmlDropped = Signal(str)  # docx/odt/epub (handled by MainWindow)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -26,8 +29,16 @@ class TextEditWidget(QPlainTextEdit):
         if mime_data.hasUrls():
             file_path = mime_data.urls()[0].toLocalFile()
             self.content_filename = file_path
-            if is_pdf(file_path):
+            ext = Path(file_path).suffix.lower()
+
+            if ext == ".pdf":
                 self.pdfDropped.emit(file_path)
+                event.acceptProposedAction()
+                return
+
+            if ext in (".docx", ".odt", ".epub"):
+                self.openXmlDropped.emit(file_path)
+                event.acceptProposedAction()
                 return
 
             # Read the content of the file and set it to QTextEdit
@@ -84,6 +95,3 @@ class DragListWidget(QListWidget):
         items = self.findItems(item_text, Qt.MatchFlag.MatchExactly)
         return len(items) > 0
 
-
-def is_pdf(pth: str) -> bool:
-        return pth.lower().endswith(".pdf")

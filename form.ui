@@ -1011,7 +1011,7 @@
      <x>0</x>
      <y>0</y>
      <width>1036</width>
-     <height>33</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1069,7 +1069,10 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Convert Filename (转换文件名)</string>
+    <string>Convert Filename</string>
+   </property>
+   <property name="toolTip">
+    <string>Convert Filename in batch conversion</string>
    </property>
   </action>
   <action name="actionAddPdfPageHeader">
@@ -1128,7 +1131,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>

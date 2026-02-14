@@ -1,5 +1,44 @@
 from __future__ import annotations
 
+from pdf_module.cjk_text import (
+    last_non_whitespace,
+    last_two_non_whitespace,
+    is_all_ascii,
+    is_cjk,
+    contains_any_cjk_str,
+    is_mixed_cjk_ascii,
+    is_mostly_cjk,
+    is_all_cjk_ignoring_ws,
+    is_all_cjk_no_ws,
+)
+
+from pdf_module.punct_sets import (
+    CJK_PUNCT_END,
+    DIALOG_OPEN_TO_CLOSE,
+    DIALOG_CLOSE_TO_OPEN,
+
+    is_clause_or_end_punct,
+    is_dialog_opener,
+    is_dialog_closer,
+    begins_with_dialog_opener,
+
+    is_bracket_opener,
+    is_bracket_closer,
+    is_matching_bracket,
+    is_wrapped_by_matching_bracket,
+    try_get_matching_closer,
+
+    is_allowed_postfix_closer,
+    ends_with_allowed_postfix_closer,
+
+    is_strong_sentence_end,
+    is_comma_like,
+    contains_any_comma_like,
+    is_colon_like,
+    ends_with_colon_like,
+    ends_with_ellipsis,
+)
+
 """
 reflow_helper.py
 
@@ -17,105 +56,16 @@ The public entry point is:
 """
 
 import re
-from typing import List, Optional, Sequence, Tuple, Dict
-
-
-# =============================================================================
-# Optional cleanup helpers (kept outside extraction)
-# =============================================================================
-
-def collapse_consecutive_duplicate_lines(text: str) -> str:
-    """
-    Collapse consecutive duplicate *non-empty* lines (whitespace-insensitive).
-
-    Useful for removing repeated headers/footers that occasionally leak into
-    extracted text streams.
-    """
-    out: List[str] = []
-    prev: Optional[str] = None
-
-    for line in text.splitlines():
-        key = line.strip()
-        if not key:
-            out.append(line)
-            prev = None
-            continue
-        if prev is not None and key == prev:
-            continue
-        out.append(line)
-        prev = key
-
-    return "\n".join(out)
-
+from typing import List, Optional, Sequence, Tuple
 
 # =============================================================================
 # Shared constants (CJK / dialog / metadata)
 # =============================================================================
 
-# Tuple definition (readable)
-CJK_PUNCT_END = (
-    "。", "！", "？", "；", "：", "…", "—", "”", "」", "’", "』",
-    "）", "】", "》", "〗", "〔", "〉", "］", "｝", "＞",
-    ".", "!", "?", ")", ":"
-)
-
-# Precompute for O(1) membership
-_CJK_PUNCT_END_SET = set(CJK_PUNCT_END)
-
-
-def is_clause_or_end_punct(ch: str) -> bool:
-    """Return True if character is clause-ending or sentence-ending punctuation."""
-    return ch in _CJK_PUNCT_END_SET
-
-
 TITLE_HEADING_REGEX = re.compile(
     r"^(?!.*[,，])(?=.{0,50}$)"
     r".{0,10}?(前言|序章|终章|尾声|后记|番外.{0,15}?|尾聲|後記|第.{0,5}?([章节部卷節回][^分合的])|[卷章][一二三四五六七八九十](?:$|.{0,20}?))"
 )
-
-DIALOG_OPEN_TO_CLOSE: Dict[str, str] = {
-    "“": "”",
-    "‘": "’",
-    "「": "」",
-    "『": "』",
-    "﹁": "﹂",
-    "﹃": "﹄",
-}
-
-DIALOG_CLOSE_TO_OPEN: Dict[str, str] = {
-    v: k for k, v in DIALOG_OPEN_TO_CLOSE.items()
-}
-
-DIALOG_OPENERS = tuple(DIALOG_OPEN_TO_CLOSE.keys())
-DIALOG_CLOSERS = tuple(DIALOG_CLOSE_TO_OPEN.keys())
-
-_DIALOG_OPENER_SET = set(DIALOG_OPENERS)
-_DIALOG_CLOSER_SET = set(DIALOG_CLOSERS)
-
-
-def is_dialog_opener(ch: str) -> bool:
-    """Return True if character is a dialog opening mark."""
-    return ch in _DIALOG_OPENER_SET
-
-
-def is_dialog_closer(ch: str) -> bool:
-    """Return True if character is a dialog closing mark."""
-    return ch in _DIALOG_CLOSER_SET
-
-
-def begins_with_dialog_opener(s: str) -> bool:
-    # Trim only ASCII space and full-width space (U+3000)
-    i = 0
-    length = len(s)
-
-    while i < length and (s[i] == " " or s[i] == "\u3000"):
-        i += 1
-
-    if i >= length:
-        return False
-
-    return is_dialog_opener(s[i])
-
 
 METADATA_SEPARATORS = ("：", ":", "　", "·", "・")
 METADATA_KEYS = {
@@ -153,355 +103,37 @@ METADATA_KEYS = {
     "ISBN",
 }
 
-# ------------------------------------------------------------
-# Bracket pairs (open → close)
-# Single source of truth
-# ------------------------------------------------------------
-
-BRACKET_PAIRS: tuple[tuple[str, str], ...] = (
-    # Parentheses
-    ("（", "）"),
-    ("(", ")"),
-    # Square brackets
-    ("［", "］"),
-    ("[", "]"),
-    # Curly braces
-    ("｛", "｝"),
-    ("{", "}"),
-    # Angle brackets
-    ("＜", "＞"),
-    ("<", ">"),
-    ("⟨", "⟩"),
-    ("〈", "〉"),
-    # CJK brackets
-    ("【", "】"),
-    ("《", "》"),
-    ("〔", "〕"),
-    ("〖", "〗"),
-)
-
-_BRACKET_OPEN_SET = {open_ for open_, _ in BRACKET_PAIRS}
-_BRACKET_CLOSE_SET = {close for _, close in BRACKET_PAIRS}
-
-_BRACKET_OPEN_TO_CLOSE = dict(BRACKET_PAIRS)
-_BRACKET_CLOSE_TO_OPEN = {close: open_ for open_, close in BRACKET_PAIRS}
-
-
-def is_bracket_opener(ch: str) -> bool:
-    return ch in _BRACKET_OPEN_SET
-
-
-def is_bracket_closer(ch: str) -> bool:
-    return ch in _BRACKET_CLOSE_SET
-
-
-def is_matching_bracket(open_ch: str, close_ch: str) -> bool:
-    return _BRACKET_OPEN_TO_CLOSE.get(open_ch) == close_ch
-
-
-def is_wrapped_by_matching_bracket(s: str, last_non_ws: str, min_len: int) -> bool:
-    # min_len=3 means at least: open + 1 char + close
-    if not s:
-        return False
-
-    open_ch = s[0]
-
-    # Equivalent to Rust's `s.chars().count() >= min_len`
-    # (Python len() counts Unicode code points)
-    if len(s) < min_len:
-        return False
-
-    return is_matching_bracket(open_ch, last_non_ws)
-
-
-def try_get_matching_closer(open_ch: str) -> Optional[str]:
-    return _BRACKET_OPEN_TO_CLOSE.get(open_ch)
-
-
-_ALLOWED_POSTFIX_CLOSERS = {")", "）"}
-
-
-def is_allowed_postfix_closer(ch: str) -> bool:
-    return ch in _ALLOWED_POSTFIX_CLOSERS
-
-
-def ends_with_allowed_postfix_closer(s: str) -> bool:
-    # Trim only trailing whitespace
-    s = s.rstrip()
-    if not s:
-        return False
-    # Last non-whitespace character
-    return is_allowed_postfix_closer(s[-1])
-
-
-# ------------------------------------------------------------
-# Sentence / punctuation helpers
-# ------------------------------------------------------------
-
-_STRONG_SENTENCE_END = {"。", "！", "？", "!", "?"}
-
-_COMMA_LIKE = {"，", ",", "、"}
-
-_COLON_LIKE = {"：", ":"}
-
-
-def is_strong_sentence_end(ch: str) -> bool:
-    return ch in _STRONG_SENTENCE_END
-
-
-def is_comma_like(ch: str) -> bool:
-    return ch in _COMMA_LIKE
-
-
-def contains_any_comma_like(s: str) -> bool:
-    # Generator short-circuits like Rust's .any()
-    return any(ch in _COMMA_LIKE for ch in s)
-
-
-def is_colon_like(ch: str) -> bool:
-    return ch in _COLON_LIKE
-
-
-def ends_with_colon_like(s: str) -> bool:
-    t = s.rstrip()  # trim right only
-    return bool(t) and t[-1] in _COLON_LIKE
-
-
-_ELLIPSIS_SUFFIXES = ("……", "...", "..", "…")
-
-
-def ends_with_ellipsis(s: str) -> bool:
-    t = s.rstrip()
-    return t.endswith(_ELLIPSIS_SUFFIXES)
-
-
-def last_non_whitespace(s: str) -> Optional[str]:
-    """Return the last non-whitespace character, or None."""
-    i = len(s) - 1
-    while i >= 0:
-        ch = s[i]
-        if not ch.isspace():
-            return ch
-        i -= 1
-    return None
-
-
-def last_two_non_whitespace(s: str) -> Optional[Tuple[str, str]]:
-    """Return (last, prev) non-whitespace characters, or None if not enough."""
-    last = None
-
-    i = len(s) - 1
-    while i >= 0:
-        ch = s[i]
-        if not ch.isspace():
-            if last is None:
-                last = ch
-            else:
-                return last, ch  # (last, prev)
-        i -= 1
-
-    return None
-
-
-def find_last_non_whitespace_index(s: str) -> Optional[int]:
-    """Return the Python string index of the last non-whitespace char, or None."""
-    i = len(s) - 1
-    while i >= 0:
-        if not s[i].isspace():
-            return i
-        i -= 1
-    return None
-
-
-def find_prev_non_whitespace_index(s: str, end_exclusive: int) -> Optional[int]:
-    """
-    Return the index of the previous non-whitespace char strictly before end_exclusive,
-    or None.
-
-    end_exclusive is a Python string index (like slicing).
-    """
-    i = min(end_exclusive, len(s)) - 1
-    while i >= 0:
-        if not s[i].isspace():
-            return i
-        i -= 1
-    return None
-
-
-# =============================================================================
-# Low-level helpers (indent / CJK / box line / repeats)
-# =============================================================================
-
-def is_all_ascii(s: str) -> bool:
-    for ch in s:
-        if ord(ch) > 0x7F:
-            return False
-    return True
-
-
-def is_cjk(ch: str) -> bool:
-    """
-    Minimal CJK checker (BMP focused).
-    Designed for reflow heuristics, not full Unicode linguistics.
-    """
-    c = ord(ch)
-    if 0x3400 <= c <= 0x4DBF:  # Extension A
-        return True
-    if 0x4E00 <= c <= 0x9FFF:  # Unified Ideographs
-        return True
-    return 0xF900 <= c <= 0xFAFF  # Compatibility Ideographs
-
-
-def contains_any_cjk_str(s: str) -> bool:
-    return any(is_cjk(ch) for ch in s)
-
-
-def is_all_ascii_digits(s: str) -> bool:
-    """
-    Match C# IsAllAsciiDigits:
-    - ASCII space ' ' is neutral (allowed)
-    - ASCII digits '0'..'9' allowed
-    - FULLWIDTH digits '０'..'９' allowed
-    - Anything else rejects
-    - Must contain at least one digit (ASCII or fullwidth)
-    """
-    has_digit = False
-    for ch in s:
-        if ch == " ":
-            continue
-        o = ord(ch)
-        if 0x30 <= o <= 0x39:  # '0'..'9'
-            has_digit = True
-            continue
-        if 0xFF10 <= o <= 0xFF19:  # '０'..'９'
-            has_digit = True
-            continue
-        return False
-    return has_digit
-
-
-def is_mixed_cjk_ascii(s: str) -> bool:
-    """
-    Match C# IsMixedCjkAscii:
-    - Neutral ASCII allowed but does not count as ASCII content: ' ', '-', '/', ':', '.'
-    - ASCII letters/digits count as ASCII content, other ASCII punctuation rejects
-    - FULLWIDTH digits count as ASCII content
-    - CJK chars count as CJK content
-    - Any other non-ASCII non-CJK rejects
-    - Early return True once both seen
-    """
-    has_cjk = False
-    has_ascii = False
-
-    for ch in s:
-        # Neutral ASCII
-        if ch in (" ", "-", "/", ":", "."):
-            continue
-
-        o = ord(ch)
-        if o <= 0x7F:
-            # Only ASCII letters/digits are allowed (and count)
-            if ("0" <= ch <= "9") or ("A" <= ch <= "Z") or ("a" <= ch <= "z"):
-                has_ascii = True
-            else:
-                return False
-        elif 0xFF10 <= o <= 0xFF19:  # FULLWIDTH digits
-            has_ascii = True
-        elif is_cjk(ch):
-            has_cjk = True
-        else:
-            return False
-
-        if has_cjk and has_ascii:
-            return True
-
-    return False
-
-
-def is_mostly_cjk(s: str) -> bool:
-    cjk = 0
-    ascii_ = 0
-
-    for ch in s:
-        # Neutral: whitespace
-        if ch.isspace():
-            continue
-
-        o = ord(ch)
-
-        # Neutral: ASCII digits
-        if 0x30 <= o <= 0x39:
-            continue
-
-        # Neutral: FULLWIDTH digits
-        if 0xFF10 <= o <= 0xFF19:
-            continue
-
-        if is_cjk(ch):
-            cjk += 1
-        elif o <= 0x7F and ch.isalpha():
-            ascii_ += 1
-        # else: symbols / punctuation → neutral (ignored)
-
-    return cjk > 0 and cjk >= ascii_
-
-
-def is_all_cjk_no_whitespace(s: str) -> bool:
-    if not s:
-        return False
-    for ch in s:
-        if ch.isspace():
-            return False
-        if not is_cjk(ch):
-            return False
-    return True
-
-
-def is_all_cjk_ignoring_whitespace(s: str) -> bool:
-    """
-    Match C# IsAllCjkIgnoringWhitespace:
-    - Ignore any Unicode whitespace
-    - If any non-whitespace ASCII is present => false
-    - Otherwise true (even if empty / whitespace-only)
-    """
-    for ch in s:
-        if ch.isspace():
-            continue
-        if ord(ch) <= 0x7F:
-            return False
-    return True
-
-
-def is_visual_divider_line(s: str) -> bool:
-    """
-    Detect visual divider lines (box drawing / ASCII separators).
-
-    If True, we force a paragraph break.
-    """
-    if not s or s.isspace():
-        return False
-
-    total = 0
-    for ch in s:
-        if ch.isspace():
-            continue
-        total += 1
-
-        if "\u2500" <= ch <= "\u257F":  # box drawing range
-            continue
-
-        if ch in ("-", "=", "_", "~", "·", "•", "*"):
-            continue
-
-        return False
-
-    return total >= 3
-
-
 IDEOGRAPHIC_SPACE = "\u3000"
-
 # Common indent regex (raw_line based)
 _INDENT_RE = re.compile(r"^\s{2,}")
+
+
+# =============================================================================
+# Optional cleanup helpers (kept outside extraction)
+# =============================================================================
+
+def collapse_consecutive_duplicate_lines(text: str) -> str:
+    """
+    Collapse consecutive duplicate *non-empty* lines (whitespace-insensitive).
+
+    Useful for removing repeated headers/footers that occasionally leak into
+    extracted text streams.
+    """
+    out: List[str] = []
+    prev: Optional[str] = None
+
+    for line in text.splitlines():
+        key = line.strip()
+        if not key:
+            out.append(line)
+            prev = None
+            continue
+        if prev is not None and key == prev:
+            continue
+        out.append(line)
+        prev = key
+
+    return "\n".join(out)
 
 
 def strip_half_width_indent_keep_fullwidth(s: str) -> str:
@@ -735,10 +367,10 @@ def is_heading_like(s: str) -> bool:
         # 1) Item-title like: "物品准备："
         if is_colon_like(last) and length < max_len:
             body = s[:-1]  # strip_last_char(s)
-            if is_all_cjk_no_whitespace(body):
+            if is_all_cjk_no_ws(body):
                 return True
 
-        # 2) Allowed postfix closer: ... ) / ） and no comma-like anywhere
+        # 2) Allowed postfix closer: ... () / ） and no comma-like anywhere
         if is_allowed_postfix_closer(last):
             if not contains_any_comma_like(s):
                 return True
@@ -824,6 +456,32 @@ def is_metadata_line(line: str) -> bool:
 
     # Reject dialog opener right after "Key: "
     return not is_dialog_opener(s[j])
+
+
+def is_visual_divider_line(s: str) -> bool:
+    """
+    Detect visual divider lines (box drawing / ASCII separators).
+
+    If True, we force a paragraph break.
+    """
+    if not s or s.isspace():
+        return False
+
+    total = 0
+    for ch in s:
+        if ch.isspace():
+            continue
+        total += 1
+
+        if "\u2500" <= ch <= "\u257F":  # box drawing range
+            continue
+
+        if ch in ("-", "=", "_", "~", "·", "•", "*"):
+            continue
+
+        return False
+
+    return total >= 3
 
 
 # -------------------------------
@@ -1165,7 +823,7 @@ def reflow_cjk_paragraphs_core(
 
         # Weak heading-like (heuristic)
         if is_short_heading:
-            is_all_cjk = is_all_cjk_ignoring_whitespace(stripped)
+            is_all_cjk = is_all_cjk_ignoring_ws(stripped)
             current_looks_like_cont_marker = (
                     is_all_cjk
                     or ends_with_colon_like(stripped)
@@ -1289,6 +947,7 @@ def reflow_cjk_paragraphs_core(
         d_update(stripped)
 
     if buffer:
-        segments.append(buffer)
+        # segments.append(buffer)
+        append_seg(buffer)
 
     return "\n".join(segments) if compact else "\n\n".join(segments)
