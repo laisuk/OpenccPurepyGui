@@ -25,15 +25,18 @@ python -m nuitka ^
   --enable-plugin=pyside6 ^
   --include-package=opencc_purepy ^
   --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts ^
+  --include-data-dir=pdf_module/pdfium/win-x64=pdf_module/pdfium/win-x64 ^
   --windows-icon-from-ico=resource/openccpurepygui.ico ^
   --windows-disable-console ^
   mainwindow.py
+
 
 python -m nuitka `
   --standalone `
   --enable-plugin=pyside6 `
   --include-package=opencc_purepy `
   --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts `
+  --include-data-dir=pdf_module/pdfium/win-x64=pdf_module/pdfium/win-x64 `
   --windows-icon-from-ico=resource/openccpurepygui.ico `
   --windows-disable-console `
   mainwindow.py
