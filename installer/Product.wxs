@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product
+    Name="OpenccPurepyGui"
+    Manufacturer="Laisuk@2026"
+    Id="*"
+    UpgradeCode="40afec5d-369d-44ef-9459-e34e2d2149ff"
+    Language="1033"
+    Version="1.2.0">
+
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Platform="x64" />
+
+    <MajorUpgrade
+      AllowDowngrades="no"
+      DowngradeErrorMessage="A newer version of OpenccPurepyGui is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- Directories -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="OpenccPurepyGui" />
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="AppProgramMenuDir" Name="OpenccPurepyGui" />
+      </Directory>
+      <Directory Id="DesktopFolder" />
+    </Directory>
+
+    <!-- Feature -->
+    <Feature Id="MainFeature" Title="OpenccPurepyGui" Level="1" Absent="disallow" ConfigurableDirectory="INSTALLFOLDER">
+      <!-- All harvested app files -->
+      <ComponentGroupRef Id="AppFiles" />
+      <!-- Shortcuts -->
+      <ComponentRef Id="ApplicationShortcutStartMenu" />
+      <ComponentRef Id="ApplicationShortcutDesktop" />
+    </Feature>
+
+    <!-- Non-advertised shortcuts must be in HKCU-keyed components with NO file elements -->
+
+    <!-- Start Menu shortcut component -->
+    <DirectoryRef Id="AppProgramMenuDir">
+      <Component Id="ApplicationShortcutStartMenu" Guid="97a770c1-e492-4f68-8960-a6ebad0aa0df">
+        <!-- HKCU KeyPath satisfies ICE43/ICE57 -->
+        <RegistryValue Root="HKCU"
+                       Key="Software\OpenccPurepyGui"
+                       Name="StartMenuShortcutInstalled"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+        <Shortcut Id="StartMenuShortcut"
+                  Directory="AppProgramMenuDir"
+                  Name="OpenccPurepyGui"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Target="[INSTALLFOLDER]OpenccPurepyGui.exe"
+                  Icon="AppIcon.ico" />
+        <RemoveFolder Id="RemoveAppProgramMenuDir" Directory="AppProgramMenuDir" On="uninstall" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- Desktop shortcut component -->
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="ApplicationShortcutDesktop" Guid="c6c431a7-2bce-468f-b88e-1a2cb282788f">
+        <!-- HKCU KeyPath -->
+        <RegistryValue Root="HKCU"
+                       Key="Software\OpenccPurepyGui"
+                       Name="DesktopShortcutInstalled"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+        <Shortcut Id="DesktopShortcut"
+                  Directory="DesktopFolder"
+                  Name="OpenccPurepyGui"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Target="[INSTALLFOLDER]OpenccPurepyGui.exe"
+                  Icon="AppIcon.ico" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- ARP icon / shortcuts icon (ensure this .ico exists in your .dist) -->
+<!--     <Icon Id="AppIcon.ico" SourceFile="$(var.SourceDir)\openccpurepygui.ico" /> -->
+    <Icon Id="AppIcon.ico" SourceFile="assets\openccpurepygui.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+
+    <!-- Let user choose install directory -->
+    <UIRef Id="WixUI_InstallDir" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+  </Product>
+</Wix>
