@@ -1,0 +1,103 @@
+🧩 WiX MSI Build Workflow (OpenccPurepyGui)
+1) Prepare folders
+
+Open PowerShell or Command Prompt (normal shell is fine — no need for Developer Command Prompt).
+
+$SRC = "D:\codes\Python\OpenccPurepyGui\OpenccPurepyGui.dist"
+$OUT = "D:\codes\Python\OpenccPurepyGui\installer"
+mkdir $OUT -Force | Out-Null
+cd $OUT
+
+2) Harvest the dist folder (heat.exe)
+
+$SRC = "D:\codes\Python\OpenccPurepyGui\OpenccPurepyGui.dist"
+$OUT = "D:\codes\Python\OpenccPurepyGui\installer"
+
+Generate component definitions for all files in your .dist directory.
+
+heat dir "$SRC" `
+  -cg AppFiles `
+  -dr INSTALLFOLDER `
+  -srd -sreg -scom -sfrag `
+  -gg -g1 `
+  -var var.SourceDir `
+  -out AppFiles.wxs
+
+
+Notes:
+
+-dr INSTALLFOLDER — directory reference name used in Product.wxs.
+
+-srd — keeps relative directory structure.
+
+-gg -g1 — generates stable GUIDs for consistent rebuilds.
+
+The generated AppFiles.wxs contains <Component> entries for all files in your build output.
+
+3) Create Product.wxs
+
+Create Product.wxs in $OUT.
+This file defines product metadata, directories, features, shortcuts, icons, and UI.
+
+Update these fields:
+
+Manufacturer → your name or organization
+
+Version → e.g., 1.0.0
+
+UpgradeCode → a permanent GUID (stays same across releases)
+
+3a) Generate two unique GUIDs
+
+Command:
+VS Dev:
+uuidgen
+uuidgen
+
+PowerShell:
+powershell -NoProfile -Command "'{' + [guid]::NewGuid().ToString() + '}'"
+
+These are used for your Start Menu and Desktop shortcut components.
+
+[guid]::NewGuid()
+[guid]::NewGuid()
+
+Notes: generate UpgradeCode as well
+
+Paste the resulting GUIDs into your Product.wxs.
+
+4) Compile and link (candle.exe + light.exe)
+
+Compile both .wxs files to object files and link them into an MSI installer.
+
+# Compile
+candle.exe -arch x64 -dSourceDir="$SRC" Product.wxs AppFiles.wxs
+
+# Link
+light.exe Product.wixobj AppFiles.wixobj `
+  -ext WixUIExtension `
+  -ext WixUtilExtension `
+  -o OpenccPurepyGui-Setup.msi `
+  -cultures:en-us
+
+
+After linking, your MSI should appear here:
+
+D:\codes\Python\OpenccPurepyGui\installer\OpenccPurepyGui-Setup.msi
+
+✅ Final Notes
+
+The installer includes:
+
+Start Menu and Desktop shortcuts (jpackage-style)
+
+Customizable install directory
+
+App icon visible in “Programs and Features”
+
+For repeat builds, re-run steps 2–4.
+(Reharvest if your .dist folder content changes.)
+
+To sign the MSI (recommended for distribution):
+
+signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "OpenccPurepyGui-Setup.msi"
