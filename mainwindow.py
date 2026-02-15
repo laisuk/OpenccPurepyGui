@@ -13,7 +13,7 @@ from PySide6.QtCore import Qt, Slot, QThread
 from PySide6.QtGui import QGuiApplication, QTextCursor
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton
 
-from services.batch_worker import BatchWorker
+from workers.batch_worker import BatchWorker
 from opencc_purepy import OpenCC
 from pdf_module.pdf_extract_worker import PdfExtractWorker
 from pdf_module.pdf_helper import build_progress_bar, extract_pdf_text_core
