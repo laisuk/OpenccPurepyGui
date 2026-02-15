@@ -703,9 +703,18 @@ class MainWindow(QMainWindow):
         Single-text conversion (Tab 0).
         Converts the content of tbSource into tbDestination.
         """
-        self.ui.tbDestination.clear()
+        tbDest = self.ui.tbDestination
+        docDest = tbDest.document()
 
-        input_text = self.ui.tbSource.document().toPlainText()
+        # destination is display-only: no undo, no history
+        if hasattr(tbDest, "setUndoRedoEnabled"):
+            tbDest.setUndoRedoEnabled(False)
+        docDest.setUndoRedoEnabled(False)
+
+        cursor = self.ui.tbSource.textCursor()
+        has_selection = cursor.hasSelection()
+
+        input_text = cursor.selectedText() if has_selection else self.ui.tbSource.document().toPlainText()
         if not input_text:
             self.ui.statusbar.showMessage("Nothing to convert: Empty content.")
             return
@@ -910,14 +919,22 @@ class MainWindow(QMainWindow):
         self.ui.statusbar.showMessage("File preview cleared.")
 
     def btn_clear_tb_source_clicked(self):
-        self.ui.tbSource.clear()
+        tb = self.ui.tbSource
+        tb.clear()
+        doc = tb.document()
+        doc.clearUndoRedoStacks()  # clear undo history
+        doc.setModified(False)  # reset modified flag
         self.ui.lblSourceCode.setText("")
-        self.ui.tbSource.content_filename = ""
+        tb.content_filename = ""
         self.ui.lblFilename.setText("")
         self.ui.statusbar.showMessage("Source contents cleared.")
 
     def btn_clear_tb_destination_clicked(self):
-        self.ui.tbDestination.clear()
+        tb = self.ui.tbDestination
+        tb.clear()
+        doc = tb.document()
+        doc.clearUndoRedoStacks()
+        doc.setModified(False)
         self.ui.lblDestinationCode.setText("")
         self.ui.statusbar.showMessage("Destination contents cleared.")
 

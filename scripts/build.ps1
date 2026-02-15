@@ -101,7 +101,10 @@ Write-Host ""
 # --- build ---
 $mode = if ($OneFile)
 {
-    "--onefile"
+    @(
+        "--onefile",
+        "--onefile-tempdir-spec={CACHE_DIR}/OpenccPurepyGui/1.2.0/"
+    )
 }
 else
 {

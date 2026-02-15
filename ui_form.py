@@ -30,7 +30,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1036, 750)
+        MainWindow.resize(1000, 708)
         self.actionExit = QAction(MainWindow)
         self.actionExit.setObjectName(u"actionExit")
         self.actionExit.setMenuRole(QAction.MenuRole.NoRole)
@@ -208,6 +208,7 @@ class Ui_MainWindow(object):
         self.tbDestination.setLineWidth(2)
         self.tbDestination.setMidLineWidth(0)
         self.tbDestination.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.tbDestination.setUndoRedoEnabled(False)
         self.tbDestination.setReadOnly(True)
 
         self.horizontalLayout_textBox.addWidget(self.tbDestination)
@@ -364,6 +365,8 @@ class Ui_MainWindow(object):
         self.tbPreview.setAcceptDrops(True)
         self.tbPreview.setFrameShape(QFrame.Shape.Box)
         self.tbPreview.setLineWidth(2)
+        self.tbPreview.setUndoRedoEnabled(False)
+        self.tbPreview.setReadOnly(True)
 
         self.horizontalLayout_listbox.addWidget(self.tbPreview)
 
@@ -550,7 +553,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1036, 22))
+        self.menubar.setGeometry(QRect(0, 0, 1000, 22))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuHelp = QMenu(self.menubar)

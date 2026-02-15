@@ -12,6 +12,7 @@ cd $OUT
 
 $SRC = "D:\codes\Python\OpenccPurepyGui\OpenccPurepyGui.dist"
 $OUT = "D:\codes\Python\OpenccPurepyGui\installer"
+cd $OUT
 
 Generate component definitions for all files in your .dist directory.
 
@@ -91,7 +92,7 @@ The installer includes:
 
 Start Menu and Desktop shortcuts (jpackage-style)
 
-Customizable install directory
+Customizable installation directory
 
 App icon visible in “Programs and Features”
 
