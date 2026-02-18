@@ -6,6 +6,7 @@ param(
     [switch]$AssumeYes = $true, # auto-yes for tool downloads
     [string]$Entry = "mainwindow.py", # entry script
     [string]$OutputName = "OpenccPurepyGui.exe", # final exe name
+    [string]$Version = "1.2.0", # Build version
     [string]$Icon = "resource/openccpurepygui.ico",
     [string]$PythonExe = "python"              # which Python to use (e.g. 'py -3.13')
 )
@@ -103,7 +104,7 @@ $mode = if ($OneFile)
 {
     @(
         "--onefile",
-        "--onefile-tempdir-spec={CACHE_DIR}/OpenccPurepyGui/1.2.0/"
+        "--onefile-tempdir-spec={CACHE_DIR}/OpenccPurepyGui/$($Version)/"
     )
 }
 else

@@ -6,7 +6,7 @@
     Id="*"
     UpgradeCode="40afec5d-369d-44ef-9459-e34e2d2149ff"
     Language="1033"
-    Version="1.2.0">
+    Version="$(var.AppVersion)">
 
     <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Platform="x64" />
 

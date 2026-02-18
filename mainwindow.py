@@ -48,6 +48,7 @@ def _read_text_file(filename: str) -> str:
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.version = "1.2.0"
         self._batch_worker = None
         self._batch_thread = None
         self.ui = Ui_MainWindow()
@@ -370,7 +371,7 @@ class MainWindow(QMainWindow):
         dlg = AboutDialog(
             AboutInfo(
                 app_name="OpenccPurepyGui",
-                version="1.2.0",
+                version=self.version,
                 author="Laisuk",
                 year="2026",
                 description="Open Chinese Simplified / Traditional Converter\nPowered by OpenCC Pure Python + Pdfium",
