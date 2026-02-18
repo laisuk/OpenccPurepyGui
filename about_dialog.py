@@ -56,7 +56,8 @@ class AboutDialog(QDialog):
         icon_label.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         if icon is None:
-            icon = QApplication.windowIcon()
+            # icon = QApplication.windowIcon()
+            icon = self.windowIcon()
 
         pm = icon.pixmap(64, 64) if not icon.isNull() else QPixmap()
         if not pm.isNull():
