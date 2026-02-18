@@ -749,7 +749,7 @@
               </property>
               <property name="icon">
                <iconset resource="resource.qrc">
-                <normaloff>:/images/resource/icons8-preview-48.png</normaloff>:/images/resource/icons8-preview-48.png</iconset>
+                <normaloff>:/images/resource/visual.png</normaloff>:/images/resource/visual.png</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -1058,6 +1058,10 @@
    </property>
   </widget>
   <action name="actionExit">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/images/resource/exit.png</normaloff>:/images/resource/exit.png</iconset>
+   </property>
    <property name="text">
     <string>Exit</string>
    </property>
@@ -1066,6 +1070,10 @@
    </property>
   </action>
   <action name="actionAbout">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/images/resource/information.png</normaloff>:/images/resource/information.png</iconset>
+   </property>
    <property name="text">
     <string>About</string>
    </property>
@@ -1127,12 +1135,12 @@
   <customwidget>
    <class>TextEditWidget</class>
    <extends>QPlainTextEdit</extends>
-   <header location="global">custom_widgets</header>
+   <header location="global">widgets.custom_widgets</header>
   </customwidget>
   <customwidget>
    <class>DragListWidget</class>
    <extends>QListWidget</extends>
-   <header location="global">custom_widgets</header>
+   <header location="global">widgets.custom_widgets</header>
   </customwidget>
  </customwidgets>
  <resources>
@@ -1140,7 +1148,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>

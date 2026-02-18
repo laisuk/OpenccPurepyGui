@@ -812,3 +812,23 @@ def convert_range_group_union(args: Tuple[str, Iterable[Tuple[int, int]], "Start
     text, group, union = args
     conv = OpenCC.convert_union  # local bind
     return "".join(conv(text[s:e], union) for (s, e) in group)
+
+# ------ Non-GIL ------
+
+# import sys
+# import sysconfig
+#
+# def is_free_threading_build() -> bool:
+#     # Build-time: 1 on free-threaded builds, 0 on regular builds
+#     return bool(sysconfig.get_config_var("Py_GIL_DISABLED"))  # 3.13+
+#
+# def is_gil_enabled_runtime() -> bool:
+#     # Runtime: True if GIL currently enabled, False if disabled
+#     fn = getattr(sys, "_is_gil_enabled", None)  # 3.13+
+#     if fn is None:
+#         return True  # older Pythons always have GIL
+#     return bool(fn())
+#
+# def can_use_true_threads() -> bool:
+#     # Only worth using ThreadPool for CPU-bound work when GIL is actually disabled
+#     return is_free_threading_build() and (not is_gil_enabled_runtime())

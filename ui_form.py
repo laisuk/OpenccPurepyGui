@@ -8,18 +8,23 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import (QCoreApplication, QMetaObject, QRect,
-                            QSize, Qt)
-from PySide6.QtGui import (QAction, QFont, QIcon)
-from PySide6.QtWidgets import (QAbstractItemView, QButtonGroup, QCheckBox,
-                               QComboBox, QFrame, QHBoxLayout, QLabel,
-                               QLineEdit, QMenu,
-                               QMenuBar, QPlainTextEdit, QPushButton, QRadioButton,
-                               QSizePolicy, QSpacerItem, QStatusBar, QTabWidget,
-                               QVBoxLayout, QWidget)
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
+    QCursor, QFont, QFontDatabase, QGradient,
+    QIcon, QImage, QKeySequence, QLinearGradient,
+    QPainter, QPalette, QPixmap, QRadialGradient,
+    QTransform)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QButtonGroup, QCheckBox,
+    QComboBox, QFrame, QHBoxLayout, QLabel,
+    QLineEdit, QListWidgetItem, QMainWindow, QMenu,
+    QMenuBar, QPlainTextEdit, QPushButton, QRadioButton,
+    QSizePolicy, QSpacerItem, QStatusBar, QTabWidget,
+    QVBoxLayout, QWidget)
 
 from widgets.custom_widgets import (DragListWidget, TextEditWidget)
-
+import resource_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -28,9 +33,15 @@ class Ui_MainWindow(object):
         MainWindow.resize(1000, 708)
         self.actionExit = QAction(MainWindow)
         self.actionExit.setObjectName(u"actionExit")
+        icon = QIcon()
+        icon.addFile(u":/images/resource/exit.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.actionExit.setIcon(icon)
         self.actionExit.setMenuRole(QAction.MenuRole.NoRole)
         self.actionAbout = QAction(MainWindow)
         self.actionAbout.setObjectName(u"actionAbout")
+        icon1 = QIcon()
+        icon1.addFile(u":/images/resource/information.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.actionAbout.setIcon(icon1)
         self.actionAbout.setMenuRole(QAction.MenuRole.NoRole)
         self.actionConvert_filename = QAction(MainWindow)
         self.actionConvert_filename.setObjectName(u"actionConvert_filename")
@@ -259,9 +270,9 @@ class Ui_MainWindow(object):
         font4.setPointSize(10)
         font4.setBold(True)
         self.btnReflow.setFont(font4)
-        icon = QIcon()
-        icon.addFile(u":/images/resource/icons8-refresh-48.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.btnReflow.setIcon(icon)
+        icon2 = QIcon()
+        icon2.addFile(u":/images/resource/icons8-refresh-48.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.btnReflow.setIcon(icon2)
         self.btnReflow.setIconSize(QSize(18, 18))
 
         self.horizontalLayout_source.addWidget(self.btnReflow)
@@ -328,9 +339,9 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addLayout(self.horizontalLayout_textbox_action)
 
-        icon1 = QIcon()
-        icon1.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.tabWidget.addTab(self.tab_main, icon1, "")
+        icon3 = QIcon()
+        icon3.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.tabWidget.addTab(self.tab_main, icon3, "")
         self.tab_batch = QWidget()
         self.tab_batch.setObjectName(u"tab_batch")
         self.verticalLayout = QVBoxLayout(self.tab_batch)
@@ -399,9 +410,9 @@ class Ui_MainWindow(object):
         font7.setPointSize(9)
         font7.setBold(False)
         self.btnPreview.setFont(font7)
-        icon2 = QIcon()
-        icon2.addFile(u":/images/resource/icons8-preview-48.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.btnPreview.setIcon(icon2)
+        icon4 = QIcon()
+        icon4.addFile(u":/images/resource/visual.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.btnPreview.setIcon(icon4)
         self.btnPreview.setIconSize(QSize(16, 16))
 
         self.horizontalLayout_listbox_buttons.addWidget(self.btnPreview)
@@ -434,9 +445,9 @@ class Ui_MainWindow(object):
         self.btnOutDir.setSizePolicy(sizePolicy)
         self.btnOutDir.setMaximumSize(QSize(30, 16777215))
         self.btnOutDir.setFont(font4)
-        icon3 = QIcon()
-        icon3.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.btnOutDir.setIcon(icon3)
+        icon5 = QIcon()
+        icon5.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.btnOutDir.setIcon(icon5)
         self.btnOutDir.setIconSize(QSize(18, 18))
 
         self.horizontalLayout_preview.addWidget(self.btnOutDir)
@@ -457,9 +468,9 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout_listbox_action)
 
-        icon4 = QIcon()
-        icon4.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.tabWidget.addTab(self.tab_batch, icon4, "")
+        icon6 = QIcon()
+        icon6.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.tabWidget.addTab(self.tab_batch, icon6, "")
 
         self.verticalLayout_3.addWidget(self.tabWidget)
 
@@ -497,9 +508,9 @@ class Ui_MainWindow(object):
         font8.setPointSize(12)
         font8.setBold(True)
         self.btnProcess.setFont(font8)
-        icon5 = QIcon()
-        icon5.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.btnProcess.setIcon(icon5)
+        icon7 = QIcon()
+        icon7.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.btnProcess.setIcon(icon7)
         self.btnProcess.setIconSize(QSize(24, 24))
 
         self.horizontalLayout_process.addWidget(self.btnProcess)
