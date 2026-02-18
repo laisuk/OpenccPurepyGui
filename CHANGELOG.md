@@ -7,9 +7,22 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ---
 
+## [1.2.0] - 2026-02-18
+
+### Added
+
+- Added support for `text-embedded PDF`
+
+### Changed
+
+- Updated dictionary to v1.2.0.
+- Code optimization.
+
+---
+
 ## [1.1.0] - 2025-09-22
 
-## Added
+### Added
 
 - Implement st_punctuations and ts_punctuations, dropped manual convert punctuations
 
