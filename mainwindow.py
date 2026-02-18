@@ -10,7 +10,7 @@ from typing import Optional, Callable
 
 import PySide6
 from PySide6.QtCore import Qt, Slot, QThread
-from PySide6.QtGui import QGuiApplication, QTextCursor
+from PySide6.QtGui import QGuiApplication, QTextCursor, QIcon
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton
 
 from workers.batch_worker import BatchWorker
@@ -955,8 +955,12 @@ def btn_exit_click():
 
 
 if __name__ == "__main__":
+    # import multiprocessing as mp
+    # mp.freeze_support()  # <- REQUIRED for Nuitka/PyInstaller frozen apps on Windows
+
     app = QApplication()
     app.setStyle("WindowsVista")
+    app.setWindowIcon(QIcon("resource/openccpurepygui.ico"))
     widget = MainWindow()
     widget.show()
     sys.exit(app.exec())
