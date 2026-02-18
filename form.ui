@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>OpenccPurepyGui</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="resource.qrc">
+    <normaloff>:/images/resource/openccpurepygui.png</normaloff>:/images/resource/openccpurepygui.png</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_3">
     <item>

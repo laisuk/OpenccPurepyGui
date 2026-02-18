@@ -10,5 +10,6 @@
     <file>resource/information.png</file>
     <file>resource/visual.png</file>
     <file>resource/exit.png</file>
+    <file>resource/openccpurepygui.png</file>
   </qresource>
 </RCC>

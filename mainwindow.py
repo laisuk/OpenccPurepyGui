@@ -10,30 +10,29 @@ from typing import Optional, Callable
 
 import PySide6
 from PySide6.QtCore import Qt, Slot, QThread
-from PySide6.QtGui import QGuiApplication, QTextCursor, QIcon
+from PySide6.QtGui import QGuiApplication, QTextCursor
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton
 
-from workers.batch_worker import BatchWorker
 from opencc_purepy import OpenCC
-from pdf_module.pdf_extract_worker import PdfExtractWorker
-from pdf_module.pdf_helper import build_progress_bar, extract_pdf_text_core
-from pdf_module.reflow_helper import reflow_cjk_paragraphs_core
+from openxml_module.epub_helper import (
+    is_epub,
+    extract_epub_all_text,
+)
 from openxml_module.openxml_helper import (
     is_docx,
     is_odt,
     extract_docx_all_text,
     extract_odt_all_text,
 )
-from openxml_module.epub_helper import (
-    is_epub,
-    extract_epub_all_text,
-)
-
+from pdf_module.pdf_extract_worker import PdfExtractWorker
+from pdf_module.pdf_helper import build_progress_bar, extract_pdf_text_core
+from pdf_module.reflow_helper import reflow_cjk_paragraphs_core
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
 #     pyside2-uic form.ui -o ui_form.py
 from ui_form import Ui_MainWindow
+from workers.batch_worker import BatchWorker
 
 
 def _read_text_file(filename: str) -> str:
@@ -960,7 +959,7 @@ if __name__ == "__main__":
 
     app = QApplication()
     app.setStyle("WindowsVista")
-    app.setWindowIcon(QIcon("resource/openccpurepygui.ico"))
+    # app.setWindowIcon(QIcon("resource/openccpurepygui.ico"))
     widget = MainWindow()
     widget.show()
     sys.exit(app.exec())
