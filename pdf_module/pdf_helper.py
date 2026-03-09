@@ -79,8 +79,8 @@ def extract_pdf_text_core(
             cancelled = True
             return
 
-        if add_pdf_page_header:
-            parts.append(f"\n\n=== [Page {page}/{total}] ===\n\n")
+        # if add_pdf_page_header:
+        #     parts.append(f"\n\n=== [Page {page}/{total}] ===\n\n")
 
         parts.append(text)
 
@@ -91,7 +91,7 @@ def extract_pdf_text_core(
                 on_progress(page, total)
 
     # Run Pdfium extraction
-    extract_pdf_pages_with_callback_pdfium(str(path), _callback)
+    extract_pdf_pages_with_callback_pdfium(str(path), _callback, add_pdf_page_header)
 
     if cancelled:
         return ""
