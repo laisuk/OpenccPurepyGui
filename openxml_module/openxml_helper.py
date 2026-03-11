@@ -535,16 +535,22 @@ def _trim_trailing_newlines(s: str) -> str:
 class _LevelDef:
     num_fmt: str = ""
     lvl_text: str = ""
+    font_hint: Optional[str] = None  # Symbol / Wingdings / Wingdings 2 / Wingdings 3 / Courier New
 
 
 class NumberingContext:
     """
-    C#-equivalent minimal numbering:
+    Closer-to-C# numbering context:
 
     - numId -> abstractNumId
-    - abstractNumId -> ilvl -> (numFmt, lvlText)
+    - abstractNumId -> ilvl -> LevelDef(numFmt, lvlText, fontHint)
     - styleId -> (numId, ilvl)
     - counters per numId (9 levels)
+
+    Behavior aligned with C#:
+    - direct numId alone resolves to (numId, 0)
+    - %n replacement uses the referenced level's numFmt
+    - bullet glyph tries to resolve via lvlText + fontHint
     """
 
     _re_pct = re.compile(r"%([1-9])")
@@ -555,7 +561,9 @@ class NumberingContext:
         self._style_num: Dict[str, Tuple[int, int]] = {}
         self._counters: Dict[int, List[int]] = {}
 
-    # ---- lifecycle ----
+    # -------------------------------------------------------------------------
+    # lifecycle
+    # -------------------------------------------------------------------------
 
     def reset_counters_for_part(self) -> None:
         self._counters.clear()
@@ -567,7 +575,9 @@ class NumberingContext:
         ctx._load_styles(zf)
         return ctx
 
-    # ---- resolve + next prefix ----
+    # -------------------------------------------------------------------------
+    # resolve + next prefix
+    # -------------------------------------------------------------------------
 
     def resolve_num(
             self,
@@ -575,8 +585,10 @@ class NumberingContext:
             direct_ilvl: Optional[int],
             style_id: Optional[str],
     ) -> Tuple[Optional[int], Optional[int]]:
-        if direct_num_id is not None and direct_ilvl is not None:
-            return direct_num_id, direct_ilvl
+        # Match C#:
+        # if directNumId.HasValue => (directNumId, directIlvl ?? 0)
+        if direct_num_id is not None:
+            return direct_num_id, (0 if direct_ilvl is None else direct_ilvl)
 
         if style_id:
             v = self._style_num.get(style_id)
@@ -586,7 +598,6 @@ class NumberingContext:
         return None, None
 
     def next_prefix(self, num_id: int, ilvl: int) -> str:
-        # clamp like C#
         if ilvl < 0:
             ilvl = 0
         elif ilvl > 8:
@@ -613,28 +624,30 @@ class NumberingContext:
         for d in range(ilvl + 1, len(counters)):
             counters[d] = 0
 
-        # common numbering only: bullet + %n replacement
-        if defn.num_fmt.lower() == "bullet":
-            return "• "
+        if defn.num_fmt.strip().lower() == "bullet":
+            bullet = self._resolve_bullet_glyph(defn.lvl_text, defn.font_hint)
+            return bullet + " "
 
         lvl_text = defn.lvl_text or "%1."
 
         def repl(m: re.Match[str]) -> str:
-            k = ord(m.group(1)) - ord("1")  # 0..8
+            k = ord(m.group(1)) - ord("1")  # %1 -> level 0
             v = counters[k]
-            if v <= 0:
-                v = 1
-            return str(v)
+            ref_def = lvls.get(k)
+            ref_fmt = ref_def.num_fmt if ref_def is not None else "decimal"
+            return self._format_counter(v, ref_fmt)
 
         prefix = self._re_pct.sub(repl, lvl_text)
-
-        # normalize like C#
         prefix = prefix.replace("\t", " ").replace("\u00A0", " ")
+
         if prefix and not prefix[-1].isspace():
             prefix += " "
+
         return prefix
 
-    # ---- load numbering.xml ----
+    # -------------------------------------------------------------------------
+    # load numbering.xml
+    # -------------------------------------------------------------------------
 
     def _load_numbering(self, zf: ZipFile) -> None:
         try:
@@ -644,52 +657,53 @@ class NumberingContext:
 
         current_abs: Optional[int] = None
         current_lvl: Optional[int] = None
+        current_num_id: Optional[int] = None
 
         for ev, elem in eT.iterparse(_bytes_io(xml_bytes), events=("start", "end")):
-            if not elem.tag.startswith(_W_TAG):
+            tag = elem.tag
+            if not isinstance(tag, str) or not tag.startswith(_W_TAG):
+                if ev == "end":
+                    elem.clear()
                 continue
-            name = elem.tag[len(_W_TAG):]
+
+            name = tag[len(_W_TAG):]
 
             if ev == "start":
                 if name == "num":
-                    num_id_str = _w_attr(elem, "numId")
+                    s = _w_attr(elem, "numId")
                     try:
-                        this_num_id = int(num_id_str) if num_id_str is not None else None
+                        current_num_id = int(s) if s is not None else None
                     except ValueError:
-                        this_num_id = None
+                        current_num_id = None
 
-                    if this_num_id is not None:
-                        # scan subtree (like C# ReadSubtree) for abstractNumId
-                        # Here, we just rely on parsing and capture at end when we see abstractNumId.
-                        elem._openxmlhelper_numid = this_num_id  # type: ignore[attr-defined]
-
-                elif name == "abstractNum":
-                    abs_id_str = _w_attr(elem, "abstractNumId")
+                elif name == "abstractNumId" and current_num_id is not None:
+                    v = _w_attr(elem, "val")
                     try:
-                        abs_id = int(abs_id_str) if abs_id_str is not None else None
+                        abs_id = int(v) if v is not None else None
                     except ValueError:
                         abs_id = None
+                    if abs_id is not None:
+                        self._num_to_abstract[current_num_id] = abs_id
 
+                elif name == "abstractNum":
+                    s = _w_attr(elem, "abstractNumId")
+                    try:
+                        abs_id = int(s) if s is not None else None
+                    except ValueError:
+                        abs_id = None
                     if abs_id is not None:
                         current_abs = abs_id
                         self._abstract_levels.setdefault(abs_id, {})
 
-                elif name == "lvl":
-                    if current_abs is not None:
-                        ilvl_str = _w_attr(elem, "ilvl")
-                        try:
-                            ilvl = int(ilvl_str) if ilvl_str is not None else None
-                        except ValueError:
-                            ilvl = None
-
-                        if ilvl is not None:
-                            current_lvl = ilvl
-                            self._abstract_levels[current_abs].setdefault(ilvl, _LevelDef())
-
-
-                elif name == "abstractNumId":
-                    # handled in second pass (_parse_num_to_abstract)
-                    pass
+                elif name == "lvl" and current_abs is not None:
+                    s = _w_attr(elem, "ilvl")
+                    try:
+                        ilvl = int(s) if s is not None else None
+                    except ValueError:
+                        ilvl = None
+                    if ilvl is not None:
+                        current_lvl = ilvl
+                        self._abstract_levels[current_abs].setdefault(ilvl, _LevelDef())
 
                 elif name == "numFmt":
                     if current_abs is not None and current_lvl is not None:
@@ -701,8 +715,18 @@ class NumberingContext:
                         v = _w_attr(elem, "val") or ""
                         self._abstract_levels[current_abs][current_lvl].lvl_text = v
 
-            elif ev == "end":
-                if name == "abstractNum":
+                elif name == "rFonts":
+                    if current_abs is not None and current_lvl is not None:
+                        ascii_font = _w_attr(elem, "ascii")
+                        hansi_font = _w_attr(elem, "hAnsi")
+                        hint = ascii_font or hansi_font
+                        if hint:
+                            self._abstract_levels[current_abs][current_lvl].font_hint = hint
+
+            else:  # end
+                if name == "num":
+                    current_num_id = None
+                elif name == "abstractNum":
                     current_abs = None
                     current_lvl = None
                 elif name == "lvl":
@@ -710,10 +734,9 @@ class NumberingContext:
 
                 elem.clear()
 
-        # Robust second pass to build numId->abstractNumId mapping (clean + deterministic)
-        self._num_to_abstract.update(_parse_num_to_abstract(xml_bytes))
-
-    # ---- load styles.xml ----
+    # -------------------------------------------------------------------------
+    # load styles.xml
+    # -------------------------------------------------------------------------
 
     def _load_styles(self, zf: ZipFile) -> None:
         try:
@@ -726,9 +749,13 @@ class NumberingContext:
         style_ilvl: Optional[int] = None
 
         for ev, elem in eT.iterparse(_bytes_io(xml_bytes), events=("start", "end")):
-            if not elem.tag.startswith(_W_TAG):
+            tag = elem.tag
+            if not isinstance(tag, str) or not tag.startswith(_W_TAG):
+                if ev == "end":
+                    elem.clear()
                 continue
-            name = elem.tag[len(_W_TAG):]
+
+            name = tag[len(_W_TAG):]
 
             if ev == "start":
                 if name == "style":
@@ -754,48 +781,122 @@ class NumberingContext:
 
             else:  # end
                 if name == "style":
-                    if current_style_id and style_num_id is not None and style_ilvl is not None:
+                    if (
+                            current_style_id
+                            and style_num_id is not None
+                            and style_ilvl is not None
+                    ):
                         self._style_num[current_style_id] = (style_num_id, style_ilvl)
+
                     current_style_id = None
                     style_num_id = None
                     style_ilvl = None
 
                 elem.clear()
 
+    # -------------------------------------------------------------------------
+    # helpers
+    # -------------------------------------------------------------------------
 
-def _parse_num_to_abstract(numbering_xml_bytes: bytes) -> Dict[int, int]:
-    """
-    Clean pass that matches the C# behavior of:
-    <w:num w:numId="X"> ... <w:abstractNumId w:val="Y" /> ...
-    """
-    out: Dict[int, int] = {}
-    current_num_id: Optional[int] = None
+    @staticmethod
+    def _format_counter(v: int, num_fmt: Optional[str]) -> str:
+        if v <= 0:
+            v = 1
 
-    for ev, elem in eT.iterparse(_bytes_io(numbering_xml_bytes), events=("start", "end")):
-        if not elem.tag.startswith(_W_TAG):
-            continue
-        name = elem.tag[len(_W_TAG):]
+        fmt = (num_fmt or "").strip()
 
-        if ev == "start":
-            if name == "num":
-                s = _w_attr(elem, "numId")
-                try:
-                    current_num_id = int(s) if s is not None else None
-                except ValueError:
-                    current_num_id = None
+        if fmt == "lowerLetter":
+            return NumberingContext._to_letters(v, upper=False)
+        if fmt == "upperLetter":
+            return NumberingContext._to_letters(v, upper=True)
+        if fmt == "lowerRoman":
+            return NumberingContext._to_roman(v).lower()
+        if fmt == "upperRoman":
+            return NumberingContext._to_roman(v)
+        if fmt == "decimalZero":
+            return f"0{v}" if v < 10 else str(v)
 
-            elif name == "abstractNumId" and current_num_id is not None:
-                v = _w_attr(elem, "val")
-                try:
-                    abs_id = int(v) if v is not None else None
-                except ValueError:
-                    abs_id = None
-                if abs_id is not None:
-                    out[current_num_id] = abs_id
+        return str(v)
 
-        elif ev == "end":
-            if name == "num":
-                current_num_id = None
-            elem.clear()
+    @staticmethod
+    def _to_letters(v: int, upper: bool) -> str:
+        # 1 -> a, 26 -> z, 27 -> aa
+        if v <= 0:
+            v = 1
 
-    return out
+        chars: List[str] = []
+        while v > 0:
+            v -= 1
+            chars.append(chr(ord("a") + (v % 26)))
+            v //= 26
+
+        s = "".join(reversed(chars))
+        return s.upper() if upper else s
+
+    @staticmethod
+    def _to_roman(v: int) -> str:
+        if v <= 0:
+            return "I"
+
+        mapping = (
+            (1000, "M"),
+            (900, "CM"),
+            (500, "D"),
+            (400, "CD"),
+            (100, "C"),
+            (90, "XC"),
+            (50, "L"),
+            (40, "XL"),
+            (10, "X"),
+            (9, "IX"),
+            (5, "V"),
+            (4, "IV"),
+            (1, "I"),
+        )
+
+        out: List[str] = []
+        for n, s in mapping:
+            while v >= n:
+                out.append(s)
+                v -= n
+
+        return "".join(out)
+
+    @staticmethod
+    def _resolve_bullet_glyph(lvl_text: Optional[str], font_hint: Optional[str]) -> str:
+        t = (lvl_text or "").replace("\t", "").replace("\u00A0", " ").strip()
+        if not t:
+            return "•"
+
+        ch = t[0]
+        font = (font_hint or "").strip()
+
+        if NumberingContext._is_good_unicode_glyph(ch):
+            return ch
+
+        if font.lower() == "symbol":
+            if ch == "":
+                return "•"
+            return "•"
+
+        if font.lower().startswith("wingdings"):
+            return {
+                "": "✓",
+                "": "➤",
+                "": "▪",
+                "n": "■",
+                "u": "◆",
+                "v": "◇",
+            }.get(ch, "•")
+
+        if font.lower() == "courier new":
+            return "○" if ch == "o" else "•"
+
+        return "•"
+
+    @staticmethod
+    def _is_good_unicode_glyph(c: str) -> bool:
+        return c in {
+            "•", "●", "○", "■", "▪", "◆", "◇",
+            "✓", "✔", "➤", "➔", "➢",
+        }
