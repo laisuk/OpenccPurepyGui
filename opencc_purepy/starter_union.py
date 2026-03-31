@@ -26,7 +26,6 @@ class StarterUnion:
     merged_map: Dict[str, str]
     cap: int
 
-    # Lazy-built starter index
     bmp_mask: List[int] = field(default_factory=lambda: [0] * 0x10000)
     bmp_cap: List[int] = field(default_factory=lambda: [0] * 0x10000)
     astral_mask: Dict[str, int] = field(default_factory=dict)
@@ -35,22 +34,23 @@ class StarterUnion:
 
     @staticmethod
     def merge_precedence(slots: Iterable[DictSlot]) -> "StarterUnion":
-        slots = list(slots)
-        if len(slots) == 1: # type: ignore
-            d, m_len = slots[0] # type: ignore
+        slot_list: List[DictSlot] = list(slots)
+
+        if len(slot_list) == 1:
+            d, m_len = slot_list[0]
             return StarterUnion(merged_map=d, cap=int(m_len))
 
         merged: Dict[str, str] = {}
         max_len = 0
-        for d, m_len in slots:
+        for d, m_len in slot_list:
             if d:
                 for k, v in d.items():
-                    if k not in merged:  # precedence: first dict wins
+                    if k not in merged:
                         merged[k] = v
             max_len = max(max_len, int(m_len))
+
         return StarterUnion(merged_map=merged, cap=max_len)
 
-    # ----- Starter index builder (lazy) -----
     def build_starter_index(self) -> None:
         """Populate per-starter masks and caps by scanning `merged_map` keys.
         Safe to call multiple times; subsequent calls are no-ops.
@@ -58,7 +58,6 @@ class StarterUnion:
         if self._indexed:
             return
 
-        # Local aliases for speed
         bmp_mask = self.bmp_mask
         bmp_cap = self.bmp_cap
         a_mask = self.astral_mask
@@ -71,7 +70,6 @@ class StarterUnion:
                 return 1 << 63
             return 1 << (length - 1)
 
-        # Build from keys in merged_map
         for key in self.merged_map.keys():
             if not key:
                 continue
@@ -79,6 +77,7 @@ class StarterUnion:
             key_len = len(key)
             b = bit_for(key_len)
             code = ord(starter)
+
             if code <= 0xFFFF:
                 idx = code
                 bmp_mask[idx] |= b
@@ -93,5 +92,5 @@ class StarterUnion:
         self._indexed = True
 
     @property
-    def indexed(self):
+    def indexed(self) -> bool:
         return self._indexed

@@ -53,8 +53,8 @@ def convert_office_doc(
     Returns:
         (success: bool, message: str)
     """
-    input_path = Path(input_path) # type: ignore
-    output_path = Path(output_path) # type: ignore
+    input_path = str(Path(input_path))
+    output_path = str(Path(output_path))
 
     # --- NEW: normalized temp root and pre-created working dir
     temp_root = _normalized_temp_root()
@@ -73,7 +73,7 @@ def convert_office_doc(
                 else:
                     dest_path.parent.mkdir(parents=True, exist_ok=True)
                     with archive.open(entry) as src, open(dest_path, 'wb') as dst:
-                        shutil.copyfileobj(src, dst)  # type: ignore
+                        shutil.copyfileobj(src, dst) # type: ignore
 
         target_paths = _get_target_xml_paths(office_format, temp_dir)
         if not target_paths:
@@ -118,13 +118,13 @@ def convert_office_doc(
 
         # Ensure output path is clear
         try:
-            output_path.unlink(missing_ok=True) # type: ignore # Python 3.8+: ok
+            Path(output_path).unlink(missing_ok=True) # Python 3.8+: ok
         except TypeError:
-            if output_path.exists(): # type: ignore
-                output_path.unlink() # type: ignore
+            if Path(output_path).exists():
+                Path(output_path).unlink()
 
         if office_format == "epub":
-            return create_epub_zip_with_spec(temp_dir, output_path) # type: ignore
+            return create_epub_zip_with_spec(temp_dir, Path(output_path))
         else:
             with zipfile.ZipFile(output_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
                 for file in temp_dir.rglob("*"):

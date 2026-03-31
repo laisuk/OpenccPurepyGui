@@ -414,7 +414,7 @@ class MainWindow(QMainWindow):
 
         filename = getattr(self.ui.tbSource, "content_filename", None)
         if filename:
-            base = os.path.basename(filename) # type: ignore
+            base = os.path.basename(str(filename))
             self.ui.lblFilename.setText(base)
             # self.statusBar().showMessage(f"File: {filename}")
 
