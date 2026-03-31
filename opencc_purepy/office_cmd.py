@@ -92,7 +92,7 @@ def main(args):
         success, message = convert_office_doc(
             input_file,
             output_file,
-            office_format,
+            office_format, # type: ignore
             OpenCC(config),
             punct,
             keep_font,

@@ -632,8 +632,8 @@ class NumberingContext:
 
         def repl(m: re.Match[str]) -> str:
             k = ord(m.group(1)) - ord("1")  # %1 -> level 0
-            v = counters[k]
-            ref_def = lvls.get(k)
+            v = counters[k] # type: ignore
+            ref_def = lvls.get(k) # type: ignore
             ref_fmt = ref_def.num_fmt if ref_def is not None else "decimal"
             return self._format_counter(v, ref_fmt)
 

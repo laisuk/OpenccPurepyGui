@@ -216,16 +216,13 @@ def collapse_repeated_word_sequences(parts: Sequence[str]) -> List[str]:
     return list(parts)
 
 
-def collapse_repeated_token(token: Optional[str]) -> Optional[str]:
+def collapse_repeated_token(token: str) -> str:
     """
     Collapse repeated unit patterns in a token, e.g.
     'ABC...ABC...ABC...' → 'ABC...'
 
     Only applies to medium-length tokens (4..200 chars) and unit sizes 4..10.
     """
-    if token is None:
-        return None
-
     length = len(token)
     if length < 4 or length > 200:
         return token
@@ -910,7 +907,7 @@ def reflow_cjk_paragraphs_core(
 
                 # dialog_unclosed might have changed after update; re-check like Rust
                 if (not is_unclosed()) and punct_before_closer_is_strong and (
-                        (not buffer_has_bracket_issue) or line_has_bracket_issue
+                        (not buffer_has_bracket_issue) or line_has_bracket_issue or len(buffer) > 120
                 ):
                     append_seg(buffer)
                     buffer = ""

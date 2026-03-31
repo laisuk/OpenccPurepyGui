@@ -36,8 +36,8 @@ class StarterUnion:
     @staticmethod
     def merge_precedence(slots: Iterable[DictSlot]) -> "StarterUnion":
         slots = list(slots)
-        if len(slots) == 1:
-            d, m_len = slots[0]
+        if len(slots) == 1: # type: ignore
+            d, m_len = slots[0] # type: ignore
             return StarterUnion(merged_map=d, cap=int(m_len))
 
         merged: Dict[str, str] = {}

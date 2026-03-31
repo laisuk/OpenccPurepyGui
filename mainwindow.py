@@ -63,16 +63,16 @@ class MainWindow(QMainWindow):
 
         # shared Cancel button (hidden by default)
         self._cancel_button = QPushButton("Cancel", self)
-        self._cancel_button.setAutoDefault(False)
-        self._cancel_button.setDefault(False)
-        self._cancel_button.setFlat(True)
-        self._cancel_button.setStyleSheet(
+        self._cancel_button.setAutoDefault(False) # type: ignore
+        self._cancel_button.setDefault(False) # type: ignore
+        self._cancel_button.setFlat(True) # type: ignore
+        self._cancel_button.setStyleSheet( # type: ignore
             "QPushButton { padding: 2px 8px; margin: 0px; }"
         )
-        self._cancel_button.hide()
+        self._cancel_button.hide() # type: ignore
         self._cancel_click_handler = None  # type: Optional[object]
         # self._cancel_pdf_button.clicked.connect(self.on_pdf_cancel_clicked)  # type: ignore
-        self.statusBar().addPermanentWidget(self._cancel_button)
+        self.statusBar().addPermanentWidget(self._cancel_button) # type: ignore
 
         self.ui.tabWidget.setCurrentIndex(0)
         self.ui.btnCopy.clicked.connect(self.btn_copy_click)
@@ -195,27 +195,27 @@ class MainWindow(QMainWindow):
         # Create worker + thread
         self._pdf_thread = QThread(self)
         self._pdf_worker = PdfExtractWorker(filename, add_header)
-        self._pdf_worker.moveToThread(self._pdf_thread)
+        self._pdf_worker.moveToThread(self._pdf_thread) # type: ignore
 
         # Thread start → worker.run
         self._pdf_thread.started.connect(self._pdf_worker.run)  # type: ignore
 
         # Connect worker signals → caller-provided handlers
         if on_progress is not None:
-            self._pdf_worker.progress.connect(on_progress)
+            self._pdf_worker.progress.connect(on_progress) # type: ignore
         if on_finished is not None:
-            self._pdf_worker.finished.connect(on_finished)
+            self._pdf_worker.finished.connect(on_finished) # type: ignore
         if on_error is not None:
-            self._pdf_worker.error.connect(on_error)
+            self._pdf_worker.error.connect(on_error) # type: ignore
 
         # Cleanup
-        self._pdf_worker.finished.connect(self._pdf_thread.quit)
-        self._pdf_worker.error.connect(self._pdf_thread.quit)
+        self._pdf_worker.finished.connect(self._pdf_thread.quit) # type: ignore
+        self._pdf_worker.error.connect(self._pdf_thread.quit) # type: ignore
         self._pdf_thread.finished.connect(self._pdf_worker.deleteLater)  # type: ignore
         self._pdf_thread.finished.connect(self._on_pdf_thread_finished)  # type: ignore
 
         # Start background thread
-        self._pdf_thread.start()
+        self._pdf_thread.start() # type: ignore
 
     @Slot(int, int)
     def _on_pdf_progress(self, current: int, total: int) -> None:
@@ -274,7 +274,7 @@ class MainWindow(QMainWindow):
         """
         Thread finished; clear references so another extraction can be started.
         """
-        self._pdf_thread.deleteLater()
+        self._pdf_thread.deleteLater() # type: ignore
         self._pdf_thread = None
         self._pdf_worker = None
 
@@ -414,7 +414,7 @@ class MainWindow(QMainWindow):
 
         filename = getattr(self.ui.tbSource, "content_filename", None)
         if filename:
-            base = os.path.basename(filename)
+            base = os.path.basename(filename) # type: ignore
             self.ui.lblFilename.setText(base)
             # self.statusBar().showMessage(f"File: {filename}")
 
@@ -428,7 +428,7 @@ class MainWindow(QMainWindow):
         """
         self._pdf_sequential_active = True
         self._cancel_pdf_extraction = False
-        self._cancel_button.show()
+        self._cancel_button.show() # type: ignore
         self.ui.btnReflow.setEnabled(False)
 
         # Track last progress for nicer "cancelled at page X/Y" message
@@ -479,7 +479,7 @@ class MainWindow(QMainWindow):
         finally:
             self._pdf_sequential_active = False
             self._cancel_pdf_extraction = False
-            self._cancel_button.hide()
+            self._cancel_button.hide() # type: ignore
             self.ui.btnReflow.setEnabled(True)
 
     def reflow_cjk_paragraphs(self) -> None:

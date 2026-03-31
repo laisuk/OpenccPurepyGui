@@ -48,7 +48,7 @@ def _module_dir() -> Path:
     # PyInstaller
     meipass = getattr(sys, "_MEIPASS", None)
     if getattr(sys, "frozen", False) and meipass:
-        return Path(meipass) / "opencc_pyo3"
+        return Path(meipass) / "opencc_pyo3" # type: ignore
 
     # Nuitka and normal execution
     return Path(os.path.abspath(__file__)).parent

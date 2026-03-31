@@ -282,7 +282,7 @@ class DictRefs:
                     to_slots = getattr(r, "to_slots", None)
                     max_cap = getattr(r, "max_cap", 0)
                     if callable(to_slots):
-                        slots: List[Tuple[dict, int]] = to_slots() if callable(to_slots) else []
+                        slots: List[Tuple[dict, int]] = to_slots() if callable(to_slots) else [] # type: ignore
                         cap = int(max_cap) if max_cap else max((m for (_d, m) in slots), default=0)
                     else:
                         merged_map = getattr(r, "merged_map", None)

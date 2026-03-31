@@ -13,7 +13,7 @@ class PdfExtractWorker(QObject):
     """
 
     progress = Signal(int, int)  # (current_page, total_pages)
-    finished = Signal(str, str, bool)  # (text, filename, cancelled)
+    finished = Signal(str, str, bool)  # (text, filename, canceled)
     error = Signal(str)  # error message
 
     def __init__(

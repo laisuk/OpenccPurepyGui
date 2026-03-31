@@ -416,7 +416,7 @@ class OpenCC:
             return bool(entry and entry[0] and entry[1])
 
         def _opt(entry: Optional[DictSlot]) -> List[DictSlot]:
-            return [entry] if _valid(entry) else []
+            return [entry] if _valid(entry) else [] # type: ignore
 
         # punctuation slots (optional)
         st_punct = _opt(getattr(d, "st_punctuations", None))
@@ -649,7 +649,7 @@ class OpenCC:
         Round 1: HK variants only.
         """
         refs = self._get_legacy_dict_refs("t2hk")
-        return refs.apply_segment_replace(input_text, segment_replace=self.segment_replace)
+        return refs.apply_segment_replace(input_text, segment_replace=self.segment_replace) # type: ignore
 
     def hk2t(self, input_text: str) -> str:
         """
@@ -657,7 +657,7 @@ class OpenCC:
         Round 1: HK reverse pair (variants_rev_phrases + variants_rev)
         """
         refs = self._get_legacy_dict_refs("hk2t")
-        return refs.apply_segment_replace(input_text, segment_replace=self.segment_replace)
+        return refs.apply_segment_replace(input_text, segment_replace=self.segment_replace) # type: ignore
 
     def t2jp(self, input_text: str) -> str:
         """
