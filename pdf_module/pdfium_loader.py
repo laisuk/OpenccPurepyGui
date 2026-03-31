@@ -46,9 +46,9 @@ def _module_dir() -> Path:
     In all other cases (including Nuitka), ``__file__`` remains valid.
     """
     # PyInstaller
-    meipass = getattr(sys, "_MEIPASS", None)
+    meipass = str(getattr(sys, "_MEIPASS", None))
     if getattr(sys, "frozen", False) and meipass:
-        return Path(meipass) / "opencc_pyo3" # type: ignore
+        return Path(meipass) / "opencc_pyo3"
 
     # Nuitka and normal execution
     return Path(os.path.abspath(__file__)).parent

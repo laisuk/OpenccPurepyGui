@@ -16,7 +16,7 @@ import shutil
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, IO
 
 # Global list of supported Office document formats
 OFFICE_FORMATS = [
@@ -72,8 +72,10 @@ def convert_office_doc(
                     dest_path.mkdir(parents=True, exist_ok=True)
                 else:
                     dest_path.parent.mkdir(parents=True, exist_ok=True)
-                    with archive.open(entry) as src, open(dest_path, 'wb') as dst:
-                        shutil.copyfileobj(src, dst) # type: ignore
+                    with archive.open(entry) as src_raw, open(dest_path, "wb") as dst_raw:
+                        src: IO[bytes] = src_raw
+                        dst: IO[bytes] = dst_raw
+                        shutil.copyfileobj(src, dst)
 
         target_paths = _get_target_xml_paths(office_format, temp_dir)
         if not target_paths:

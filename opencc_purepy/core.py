@@ -4,7 +4,7 @@ import re
 from multiprocessing import Pool, cpu_count
 from typing import TYPE_CHECKING, Any, Optional, List, Tuple, Callable, Dict, Iterable
 
-from .dict_refs import DictRefs, DictSlot
+from .dict_refs import DictRefs, DictSlot, StarterUnionLike
 from .dictionary_lib import DictionaryMaxlength
 from .union_cache import UnionKey
 
@@ -246,7 +246,7 @@ class OpenCC:
 
         return ''.join(result)
 
-    def union_replace(self, text: str, union) -> str:
+    def union_replace(self, text: str, union: StarterUnionLike) -> str:
         """
         Greedy replacement on segmented text using a StarterUnion
         (uses convert_segment_union internally).
@@ -382,7 +382,7 @@ class OpenCC:
 
         return "".join(out)
 
-    DictSlot = Tuple[dict, int]
+    DictSlot = Tuple[Dict[str, str], int]
     ConfigKey = Literal[
         "s2t", "t2s", "s2tw", "tw2s", "s2twp", "tw2sp", "s2hk", "hk2s",
         "t2tw", "t2twp", "tw2t", "tw2tp", "t2hk", "hk2t", "t2jp", "jp2t"
@@ -412,11 +412,11 @@ class OpenCC:
         def R3(round1: List[DictSlot], round2: List[DictSlot], round3: List[DictSlot]) -> "DictRefs":
             return DictRefs(round1).with_round_2(round2).with_round_3(round3)
 
-        def _valid(entry: Optional[DictSlot]) -> bool:
-            return bool(entry and entry[0] and entry[1])
-
         def _opt(entry: Optional[DictSlot]) -> List[DictSlot]:
-            return [entry] if _valid(entry) else [] # type: ignore
+            if entry is None:
+                return []
+            dct, max_len = entry
+            return [entry] if dct and max_len else []
 
         # punctuation slots (optional)
         st_punct = _opt(getattr(d, "st_punctuations", None))
@@ -475,7 +475,7 @@ class OpenCC:
             "jp2t": lambda: R1([d.jps_phrases, d.jps_characters, d.jp_variants_rev]),
         }
 
-        builder = table.get(config_key)  # type: ignore[arg-type]
+        builder = table.get(config_key)
         if builder is None:
             return None
 
@@ -648,16 +648,20 @@ class OpenCC:
         Traditional -> Traditional (Hong Kong Standard).
         Round 1: HK variants only.
         """
-        refs = self._get_legacy_dict_refs("t2hk")
-        return refs.apply_segment_replace(input_text, segment_replace=self.segment_replace) # type: ignore
+        # refs = self._get_legacy_dict_refs("t2hk")
+        # return refs.apply_segment_replace(input_text, segment_replace=self.segment_replace)
+        refs = DictRefs(self.union_cache.ensure_indexed(UnionKey.HkVariantsOnly))
+        return refs.apply_segment_replace(input_text, union_replace=self.union_replace)
 
     def hk2t(self, input_text: str) -> str:
         """
         Traditional (Hong Kong) -> Traditional (normalize HK forms back to general T).
         Round 1: HK reverse pair (variants_rev_phrases + variants_rev)
         """
-        refs = self._get_legacy_dict_refs("hk2t")
-        return refs.apply_segment_replace(input_text, segment_replace=self.segment_replace) # type: ignore
+        # refs = self._get_legacy_dict_refs("hk2t")
+        # return refs.apply_segment_replace(input_text, segment_replace=self.segment_replace)
+        refs = DictRefs(self.union_cache.ensure_indexed(UnionKey.HkRevPair))
+        return refs.apply_segment_replace(input_text, union_replace=self.union_replace)
 
     def t2jp(self, input_text: str) -> str:
         """

@@ -611,6 +611,8 @@ class NumberingContext:
         if not lvls:
             return ""
 
+        lvls_dict = lvls  # now treated as non-optional
+
         defn = lvls.get(ilvl)
         if defn is None:
             return ""
@@ -619,6 +621,8 @@ class NumberingContext:
         if counters is None:
             counters = [0] * 9
             self._counters[num_id] = counters
+
+        counters_list = counters  # non-optional
 
         counters[ilvl] += 1
         for d in range(ilvl + 1, len(counters)):
@@ -631,9 +635,13 @@ class NumberingContext:
         lvl_text = defn.lvl_text or "%1."
 
         def repl(m: re.Match[str]) -> str:
-            k = ord(m.group(1)) - ord("1")  # %1 -> level 0
-            v = counters[k] # type: ignore
-            ref_def = lvls.get(k) # type: ignore
+            k = ord(m.group(1)) - ord("1")
+
+            if k < 0 or k >= len(counters_list):
+                return ""
+
+            v = counters_list[k]
+            ref_def = lvls_dict.get(k)
             ref_fmt = ref_def.num_fmt if ref_def is not None else "decimal"
             return self._format_counter(v, ref_fmt)
 

@@ -11,7 +11,7 @@ def last_non_whitespace(s: str) -> Optional[str]:
     i = len(s) - 1
     while i >= 0:
         ch = s[i]
-        if not ch.isspace(): # type: ignore
+        if not ch.isspace():
             return ch
         i -= 1
     return None
