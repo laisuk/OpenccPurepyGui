@@ -21,6 +21,7 @@ from pdf_module.punct_sets import (
     is_dialog_opener,
     is_dialog_closer,
     begins_with_dialog_opener,
+    has_unclosed_dialog_quote,
 
     is_bracket_opener,
     is_bracket_closer,
@@ -343,7 +344,7 @@ def is_heading_like(s: str) -> bool:
         return False
 
     # Unbalanced bracket lines are not headings
-    if has_unclosed_bracket(s):
+    if has_unclosed_bracket(s) or has_unclosed_dialog_quote(s):
         return False
 
     length = len(s)

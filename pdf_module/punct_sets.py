@@ -185,3 +185,29 @@ def ends_with_colon_like(s: str) -> bool:
 def ends_with_ellipsis(s: str) -> bool:
     t = s.rstrip()
     return t.endswith(_ELLIPSIS_SUFFIXES)
+
+
+def has_unclosed_dialog_quote(s: str) -> bool:
+    """
+    Return True if this line contains an unclosed dialog quote.
+
+    This is a same-line local check used for heading-like gating only.
+    It does not replace incremental dialog state tracking.
+
+    Returns True for:
+    - unclosed opener, e.g. "“气压启"
+    - dangling closer, e.g. "这地方就是一个气泵。”"
+    """
+    balance: dict[str, int] = {opener: 0 for opener in DIALOG_OPENERS}
+
+    for ch in s:
+        if ch in DIALOG_OPEN_TO_CLOSE:
+            balance[ch] += 1
+        elif ch in DIALOG_CLOSE_TO_OPEN:
+            opener = DIALOG_CLOSE_TO_OPEN[ch]
+            if balance[opener] > 0:
+                balance[opener] -= 1
+            else:
+                return True  # dangling closer
+
+    return any(count > 0 for count in balance.values())
