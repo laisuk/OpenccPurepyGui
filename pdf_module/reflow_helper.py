@@ -854,7 +854,7 @@ def reflow_cjk_paragraphs_core(
                 continue
 
         # Final strong line punct ending check for current line text
-        if buffer and (not dialog_unclosed) and (not buffer_has_unclosed_bracket):
+        if buffer and (not dialog_unclosed) and ((not buffer_has_unclosed_bracket) or len(buffer) > 120):
             last = last_non_whitespace(stripped)
             if (last is not None) and is_strong_sentence_end(last):
                 buffer += stripped
