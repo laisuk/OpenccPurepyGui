@@ -28,6 +28,11 @@ if TYPE_CHECKING:
 else:
     StarterUnionClass = Any
 
+try:
+    from .starter_union import StarterUnion as starterUnionClass
+except (ImportError, TypeError, KeyError, ValueError):
+    starterUnionClass = None
+
 StarterUnionT = StarterUnionLike
 """Type placeholder for StarterUnion.
 
@@ -219,6 +224,7 @@ class DictRefs:
             *,
             segment_replace: Optional[Callable[[str, List[DictSlot], int], str]] = None,
             union_replace: Optional[Callable[[str, StarterUnionT], str]] = None,
+            validate_delegates: bool = True,
     ) -> str:
         """
         Unified 3-round apply.
@@ -235,14 +241,10 @@ class DictRefs:
               - merge slots → StarterUnion and use union_replace if provided,
               - otherwise skip the round.
         """
-        _check_delegates(segment_replace, union_replace)
+        if validate_delegates:
+            _check_delegates(segment_replace, union_replace)
 
-        starter_union_cls: Any = None
-        try:
-            from .starter_union import StarterUnion as importedStarterUnion
-            starter_union_cls = importedStarterUnion
-        except (ImportError, TypeError, KeyError, ValueError):
-            starter_union_cls = None
+        starter_union_cls = starterUnionClass
 
         def _is_union(obj: object) -> bool:
             return (
