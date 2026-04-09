@@ -305,7 +305,7 @@ class OpenCC:
             union.build_starter_index()
 
         total_length = len(text)
-        if total_length < 800_000:
+        if total_length < 10_000:
             return OpenCC.convert_union_indexed(text, union)
 
         ranges: List[Tuple[int, int]] = self.get_split_ranges(text, inclusive=True)
