@@ -3,4 +3,4 @@
 # GitHub: laisuk
 # January, 2025
 ##########################################################
-from .core import OpenCC
+from .core import OpenCC, OpenccConfig
