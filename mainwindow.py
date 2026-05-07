@@ -413,7 +413,7 @@ class MainWindow(QMainWindow):
             self.ui.lblSourceCode.setText("Non-zh (其它)")
 
         filename = getattr(self.ui.tbSource, "content_filename", None)
-        if filename:
+        if isinstance(filename, str):
             base = os.path.basename(str(filename))
             self.ui.lblFilename.setText(base)
             # self.statusBar().showMessage(f"File: {filename}")
