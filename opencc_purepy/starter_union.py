@@ -42,11 +42,18 @@ class StarterUnion:
 
         merged: Dict[str, str] = {}
         max_len = 0
-        for d, m_len in slot_list:
+        # for d, m_len in slot_list:
+        #     if d:
+        #         for k, v in d.items():
+        #             if k not in merged:
+        #                 merged[k] = v
+        #     max_len = max(max_len, int(m_len))
+
+        # reverse update preserves "first slot wins"
+        # later update from earlier slot overrides lower-precedence entries
+        for d, m_len in reversed(slot_list):
             if d:
-                for k, v in d.items():
-                    if k not in merged:
-                        merged[k] = v
+                merged.update(d)
             max_len = max(max_len, int(m_len))
 
         return StarterUnion(merged_map=merged, cap=max_len)

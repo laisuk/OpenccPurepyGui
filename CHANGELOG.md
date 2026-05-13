@@ -7,6 +7,17 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ---
 
+## [1.2.2] - 2026-05-14
+
+### Changed
+
+- Updated dictionary data.
+- Optimized `StarterUnion` preparation by replacing Python-level key checks with reversed `dict.update()` merging while
+  preserving precedence semantics.
+- Reduced `StarterUnion` cache preparation overhead during dictionary merge operations.
+
+---
+
 ## [1.2.0] - 2026-02-18
 
 ### Added
