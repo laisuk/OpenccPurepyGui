@@ -1,4 +1,5 @@
 import io
+import os
 import sys
 
 from opencc_purepy import OpenCC
@@ -26,6 +27,10 @@ def main(args):
         print("ℹ️  Config not specified. Use default 's2t'", file=sys.stderr)
         args.config = 's2t'
 
+    if args.input and not os.path.isfile(args.input):
+        print(f"Error: Input file not found: {args.input}", file=sys.stderr)
+        return 1
+
     # Plain text conversion fallback
     opencc = OpenCC(args.config)
 
@@ -47,7 +52,7 @@ def main(args):
     in_from = args.input if args.input else "<stdin>"
     out_to = args.output if args.output else "stdout"
     if sys.stderr.isatty():
-        if output_str and not output_str.endswith("\n"):
+        if not args.output and output_str and not output_str.endswith("\n"):
             print()
         print(f"Conversion completed ({opencc.get_config()}): {in_from} -> {out_to}", file=sys.stderr)
 
