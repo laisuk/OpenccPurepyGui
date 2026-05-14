@@ -174,8 +174,11 @@ def main():
         metavar="<filename>",
         help="Write generated dictionary to <filename>. If not specified, a default filename is used.",
     )
-    parser_dictgen.add_argument('-c', '--compact', action='store_true', default=False,
-                                help='Enable non-indented JSON compact output')
+    parser_dictgen.add_argument(
+        '-c',
+        '--compact',
+        action='store_true', default=False,
+        help='Enable non-indented JSON compact output')
     parser_dictgen.set_defaults(func=_run_dictgen)
 
     args = parser.parse_args()
