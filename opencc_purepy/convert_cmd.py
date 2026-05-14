@@ -49,6 +49,6 @@ def main(args):
     if sys.stderr.isatty():
         if output_str and not output_str.endswith("\n"):
             print()
-        print(f"Conversion completed ({args.config}): {in_from} -> {out_to}", file=sys.stderr)
+        print(f"Conversion completed ({opencc.get_config()}): {in_from} -> {out_to}", file=sys.stderr)
 
     return 0
