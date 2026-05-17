@@ -179,6 +179,16 @@ def main():
         '--compact',
         action='store_true', default=False,
         help='Enable non-indented JSON compact output')
+    parser_dictgen.add_argument(
+        "-d",
+        "--dicts",
+        metavar="<directory>",
+        help=(
+            "Load dictionaries from a custom directory instead of "
+            "the built-in dicts folder."
+        ),
+    )
+
     parser_dictgen.set_defaults(func=_run_dictgen)
 
     args = parser.parse_args()

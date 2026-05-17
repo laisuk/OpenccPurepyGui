@@ -1,8 +1,10 @@
 import os
+
 from .dictionary_lib import DictionaryMaxlength
 
 BLUE = "\033[1;34m"
 RESET = "\033[0m"
+
 
 def main(args):
     """
@@ -13,13 +15,29 @@ def main(args):
     Args:
         args: Parsed command-line arguments with attributes:
             - format (str): Output format, currently supports 'json'.
-            - output (str|None): Output file path or None for default.
-            - compact (bool): If True, write compact JSON (no indentation).
+            - output (str): Output file path or None for default.
+            - dicts (str): Optional custom dictionary directory.
 
     Returns:
         int: Exit code (0 for success).
     """
-    # Default output file per format
+
+    # ------------------------------------------------------------------
+    # Validate custom dictionary directory
+    # ------------------------------------------------------------------
+
+    try:
+        if args.dicts is not None:
+            DictionaryMaxlength.validate_dicts_dir(args.dicts)
+
+    except FileNotFoundError as e:
+        print("Error: {}".format(e))
+        return 1
+
+    # ------------------------------------------------------------------
+    # Set default output file name
+    # ------------------------------------------------------------------
+
     default_output = {
         "json": "dictionary_maxlength.json"
     }[args.format]
@@ -27,12 +45,25 @@ def main(args):
     output_file = args.output or default_output
     output_file_path = os.path.abspath(output_file)
 
+    # ------------------------------------------------------------------
     # Generate dictionary data
-    dictionaries = DictionaryMaxlength.from_dicts()
+    # ------------------------------------------------------------------
+
+    dictionaries = DictionaryMaxlength.from_dicts(
+        base_dir=args.dicts,
+    )
+
+    # ------------------------------------------------------------------
+    # Serialize output
+    # ------------------------------------------------------------------
 
     if args.format == "json":
         # pretty = not compact
         dictionaries.serialize_to_json(output_file_path, pretty=not args.compact)
-        print(f"{BLUE}Dictionary saved in JSON format at: {output_file_path}{RESET}")
+
+        print(
+            f"{BLUE}Dictionary saved in JSON format at: "
+            f"{output_file_path}{RESET}"
+        )
 
     return 0

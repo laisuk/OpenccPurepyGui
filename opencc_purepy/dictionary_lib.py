@@ -1,7 +1,13 @@
 from __future__ import annotations
+
 import warnings
 from pathlib import Path
-from typing import Dict, Tuple, Tuple as Tup  # type checking
+from typing import Dict, Tuple, Union, Mapping, Optional  # type checking
+
+from .dict_slot import DictSlot, DictSlotLike
+
+PathLike = Union[str, Path]
+SlotPathMap = Mapping[DictSlotLike, PathLike]
 
 
 class DictionaryMaxlength:
@@ -10,7 +16,7 @@ class DictionaryMaxlength:
     as a (dict, max_length) tuple to optimize the longest match lookup.
     """
     # Immutable, subclass-overridable
-    DICT_FIELDS: Tup[str, ...] = (
+    DICT_FIELDS: Tuple[str, ...] = (
         "st_characters", "st_phrases", "st_punctuations",
         "ts_characters", "ts_phrases", "ts_punctuations",
         "tw_phrases", "tw_phrases_rev",
@@ -100,14 +106,27 @@ class DictionaryMaxlength:
         return instance
 
     @classmethod
-    def from_dicts(cls):
+    def from_dicts(
+            cls,
+            base_dir: Optional[PathLike] = None,
+            paths: Optional[SlotPathMap] = None,
+            overrides: Optional[SlotPathMap] = None,
+            appends: Optional[SlotPathMap] = None,
+    ) -> "DictionaryMaxlength":
         """
         Load dictionaries directly from text files in the 'dicts' folder.
         Each file should contain tab-separated mappings.
         :return: Populated DictionaryMaxlength instance
         """
+        paths = cls._normalize_slot_path_map(paths)
+        overrides = cls._normalize_slot_path_map(overrides)
+        appends = cls._normalize_slot_path_map(appends)
+
+        if base_dir is not None:
+            cls.validate_dicts_dir(base_dir)
+
         instance = cls()
-        paths = {
+        default_paths = {
             'st_characters': "STCharacters.txt",
             'st_phrases': "STPhrases.txt",
             'st_punctuations': "STPunctuations.txt",
@@ -128,10 +147,86 @@ class DictionaryMaxlength:
             'jp_variants_rev': "JPVariantsRev.txt",
         }
 
-        base = Path(__file__).parent / "dicts"
-        for attr, filename in paths.items():
-            content = (base / filename).read_text(encoding="utf-8")
-            setattr(instance, attr, cls.load_dictionary_maxlength(content))
+        # ------------------------------------------------------------------
+        # Backward-compatible legacy behavior
+        # ------------------------------------------------------------------
+
+        mapping = default_paths.copy()
+
+        if paths:
+            mapping.update(paths)
+
+        base = (
+            Path(base_dir)
+            if base_dir is not None
+            else Path(__file__).parent / "dicts"
+        )
+
+        # ------------------------------------------------------------------
+        # Resolve initial dictionary file paths
+        # ------------------------------------------------------------------
+
+        file_map = {
+            attr: base / filename
+            for attr, filename in mapping.items()
+        }
+
+        # ------------------------------------------------------------------
+        # Apply full replacement overrides
+        # ------------------------------------------------------------------
+
+        if overrides:
+            for attr, path in overrides.items():
+                if attr not in file_map:
+                    raise ValueError(
+                        "Unknown dictionary slot: {}".format(attr)
+                    )
+
+                file_map[attr] = Path(path)
+
+        # ------------------------------------------------------------------
+        # Load base dictionaries
+        # ------------------------------------------------------------------
+
+        for attr, path in file_map.items():
+            content = path.read_text(encoding="utf-8")
+
+            setattr(
+                instance,
+                attr,
+                cls.load_dictionary_maxlength(content),
+            )
+
+        # ------------------------------------------------------------------
+        # Apply append dictionaries (late-comer wins)
+        # ------------------------------------------------------------------
+
+        if appends:
+            for attr, path in appends.items():
+                if not hasattr(instance, attr):
+                    raise ValueError(
+                        "Unknown dictionary slot: {}".format(attr)
+                    )
+
+                base_dict, base_max = getattr(instance, attr)
+
+                content = Path(path).read_text(encoding="utf-8")
+
+                append_dict, append_max = (
+                    cls.load_dictionary_maxlength(content)
+                )
+
+                # Late-comer wins
+                base_dict.update(append_dict)
+
+                setattr(
+                    instance,
+                    attr,
+                    (
+                        base_dict,
+                        max(base_max, append_max),
+                    ),
+                )
 
         return instance
 
@@ -161,6 +256,89 @@ class DictionaryMaxlength:
                 warnings.warn(f"Ignoring malformed dictionary line: {line}")
 
         return dictionary, max_length
+
+    @staticmethod
+    def _normalize_slot(slot: DictSlotLike) -> str:
+        if isinstance(slot, DictSlot):
+            return slot.value
+
+        if slot in DictSlot._value2member_map_:
+            return slot
+
+        try:
+            return DictSlot.__members__[slot].value
+        except KeyError:
+            raise ValueError("Unknown dictionary slot: {}".format(slot)) from None
+
+    @classmethod
+    def _normalize_slot_path_map(
+            cls,
+            mapping: Optional[SlotPathMap],
+    ) -> Optional[Dict[str, PathLike]]:
+        if mapping is None:
+            return None
+
+        return {
+            cls._normalize_slot(slot): path
+            for slot, path in mapping.items()
+        }
+
+    @staticmethod
+    def validate_dicts_dir(path: PathLike) -> None:
+        """
+        Validate an OpenCC dictionary directory.
+
+        Ensures the directory exists and contains all required
+        OpenCC dictionary files.
+
+        :param path:
+            Dictionary directory path.
+
+        :raises FileNotFoundError:
+            If the directory or required dictionary files are missing.
+        """
+
+        base = Path(path)
+
+        if not base.is_dir():
+            raise FileNotFoundError(
+                "Dictionary directory does not exist: {}".format(base)
+            )
+
+        required_files = [
+            "STCharacters.txt",
+            "STPhrases.txt",
+            "STPunctuations.txt",
+            "TSCharacters.txt",
+            "TSPhrases.txt",
+            "TSPunctuations.txt",
+            "TWPhrases.txt",
+            "TWPhrasesRev.txt",
+            "TWVariants.txt",
+            "TWVariantsRev.txt",
+            "TWVariantsRevPhrases.txt",
+            "HKVariants.txt",
+            "HKVariantsRev.txt",
+            "HKVariantsRevPhrases.txt",
+            "JPShinjitaiCharacters.txt",
+            "JPShinjitaiPhrases.txt",
+            "JPVariants.txt",
+            "JPVariantsRev.txt",
+        ]
+
+        missing = [
+            name for name in required_files
+            if not (base / name).is_file()
+        ]
+
+        if missing:
+            raise FileNotFoundError(
+                "Dictionary directory is missing required files:\n"
+                + "\n".join(
+                    "  - {}".format(name)
+                    for name in missing
+                )
+            )
 
     def serialize_to_json(self, path: str, pretty: bool = False) -> None:
         """
@@ -206,4 +384,3 @@ class DictionaryMaxlength:
                 json.dump(out, f, ensure_ascii=False, indent=2)
             else:
                 json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
-
