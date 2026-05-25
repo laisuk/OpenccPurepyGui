@@ -8,6 +8,7 @@ from .dict_slot import DictSlot, DictSlotLike
 
 PathLike = Union[str, Path]
 SlotPathMap = Mapping[DictSlotLike, PathLike]
+SlotPairsMap = Optional[Mapping[DictSlotLike, Mapping[str, str]]]
 
 
 class DictionaryMaxlength:
@@ -256,6 +257,99 @@ class DictionaryMaxlength:
                 warnings.warn(f"Ignoring malformed dictionary line: {line}")
 
         return dictionary, max_length
+
+    def with_custom_dicts(
+            self,
+            overrides: Optional[SlotPairsMap] = None,
+            appends: Optional[SlotPairsMap] = None,
+    ) -> "DictionaryMaxlength":
+        """
+        Apply in-memory custom dictionary pairs after this DictionaryMaxlength
+        has already been loaded.
+
+        Unlike OpenCC text dictionary files, this API preserves exact keys,
+        including keys with spaces.
+
+        override:
+            Replace the whole slot.
+
+        append:
+            Merge into the existing slot. Duplicate keys use late-comer wins.
+        """
+        # self._ensure_mutable()
+
+        normalized_overrides = {
+            self._normalize_slot(slot): pairs
+            for slot, pairs in (overrides or {}).items()
+        }
+
+        normalized_appends = {
+            self._normalize_slot(slot): pairs
+            for slot, pairs in (appends or {}).items()
+        }
+
+        for attr, pairs in normalized_overrides.items():
+            if not hasattr(self, attr):
+                raise ValueError("Unknown dictionary slot: {}".format(attr))
+
+            new_dict = dict(pairs)
+            max_len = max((len(k) for k in new_dict), default=0)
+            setattr(self, attr, (new_dict, max_len))
+
+        for attr, pairs in normalized_appends.items():
+            if not hasattr(self, attr):
+                raise ValueError("Unknown dictionary slot: {}".format(attr))
+
+            base_dict, base_max = getattr(self, attr)
+            merged = dict(base_dict)
+            merged.update(pairs)
+
+            append_max = max((len(k) for k in pairs), default=0)
+            setattr(self, attr, (merged, max(base_max, append_max)))
+
+        return self
+
+    def with_custom_dict_files(
+            self,
+            overrides: Optional[SlotPathMap] = None,
+            appends: Optional[SlotPathMap] = None,
+    ) -> "DictionaryMaxlength":
+        """
+        Apply OpenCC-compatible custom dictionary files after this
+        DictionaryMaxlength has already been loaded.
+
+        Dictionary files follow the normal OpenCC whitespace-separated format.
+        Keys are parsed from the first column, so leading spaces or embedded
+        spaces in keys are not preserved. Use with_custom_dicts() for exact
+        in-memory keys.
+        """
+        # self._ensure_mutable()
+
+        normalized_overrides = self._normalize_slot_path_map(overrides) or {}
+        normalized_appends = self._normalize_slot_path_map(appends) or {}
+
+        for attr, path in normalized_overrides.items():
+            if not hasattr(self, attr):
+                raise ValueError("Unknown dictionary slot: {}".format(attr))
+
+            content = Path(path).read_text(encoding="utf-8")
+            setattr(self, attr, self.load_dictionary_maxlength(content))
+
+        for attr, path in normalized_appends.items():
+            if not hasattr(self, attr):
+                raise ValueError("Unknown dictionary slot: {}".format(attr))
+
+            base_dict, base_max = getattr(self, attr)
+
+            content = Path(path).read_text(encoding="utf-8")
+            append_dict, append_max = self.load_dictionary_maxlength(content)
+
+            merged = dict(base_dict)
+            merged.update(append_dict)
+
+            setattr(self, attr, (merged, max(base_max, append_max)))
+
+        return self
 
     @staticmethod
     def _normalize_slot(slot: DictSlotLike) -> str:
