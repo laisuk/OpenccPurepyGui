@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from pathlib import Path
-from typing import Dict, Tuple, Union, Mapping, Optional  # type checking
+from typing import Dict, Tuple, Union, Mapping, Optional, List  # type checking
 
 from .dict_slot import DictSlot, DictSlotLike
 
@@ -434,47 +434,66 @@ class DictionaryMaxlength:
                 )
             )
 
-    def serialize_to_json(self, path: str, pretty: bool = False) -> None:
+    def serialize_to_json(
+            self,
+            path: str,
+            pretty: bool = True,
+            sort_keys: bool = True,
+    ) -> None:
         """
-        Serialize the current dictionary set to a stable JSON format.
+        Serialize the current dictionary set to JSON.
 
         Shape:
-          - Each dictionary field is serialized as: [ { <mapping> }, <max_length:int> ]
-            where the mapping is sorted by (key length ASC, then key ASC).
+          - Each dictionary field is serialized as:
+            [ { <mapping> }, <max_length:int> ]
 
-        Fields are written in a fixed order:
-            st_characters, st_phrases, st_punctuations,
-            ts_characters, ts_phrases, ts_punctuations,
-            tw_phrases, tw_phrases_rev,
-            tw_variants, tw_variants_rev, tw_variants_rev_phrases,
-            hk_variants, hk_variants_rev, hk_variants_rev_phrases,
-            jps_characters, jps_phrases,
-            jp_variants, jp_variants_rev
+        Field order follows ``DICT_FIELDS``.
+
+        Parameters
+        ----------
+        path:
+            Output JSON path. Parent folders are created automatically.
+        pretty:
+            If True, write indented JSON for readable diffs.
+            If False, write compact/minified JSON.
+        sort_keys:
+            If True, sort dictionary entries lexically by key for deterministic,
+            Git-friendly output. This is for reproducible output and review, not
+            for deserialization speed.
 
         Notes
         -----
-        - `max_length` values are plain integers.
-        - Output is UTF-8 with non-ASCII preserved.
-        - By default output is compact; set `pretty=True` for human-readable formatting.
+        - Output is UTF-8.
+        - Non-ASCII characters are preserved.
+        - No external JSON dependency is required.
         """
         import json
         from pathlib import Path
+        from typing import Any
 
-        def as_array(tup):
-            m, L = tup
-            # Deterministic inner-map order: by key length, then key
-            ordered = {k: m[k] for k in sorted(m, key=lambda k: (len(k), k))}
-            return [ordered, int(L)]
+        def as_array(tup: Any) -> List[Any]:
+            mapping, max_length = tup
 
-        out = {name: as_array(getattr(self, name)) for name in type(self).DICT_FIELDS}
+            if sort_keys:
+                ordered = {k: mapping[k] for k in sorted(mapping)}
+            else:
+                # Preserve current insertion/source order.
+                ordered = dict(mapping)
 
-        # Ensure parent folder exists
+            return [ordered, int(max_length)]
+
+        out = {
+            name: as_array(getattr(self, name))
+            for name in type(self).DICT_FIELDS
+        }
+
         p = Path(path)
-        if p.parent and not p.parent.exists():
-            p.parent.mkdir(parents=True, exist_ok=True)
+        p.parent.mkdir(parents=True, exist_ok=True)
 
-        with p.open("w", encoding="utf-8") as f:
+        with p.open("w", encoding="utf-8", newline="\n") as f:
             if pretty:
                 json.dump(out, f, ensure_ascii=False, indent=2)
+                f.write("\n")
             else:
                 json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
+                f.write("\n")

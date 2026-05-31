@@ -188,6 +188,11 @@ def main():
             "the built-in dicts folder."
         ),
     )
+    parser_dictgen.add_argument(
+        "--no-sort",
+        action="store_true",
+        help="Preserve insertion/source order instead of sorting JSON keys.",
+    )
 
     parser_dictgen.set_defaults(func=_run_dictgen)
 
