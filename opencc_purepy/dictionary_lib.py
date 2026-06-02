@@ -21,8 +21,10 @@ class DictionaryMaxlength:
         "st_characters", "st_phrases", "st_punctuations",
         "ts_characters", "ts_phrases", "ts_punctuations",
         "tw_phrases", "tw_phrases_rev",
-        "tw_variants", "tw_variants_rev", "tw_variants_rev_phrases",
-        "hk_variants", "hk_variants_rev", "hk_variants_rev_phrases",
+        "tw_variants_phrases", "tw_variants",
+        "tw_variants_rev", "tw_variants_rev_phrases",
+        "hk_variants_phrases", "hk_variants",
+        "hk_variants_rev", "hk_variants_rev_phrases",
         "jps_characters", "jps_phrases",
         "jp_variants", "jp_variants_rev",
     )
@@ -39,9 +41,11 @@ class DictionaryMaxlength:
         self.ts_punctuations: Tuple[Dict[str, str], int] = ({}, 0)
         self.tw_phrases: Tuple[Dict[str, str], int] = ({}, 0)
         self.tw_phrases_rev: Tuple[Dict[str, str], int] = ({}, 0)
+        self.tw_variants_phrases: Tuple[Dict[str, str], int] = ({}, 0)
         self.tw_variants: Tuple[Dict[str, str], int] = ({}, 0)
         self.tw_variants_rev: Tuple[Dict[str, str], int] = ({}, 0)
         self.tw_variants_rev_phrases: Tuple[Dict[str, str], int] = ({}, 0)
+        self.hk_variants_phrases: Tuple[Dict[str, str], int] = ({}, 0)
         self.hk_variants: Tuple[Dict[str, str], int] = ({}, 0)
         self.hk_variants_rev: Tuple[Dict[str, str], int] = ({}, 0)
         self.hk_variants_rev_phrases: Tuple[Dict[str, str], int] = ({}, 0)
@@ -136,9 +140,11 @@ class DictionaryMaxlength:
             'ts_punctuations': "TSPunctuations.txt",
             'tw_phrases': "TWPhrases.txt",
             'tw_phrases_rev': "TWPhrasesRev.txt",
+            'tw_variants_phrases': "TWVariantsPhrases.txt",
             'tw_variants': "TWVariants.txt",
             'tw_variants_rev': "TWVariantsRev.txt",
             'tw_variants_rev_phrases': "TWVariantsRevPhrases.txt",
+            'hk_variants_phrases': "HKVariantsPhrases.txt",
             'hk_variants': "HKVariants.txt",
             'hk_variants_rev': "HKVariantsRev.txt",
             'hk_variants_rev_phrases': "HKVariantsRevPhrases.txt",
@@ -408,9 +414,11 @@ class DictionaryMaxlength:
             "TSPunctuations.txt",
             "TWPhrases.txt",
             "TWPhrasesRev.txt",
+            "TWVariantsPhrases.txt",
             "TWVariants.txt",
             "TWVariantsRev.txt",
             "TWVariantsRevPhrases.txt",
+            "HKVariantsPhrases.txt",
             "HKVariants.txt",
             "HKVariantsRev.txt",
             "HKVariantsRevPhrases.txt",

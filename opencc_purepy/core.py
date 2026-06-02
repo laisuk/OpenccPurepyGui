@@ -599,7 +599,7 @@ class OpenCC:
         """
         refs = (
             DictRefs(self.union_cache.ensure_indexed(UnionKey.S2T_PUNCT if punctuation else UnionKey.S2T))
-            .with_round_2(self.union_cache.ensure_indexed(UnionKey.TwVariantsOnly))
+            .with_round_2(self.union_cache.ensure_indexed(UnionKey.TwVariantsPair))
         )
         output = refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
         return output
@@ -628,7 +628,7 @@ class OpenCC:
         refs = (
             DictRefs(self.union_cache.ensure_indexed(UnionKey.S2T_PUNCT if punctuation else UnionKey.S2T))  # round 1
             .with_round_2(self.union_cache.ensure_indexed(UnionKey.TwPhrasesOnly))  # round 2
-            .with_round_3(self.union_cache.ensure_indexed(UnionKey.TwVariantsOnly))  # round 3
+            .with_round_3(self.union_cache.ensure_indexed(UnionKey.TwVariantsPair))  # round 3
         )
         output = refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
         return output
@@ -657,7 +657,7 @@ class OpenCC:
         """
         refs = (
             DictRefs(self.union_cache.ensure_indexed(UnionKey.S2T_PUNCT if punctuation else UnionKey.S2T))
-            .with_round_2(self.union_cache.ensure_indexed(UnionKey.HkVariantsOnly))
+            .with_round_2(self.union_cache.ensure_indexed(UnionKey.HkVariantsPair))
         )
 
         output = refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
@@ -684,7 +684,7 @@ class OpenCC:
         """
         Convert Traditional Chinese to Taiwan Standard Traditional Chinese (variants only).
         """
-        refs = DictRefs(self.union_cache.ensure_indexed(UnionKey.TwVariantsOnly))
+        refs = DictRefs(self.union_cache.ensure_indexed(UnionKey.TwVariantsPair))
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
 
     def t2twp(self, input_text: str) -> str:
@@ -695,7 +695,7 @@ class OpenCC:
         """
         refs = (
             DictRefs(self.union_cache.ensure_indexed(UnionKey.TwPhrasesOnly))
-            .with_round_2(self.union_cache.ensure_indexed(UnionKey.TwVariantsOnly))
+            .with_round_2(self.union_cache.ensure_indexed(UnionKey.TwVariantsPair))
         )
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
 
@@ -723,9 +723,9 @@ class OpenCC:
     def t2hk(self, input_text: str) -> str:
         """
         Traditional -> Traditional (Hong Kong Standard).
-        Round 1: HK variants only.
+        Round 1: HK variant phrases + variants.
         """
-        refs = DictRefs(self.union_cache.ensure_indexed(UnionKey.HkVariantsOnly))
+        refs = DictRefs(self.union_cache.ensure_indexed(UnionKey.HkVariantsPair))
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
 
     def hk2t(self, input_text: str) -> str:

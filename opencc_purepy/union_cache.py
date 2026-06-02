@@ -16,13 +16,13 @@ class UnionKey(Enum):
 
     # TW helpers
     TwPhrasesOnly = auto()
-    TwVariantsOnly = auto()
+    TwVariantsPair = auto()
     TwPhrasesRevOnly = auto()
     TwRevPair = auto()
     Tw2SpR1TwRevTriple = auto()
 
     # HK helpers
-    HkVariantsOnly = auto()
+    HkVariantsPair = auto()
     HkRevPair = auto()
 
     # JP helpers
@@ -91,8 +91,8 @@ class UnionCache:
         # ---------- TW helpers ----------
         if key is UnionKey.TwPhrasesOnly:
             return [g("tw_phrases")]
-        if key is UnionKey.TwVariantsOnly:
-            return [g("tw_variants")]
+        if key is UnionKey.TwVariantsPair:
+            return [g("tw_variants_phrases"), g("tw_variants")]
         if key is UnionKey.TwPhrasesRevOnly:
             return [g("tw_phrases_rev")]
         if key is UnionKey.TwRevPair:
@@ -101,8 +101,8 @@ class UnionCache:
             return [g("tw_phrases_rev"), g("tw_variants_rev_phrases"), g("tw_variants_rev")]
 
         # ---------- HK helpers ----------
-        if key is UnionKey.HkVariantsOnly:
-            return [g("hk_variants")]
+        if key is UnionKey.HkVariantsPair:
+            return [g("hk_variants_phrases"), g("hk_variants")]
         if key is UnionKey.HkRevPair:
             return [g("hk_variants_rev_phrases"), g("hk_variants_rev")]
 
