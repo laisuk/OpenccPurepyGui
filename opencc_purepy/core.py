@@ -623,12 +623,14 @@ class OpenCC:
 
     def s2twp(self, input_text: str, punctuation: bool = False) -> str:
         """
-        Simplified -> Traditional (Taiwan) using S2T, then TW phrases, then TW variants.
+        Convert Simplified Chinese to Traditional (Taiwan) with phrase and variant normalization.
+
+        Round 1: Simplified Chinese -> Traditional Chinese.
+        Round 2: Taiwan phrase and variant normalization.
         """
         refs = (
-            DictRefs(self.union_cache.ensure_indexed(UnionKey.S2T_PUNCT if punctuation else UnionKey.S2T))  # round 1
-            .with_round_2(self.union_cache.ensure_indexed(UnionKey.TwPhrasesOnly))  # round 2
-            .with_round_3(self.union_cache.ensure_indexed(UnionKey.TwVariantsPair))  # round 3
+            DictRefs(self.union_cache.ensure_indexed(UnionKey.S2T_PUNCT if punctuation else UnionKey.S2T))
+            .with_round_2(self.union_cache.ensure_indexed(UnionKey.S2TwpR2TwTriple))
         )
         output = refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
         return output
