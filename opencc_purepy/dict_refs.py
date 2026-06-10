@@ -2,7 +2,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import inspect
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Protocol, Tuple, Union, cast
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union, cast
+
+try:
+    from typing import Protocol
+except ImportError:
+    try:
+        from typing_extensions import Protocol
+    except ImportError:
+        class Protocol(object):
+            pass
 
 DictSlot = Tuple[Dict[str, str], int]
 """Tuple representing a dictionary and its maximum word length.
@@ -23,17 +32,16 @@ class StarterUnionLike(Protocol):
     def build_starter_index(self) -> None: ...
 
 
-if TYPE_CHECKING:
-    from .starter_union import StarterUnion as StarterUnionClass
-else:
-    StarterUnionClass = Any
-
 try:
     from .starter_union import StarterUnion as starterUnionClass
 except (ImportError, TypeError, KeyError, ValueError):
     starterUnionClass = None
 
-StarterUnionT = StarterUnionLike
+if TYPE_CHECKING:
+    from .starter_union import StarterUnion
+    StarterUnionT = Union[StarterUnion, StarterUnionLike]
+else:
+    StarterUnionT = StarterUnionLike
 """Type placeholder for StarterUnion.
 
 This is typically a union data structure used internally for

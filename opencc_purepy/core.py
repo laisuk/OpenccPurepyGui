@@ -3,21 +3,12 @@ from __future__ import annotations
 import re
 from enum import Enum
 from multiprocessing import Pool, cpu_count
-from typing import TYPE_CHECKING, Any, List, Tuple, Dict, Iterable, Optional, Union
+from typing import Dict, Iterable, List, Mapping, Optional, Tuple, Union
 
-from .dict_refs import DictRefs, StarterUnionLike
+from .detofu import DeTofuLevel, DeTofuMap, parse_level, detofu
+from .dict_refs import DictRefs, StarterUnionT
 from .dictionary_lib import DictionaryMaxlength, PathLike, SlotPathMap
 from .union_cache import UnionKey
-
-try:
-    from typing import Literal  # py3.8+
-except ImportError:
-    from typing_extensions import Literal  # for py<3.8 if needed
-
-if TYPE_CHECKING:
-    from .starter_union import StarterUnion
-else:
-    StarterUnion = Any  # type: ignore
 
 # Pre-compiled regex for better performance
 STRIP_REGEX = re.compile(r"[!-/:-@\[-`{-~\t\n\v\f\r 0-9A-Za-z_著]")
@@ -414,7 +405,7 @@ class OpenCC:
 
         return ''.join(result)
 
-    def union_replace(self, text: str, union: StarterUnionLike) -> str:
+    def union_replace(self, text: str, union: StarterUnionT) -> str:
         """
         Greedy replacement on segmented text using a StarterUnion
         (uses convert_segment_union internally).
@@ -559,21 +550,6 @@ class OpenCC:
                 i += 1
 
         return "".join(out)
-
-    @staticmethod
-    def _convert_punctuation_legacy(text, punct_map):
-        """
-        (Fallback punctuation conversion for older Python versions)
-        Convert between Simplified and Traditional punctuation styles.
-
-        :param text: Input text
-        :param punct_map: Conversion punctuation map
-        :return: Text with punctuation converted
-        """
-        result = []
-        for char in text:
-            result.append(punct_map.get(char, char))
-        return ''.join(result)
 
     def s2t(self, input_text: str, punctuation: bool = False) -> str:
         """
@@ -847,6 +823,76 @@ class OpenCC:
         else:
             return 0
 
+    # ------ DeTofu helpers ------
+
+    @staticmethod
+    def detofu(
+            text: Optional[str],
+            level: Union[DeTofuLevel, str] = DeTofuLevel.ExtB,
+    ) -> str:
+        """Apply DeTofu display-compatible fallbacks to mapped rare CJK extension characters.
+
+        DeTofu is a display compatibility pass. It does not modify OpenCC
+        conversion dictionaries, phrase matching, regional variant selection,
+        script detection, or punctuation conversion.
+
+        For converted text, apply DeTofu after convert().
+        """
+        return detofu(text, level)
+
+    @staticmethod
+    def detofu_with_custom_file(
+            text: Optional[str],
+            level: Union[DeTofuLevel, str],
+            path: str,
+    ) -> str:
+        """Apply DeTofu using built-in mappings plus a custom fallback file.
+
+        The file must be UTF-8 text using:
+
+            tofu_char<TAB>fallback_char<TAB>extension
+
+        Blank lines and lines beginning with '#' are ignored. Custom mappings
+        override built-in mappings for the same tofu-risk character.
+        """
+        if path is None:
+            raise TypeError("path must not be None")
+
+        if isinstance(level, str):
+            level = parse_level(level)
+
+        return (
+            DeTofuMap
+            .builtin(level)
+            .with_custom_file(path)
+            .convert(text)
+        )
+
+    @staticmethod
+    def detofu_with_custom_pairs(
+            text: Optional[str],
+            level: Union[DeTofuLevel, str],
+            pairs: Union[Mapping[str, str], Iterable[Tuple[str, str]]],
+    ) -> str:
+        """Apply DeTofu using built-in mappings plus custom in-memory pairs.
+
+        Keys are tofu-risk characters and values are display-compatible fallback
+        characters. Only the first Unicode scalar from each key and value is used.
+        Empty keys and values are ignored.
+        """
+        if pairs is None:
+            raise TypeError("pairs must not be None")
+
+        if isinstance(level, str):
+            level = parse_level(level)
+
+        return (
+            DeTofuMap
+            .builtin(level)
+            .with_custom_pairs(pairs)
+            .convert(text)
+        )
+
 
 def chunk_ranges(ranges: List[Tuple[int, int]], group_count: int) -> List[List[Tuple[int, int]]]:
     """
@@ -887,27 +933,7 @@ def convert_range_group(args):
     )
 
 
-def convert_range_group_union(args: Tuple[str, Iterable[Tuple[int, int]], "StarterUnion"]) -> str:
+def convert_range_group_union(args: Tuple[str, Iterable[Tuple[int, int]], StarterUnionT]) -> str:
     text, group, union = args
     conv = OpenCC.convert_union_indexed  # local bind
     return "".join(conv(text[s:e], union) for (s, e) in group)
-
-# ------ Non-GIL ------
-
-# import sys
-# import sysconfig
-#
-# def is_free_threading_build() -> bool:
-#     # Build-time: 1 on free-threaded builds, 0 on regular builds
-#     return bool(sysconfig.get_config_var("Py_GIL_DISABLED"))  # 3.13+
-#
-# def is_gil_enabled_runtime() -> bool:
-#     # Runtime: True if GIL currently enabled, False if disabled
-#     fn = getattr(sys, "_is_gil_enabled", None)  # 3.13+
-#     if fn is None:
-#         return True  # older Pythons always have GIL
-#     return bool(fn())
-#
-# def can_use_true_threads() -> bool:
-#     # Only worth using ThreadPool for CPU-bound work when GIL is actually disabled
-#     return is_free_threading_build() and (not is_gil_enabled_runtime())
