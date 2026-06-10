@@ -9,6 +9,10 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ## [Unreleased]
 
+### Added
+
+- Added detofu() API function.
+
 ### Changed
 
 - Refactored `s2twp` from three conversion rounds to two rounds by combining Taiwan phrase and variant normalization
