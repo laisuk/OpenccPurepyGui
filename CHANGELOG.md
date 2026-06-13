@@ -7,7 +7,7 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ---
 
-## [Unreleased]
+## [1.2.3] - Unreleased
 
 ### Added
 
