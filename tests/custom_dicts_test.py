@@ -49,7 +49,7 @@ class CustomDictsTest(unittest.TestCase):
 
         dictionary = DictionaryMaxlength.from_dicts(
             appends={
-                DictSlot.ST_PHRASES: custom_dict,
+                DictSlot.STPhrases: custom_dict,
             },
         )
 
@@ -59,8 +59,8 @@ class CustomDictsTest(unittest.TestCase):
         self.assertGreaterEqual(max_len, len("帕兰蒂尔"))
 
     def test_dictslot_forward_variant_phrase_enum_members_exist(self) -> None:
-        self.assertEqual(DictSlot.TW_VARIANTS_PHRASES.value, "tw_variants_phrases")
-        self.assertEqual(DictSlot.HK_VARIANTS_PHRASES.value, "hk_variants_phrases")
+        self.assertEqual(DictSlot.TWVariantsPhrases.value, "tw_variants_phrases")
+        self.assertEqual(DictSlot.HKVariantsPhrases.value, "hk_variants_phrases")
 
     def test_dictionary_from_dicts_loads_forward_variant_phrase_slots(self) -> None:
         dictionary = DictionaryMaxlength.from_dicts()
@@ -76,10 +76,10 @@ class CustomDictsTest(unittest.TestCase):
     def test_dictionary_with_custom_dicts_appends_forward_variant_phrase_slots(self) -> None:
         dictionary = DictionaryMaxlength.from_json().with_custom_dicts(
             appends={
-                DictSlot.TW_VARIANTS_PHRASES: {
+                DictSlot.TWVariantsPhrases: {
                     "喫茶測試": "喫茶測試",
                 },
-                DictSlot.HK_VARIANTS_PHRASES: {
+                DictSlot.HKVariantsPhrases: {
                     "喫茶測試": "喫茶測試",
                 },
             },

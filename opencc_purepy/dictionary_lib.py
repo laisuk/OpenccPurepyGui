@@ -1,8 +1,6 @@
-from __future__ import annotations
-
-import warnings
 from pathlib import Path
-from typing import Dict, Tuple, Union, Mapping, Optional, List  # type checking
+from threading import Lock
+from typing import Dict, Tuple, Union, Optional, Mapping, List
 
 from .dict_slot import DictSlot, DictSlotLike
 
@@ -16,6 +14,7 @@ class DictionaryMaxlength:
     A container for OpenCC-compatible dictionaries with each represented
     as a (dict, max_length) tuple to optimize the longest match lookup.
     """
+
     # Immutable, subclass-overridable
     DICT_FIELDS: Tuple[str, ...] = (
         "st_characters", "st_phrases", "st_punctuations",
@@ -23,11 +22,15 @@ class DictionaryMaxlength:
         "tw_phrases", "tw_phrases_rev",
         "tw_variants_phrases", "tw_variants",
         "tw_variants_rev", "tw_variants_rev_phrases",
+        "hk_phrases", "hk_phrases_rev",
         "hk_variants_phrases", "hk_variants",
         "hk_variants_rev", "hk_variants_rev_phrases",
         "jps_characters", "jps_phrases",
         "jp_variants", "jp_variants_rev",
     )
+
+    _provider = None
+    _provider_lock = Lock()
 
     def __init__(self):
         """
@@ -45,6 +48,8 @@ class DictionaryMaxlength:
         self.tw_variants: Tuple[Dict[str, str], int] = ({}, 0)
         self.tw_variants_rev: Tuple[Dict[str, str], int] = ({}, 0)
         self.tw_variants_rev_phrases: Tuple[Dict[str, str], int] = ({}, 0)
+        self.hk_phrases: Tuple[Dict[str, str], int] = ({}, 0)
+        self.hk_phrases_rev: Tuple[Dict[str, str], int] = ({}, 0)
         self.hk_variants_phrases: Tuple[Dict[str, str], int] = ({}, 0)
         self.hk_variants: Tuple[Dict[str, str], int] = ({}, 0)
         self.hk_variants_rev: Tuple[Dict[str, str], int] = ({}, 0)
@@ -54,59 +59,110 @@ class DictionaryMaxlength:
         self.jp_variants: Tuple[Dict[str, str], int] = ({}, 0)
         self.jp_variants_rev: Tuple[Dict[str, str], int] = ({}, 0)
 
+        self._is_shared_provider = False
+
     def __repr__(self):
         count = sum(bool(v[0]) for v in self.__dict__.values())
         return "<DictionaryMaxlength with {} loaded dicts>".format(count)
 
     @classmethod
-    def new(cls):
+    def get_provider(cls):
         """
-        Shortcut to load from precompiled JSON for fast startup.
+        Return a shared dictionary provider loaded from precompiled JSON.
         :return: DictionaryMaxlength instance
         """
-        return cls.from_json()
+        if cls._provider is None:
+            with cls._provider_lock:
+                if cls._provider is None:
+                    cls._provider = cls.from_json()
+                    cls._provider._is_shared_provider = True
+        return cls._provider
 
-    @staticmethod
-    def _as_tuple(value):
-        """
-        Prefer canonical array form: [ { map }, max_length ].
-        Accept legacy object form: {"map": {...}, "maxlength": ...} (with warning).
-        """
-        # Canonical list/tuple form
-        if isinstance(value, (list, tuple)) and len(value) == 2 and isinstance(value[0], dict):
-            return value[0], int(value[1])
-
-        # Legacy object form
-        if isinstance(value, dict) and "map" in value and "maxlength" in value:
-            warnings.warn(
-                "Dictionary slot loaded in legacy object form; prefer [ {map}, max ] array form.",
-                DeprecationWarning,
-                stacklevel=2,
+    def _ensure_mutable(self) -> None:
+        if getattr(self, "_is_shared_provider", False):
+            raise RuntimeError(
+                "Cannot modify the shared DictionaryMaxlength provider. "
+                "Use DictionaryMaxlength.from_json() or from_dicts() to create "
+                "a private dictionary instance before applying custom dictionaries."
             )
-            return value["map"], int(value["maxlength"])
-
-        # Fallback
-        return {}, 0
 
     @classmethod
-    def from_json(cls):
+    def new(cls):
         """
-        Load dictionary data from JSON, tolerant to multiple shapes:
-        - Each dict field can be [map, max_length] OR {"map": ..., "maxlength": ...}.
-        - Unknown/non-dictionary keys (e.g., 'starter_index', 'version') are ignored.
+        Backward-compatible alias for the shared dictionary provider.
+        :return: DictionaryMaxlength instance
+        """
+        return cls.get_provider()
+
+    @classmethod
+    def _as_tuple(cls, value: object) -> Tuple[Dict[str, str], int]:
+        if (
+                isinstance(value, list)
+                and len(value) == 2
+                and isinstance(value[0], dict)
+                and isinstance(value[1], int)
+        ):
+            return value[0], value[1]
+
+        if isinstance(value, tuple) and len(value) == 2 and isinstance(value[0], dict):
+            return value[0], int(value[1])
+
+        if isinstance(value, dict) and "map" in value and "maxlength" in value:
+            raw_map = value["map"]
+            if isinstance(raw_map, dict):
+                return raw_map, int(value["maxlength"])
+
+        raise ValueError("Invalid dictionary slot format")
+
+    @classmethod
+    def from_json(cls, path: Optional[PathLike] = None) -> "DictionaryMaxlength":
+        """
+        Load dictionary data from a JSON file.
+
+        The JSON file must use the serialized DictionaryMaxlength format:
+
+            {
+                "st_characters": [{...}, 1],
+                "st_phrases": [{...}, 4],
+                ...
+            }
+
+        If ``path`` is omitted, the built-in packaged
+        ``dicts/dictionary_maxlength.json`` file is used.
+
+        :param path:
+            Optional custom JSON dictionary path.
+
+        :return:
+            Populated DictionaryMaxlength instance.
         """
         import json
 
-        path = Path(__file__).parent / "dicts" / "dictionary_maxlength.json"
-        with open(path, "r", encoding="utf-8") as f:
+        json_path = (
+            Path(path)
+            if path is not None
+            else Path(__file__).parent / "dicts" / "dictionary_maxlength.json"
+        )
+
+        with json_path.open("r", encoding="utf-8") as f:
             raw_data = json.load(f)
 
         instance = cls()
 
-        for name in cls.DICT_FIELDS:
-            if name in raw_data:
-                setattr(instance, name, cls._as_tuple(raw_data[name]))
-            # else: keep constructor default ({}, 0)
+        valid_slots = set(cls.DICT_FIELDS)
+
+        for key in raw_data:
+            if key not in valid_slots:
+                raise ValueError("Unknown dictionary slot: {}".format(key))
+
+        for key in cls.DICT_FIELDS:
+            if key not in raw_data:
+                continue
+
+            try:
+                setattr(instance, key, cls._as_tuple(raw_data[key]))
+            except (TypeError, ValueError):
+                raise ValueError("Invalid dictionary format for key: {}".format(key))
 
         return instance
 
@@ -119,9 +175,105 @@ class DictionaryMaxlength:
             appends: Optional[SlotPathMap] = None,
     ) -> "DictionaryMaxlength":
         """
-        Load dictionaries directly from text files in the 'dicts' folder.
-        Each file should contain tab-separated mappings.
-        :return: Populated DictionaryMaxlength instance
+        Load OpenCC dictionaries directly from plain-text dictionary files.
+
+        By default, all dictionaries are loaded from the built-in ``dicts`` folder.
+
+        This method supports three customization modes:
+
+        1. Legacy custom directory loading (backward compatible)
+           Use ``base_dir`` and/or ``paths`` to load dictionaries from
+           another directory.
+
+        2. Dictionary replacement (overrides)
+           Replace specific dictionary slots with fully custom dictionary files.
+
+        3. Dictionary extension (appends)
+           Append additional custom entries on top of existing dictionaries.
+           When duplicate keys exist, later entries override earlier ones
+           ("late-comer wins").
+
+        Precedence order:
+
+            built-in < override < append
+
+        Slot Keys
+        ---------
+        Dictionary slot mappings accept either:
+
+        - :class:`DictSlot` (recommended)
+        - legacy ``str`` keys (backward compatible)
+
+        Examples of valid slot keys:
+
+        >>> DictSlot.STPhrases
+        >>> "st_phrases"
+
+        Examples
+        --------
+        Load built-in dictionaries:
+
+        >>> DictionaryMaxlength.from_dicts()
+
+        Load dictionaries from another directory (legacy behavior):
+
+        >>> DictionaryMaxlength.from_dicts("./my_dicts")
+
+        Replace an entire dictionary using ``DictSlot``:
+
+        >>> from opencc_purepy import DictSlot
+        >>>
+        >>> DictionaryMaxlength.from_dicts(
+        ...     overrides={
+        ...         DictSlot.STPhrases: "./company/STPhrases.txt",
+        ...     }
+        ... )
+
+        Append additional custom terms:
+
+        >>> DictionaryMaxlength.from_dicts(
+        ...     appends={
+        ...         DictSlot.STPhrases: "./custom/custom_terms.txt",
+        ...         DictSlot.TWVariantsPhrases: "./custom/TWVariantsPhrases.txt",
+        ...         DictSlot.HKVariantsPhrases: "./custom/HKVariantsPhrases.txt",
+        ...     }
+        ... )
+
+        Legacy ``str`` keys remain supported:
+
+        >>> DictionaryMaxlength.from_dicts(
+        ...     appends={
+        ...         "st_phrases": "./custom/custom_terms.txt",
+        ...     }
+        ... )
+
+        Parameters
+        ----------
+        base_dir:
+            Optional base directory for legacy dictionary loading.
+            Defaults to the built-in ``dicts`` folder.
+
+        paths:
+            Optional dictionary slot -> filename mapping.
+
+            Supports both :class:`DictSlot` and legacy ``str`` keys.
+
+        overrides:
+            Optional dictionary slot -> file path mapping used to fully
+            replace individual dictionaries.
+
+            Supports both :class:`DictSlot` and legacy ``str`` keys.
+
+        appends:
+            Optional dictionary slot -> file path mapping used to append
+            additional entries to existing dictionaries.
+
+            Supports both :class:`DictSlot` and legacy ``str`` keys.
+
+        Returns
+        -------
+        DictionaryMaxlength
+            A populated dictionary container.
         """
         paths = cls._normalize_slot_path_map(paths)
         overrides = cls._normalize_slot_path_map(overrides)
@@ -131,6 +283,7 @@ class DictionaryMaxlength:
             cls.validate_dicts_dir(base_dir)
 
         instance = cls()
+
         default_paths = {
             'st_characters': "STCharacters.txt",
             'st_phrases': "STPhrases.txt",
@@ -144,6 +297,8 @@ class DictionaryMaxlength:
             'tw_variants': "TWVariants.txt",
             'tw_variants_rev': "TWVariantsRev.txt",
             'tw_variants_rev_phrases': "TWVariantsRevPhrases.txt",
+            'hk_phrases': "HKPhrases.txt",
+            'hk_phrases_rev': "HKPhrasesRev.txt",
             'hk_variants_phrases': "HKVariantsPhrases.txt",
             'hk_variants': "HKVariants.txt",
             'hk_variants_rev': "HKVariantsRev.txt",
@@ -195,7 +350,18 @@ class DictionaryMaxlength:
         # Load base dictionaries
         # ------------------------------------------------------------------
 
+        optional_slots = {
+            "st_punctuations",
+            "ts_punctuations",
+            "hk_phrases",
+            "hk_phrases_rev",
+        }
+
         for attr, path in file_map.items():
+            if attr in optional_slots and not path.is_file():
+                setattr(instance, attr, ({}, 0))
+                continue
+
             content = path.read_text(encoding="utf-8")
 
             setattr(
@@ -248,19 +414,19 @@ class DictionaryMaxlength:
         dictionary = {}
         max_length = 1
 
-        for line in content.splitlines():
-            line = line.strip()
-            if not line or line.startswith("#"):
+        for line in content.strip().splitlines():
+            stripped_line = line.strip()
+            if not stripped_line or stripped_line.startswith("#"):
                 continue
-            parts = line.split("\t", 1)  # safer for whitespace in values
-            if len(parts) == 2:
-                phrase, translation = parts
-                translation = translation.split()[0]  # take first space-separated part
+
+            parts = stripped_line.split()
+            if len(parts) >= 2:
+                phrase, translation = parts[0], parts[1]
                 dictionary[phrase] = translation
                 max_length = max(max_length, len(phrase))
             else:
                 import warnings
-                warnings.warn(f"Ignoring malformed dictionary line: {line}")
+                warnings.warn("Ignoring malformed dictionary line: {}".format(line))
 
         return dictionary, max_length
 
@@ -282,7 +448,7 @@ class DictionaryMaxlength:
         append:
             Merge into the existing slot. Duplicate keys use late-comer wins.
         """
-        # self._ensure_mutable()
+        self._ensure_mutable()
 
         normalized_overrides = {
             self._normalize_slot(slot): pairs
@@ -329,7 +495,7 @@ class DictionaryMaxlength:
         spaces in keys are not preserved. Use with_custom_dicts() for exact
         in-memory keys.
         """
-        # self._ensure_mutable()
+        self._ensure_mutable()
 
         normalized_overrides = self._normalize_slot_path_map(overrides) or {}
         normalized_appends = self._normalize_slot_path_map(appends) or {}
@@ -408,16 +574,16 @@ class DictionaryMaxlength:
         required_files = [
             "STCharacters.txt",
             "STPhrases.txt",
-            "STPunctuations.txt",
             "TSCharacters.txt",
             "TSPhrases.txt",
-            "TSPunctuations.txt",
             "TWPhrases.txt",
             "TWPhrasesRev.txt",
             "TWVariantsPhrases.txt",
             "TWVariants.txt",
             "TWVariantsRev.txt",
             "TWVariantsRevPhrases.txt",
+            "HKPhrases.txt",
+            "HKPhrasesRev.txt",
             "HKVariantsPhrases.txt",
             "HKVariants.txt",
             "HKVariantsRev.txt",
@@ -428,9 +594,14 @@ class DictionaryMaxlength:
             "JPVariantsRev.txt",
         ]
 
+        optional_files = {
+            "HKPhrases.txt",
+            "HKPhrasesRev.txt",
+        }
+
         missing = [
             name for name in required_files
-            if not (base / name).is_file()
+            if name not in optional_files and not (base / name).is_file()
         ]
 
         if missing:

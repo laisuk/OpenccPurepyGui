@@ -1,126 +1,100 @@
-from __future__ import annotations
-
 from enum import Enum, auto
 from typing import Dict, List
 
-# Reuse DictSlot and StarterUnion from starter_union.py
 from .starter_union import DictSlot, StarterUnion
 
 
 class UnionKey(Enum):
-    # S2T / T2S (no punctuation – we convert punctuation separately)
     S2T = auto()
     S2T_PUNCT = auto()
     T2S = auto()
     T2S_PUNCT = auto()
-
-    # TW helpers
     TwPhrasesOnly = auto()
     TwVariantsPair = auto()
     S2TwpR2TwTriple = auto()
     TwPhrasesRevOnly = auto()
     TwRevPair = auto()
     Tw2SpR1TwRevTriple = auto()
-
-    # HK helpers
+    S2HkpR2HkTriple = auto()
+    Hk2SpR1HkRevTriple = auto()
     HkVariantsPair = auto()
     HkRevPair = auto()
-
-    # JP helpers
     JpVariantsOnly = auto()
     JpRevTriple = auto()
 
 
 class UnionCache:
-    """On-demand builder & cache for *starter unions* and merged-slot dicts.
-
-    Parameters
-    ----------
-    dictionary : object
-        An instance exposing OpenCC-style dict *slots* as `(dict, max_len)` tuples.
-
-    Notes
-    -----
-    - Punctuation slots are intentionally excluded.
-    - Cache keys are stable `UnionKey` values (slot fingerprint).
-    - Legacy JSON only: we derive masks/caps from keys when requested.
-    """
+    """On-demand cache for starter-union dictionary combinations."""
 
     def __init__(self, dictionary: object) -> None:
         self._dict = dictionary
         self._union_by_key: Dict[UnionKey, StarterUnion] = {}
         self._merged_slot_by_key: Dict[UnionKey, DictSlot] = {}
 
-    # ---------------- Public API ----------------
-    def get_union(self, key: UnionKey, *, indexed: bool = False) -> StarterUnion:
-        u = self._union_by_key.get(key)
-        if u is None:
-            u = self._build_union(key)
-            self._union_by_key[key] = u
-        if indexed and not u.indexed:
-            u.build_starter_index()
-        return u
+    def get_union(self, key: UnionKey, indexed: bool = False) -> StarterUnion:
+        union = self._union_by_key.get(key)
+        if union is None:
+            union = self._build_union(key)
+            self._union_by_key[key] = union
+        if indexed and not union.indexed:
+            union.build_starter_index()
+        return union
 
     def get_merged_slot(self, key: UnionKey) -> DictSlot:
-        s = self._merged_slot_by_key.get(key)
-        if s is None:
-            u = self.get_union(key)
-            s = (u.merged_map, u.cap)
-            self._merged_slot_by_key[key] = s
-        return s
+        slot = self._merged_slot_by_key.get(key)
+        if slot is None:
+            union = self.get_union(key)
+            slot = (union.merged_map, union.cap)
+            self._merged_slot_by_key[key] = slot
+        return slot
 
-    # Convenience: ensure union has mask/cap built
     def ensure_indexed(self, key: UnionKey) -> StarterUnion:
         return self.get_union(key, indexed=True)
 
-    # ---------------- Builders ----------------
     def _build_union(self, key: UnionKey) -> StarterUnion:
-        slots = self._slots_for(key)
-        return StarterUnion.merge_precedence(slots)
+        return StarterUnion.merge_precedence(self._slots_for(key))
 
     def _slots_for(self, key: UnionKey) -> List[DictSlot]:
-        g = self._get
+        get_slot = self._get
+
         if key is UnionKey.S2T:
-            return [g("st_phrases"), g("st_characters")]
+            return [get_slot("st_phrases"), get_slot("st_characters")]
         if key is UnionKey.S2T_PUNCT:
-            return [g("st_phrases"), g("st_characters"), g("st_punctuations")]
+            return [get_slot("st_phrases"), get_slot("st_characters"), get_slot("st_punctuations")]
         if key is UnionKey.T2S:
-            return [g("ts_phrases"), g("ts_characters")]
+            return [get_slot("ts_phrases"), get_slot("ts_characters")]
         if key is UnionKey.T2S_PUNCT:
-            return [g("ts_phrases"), g("ts_characters"), g("ts_punctuations")]
-
-        # ---------- TW helpers ----------
+            return [get_slot("ts_phrases"), get_slot("ts_characters"), get_slot("ts_punctuations")]
         if key is UnionKey.TwPhrasesOnly:
-            return [g("tw_phrases")]
+            return [get_slot("tw_phrases")]
         if key is UnionKey.TwVariantsPair:
-            return [g("tw_variants_phrases"), g("tw_variants")]
+            return [get_slot("tw_variants_phrases"), get_slot("tw_variants")]
         if key is UnionKey.S2TwpR2TwTriple:
-            return [g("tw_phrases"), g("tw_variants_phrases"), g("tw_variants")]
+            return [get_slot("tw_phrases"), get_slot("tw_variants_phrases"), get_slot("tw_variants")]
         if key is UnionKey.TwPhrasesRevOnly:
-            return [g("tw_phrases_rev")]
+            return [get_slot("tw_phrases_rev")]
         if key is UnionKey.TwRevPair:
-            return [g("tw_variants_rev_phrases"), g("tw_variants_rev")]
+            return [get_slot("tw_variants_rev_phrases"), get_slot("tw_variants_rev")]
         if key is UnionKey.Tw2SpR1TwRevTriple:
-            return [g("tw_phrases_rev"), g("tw_variants_rev_phrases"), g("tw_variants_rev")]
-
-        # ---------- HK helpers ----------
+            return [get_slot("tw_phrases_rev"), get_slot("tw_variants_rev_phrases"), get_slot("tw_variants_rev")]
+        if key is UnionKey.S2HkpR2HkTriple:
+            return [get_slot("hk_phrases"), get_slot("hk_variants_phrases"), get_slot("hk_variants")]
+        if key is UnionKey.Hk2SpR1HkRevTriple:
+            return [get_slot("hk_phrases_rev"), get_slot("hk_variants_rev_phrases"), get_slot("hk_variants_rev")]
         if key is UnionKey.HkVariantsPair:
-            return [g("hk_variants_phrases"), g("hk_variants")]
+            return [get_slot("hk_variants_phrases"), get_slot("hk_variants")]
         if key is UnionKey.HkRevPair:
-            return [g("hk_variants_rev_phrases"), g("hk_variants_rev")]
-
-        # ---------- JP helpers ----------
+            return [get_slot("hk_variants_rev_phrases"), get_slot("hk_variants_rev")]
         if key is UnionKey.JpVariantsOnly:
-            return [g("jp_variants")]
+            return [get_slot("jp_variants")]
         if key is UnionKey.JpRevTriple:
-            return [g("jps_phrases"), g("jps_characters"), g("jp_variants_rev")]
+            return [get_slot("jps_phrases"), get_slot("jps_characters"), get_slot("jp_variants_rev")]
 
-        raise KeyError(f"UnionKey not handled: {key}")
+        raise KeyError("UnionKey not handled: {}".format(key))
 
-    # ---------------- Helpers ----------------
     def _get(self, attr: str) -> DictSlot:
         slot = getattr(self._dict, attr, None)
         if not slot:
             return {}, 0
-        d, cap = slot
-        return d, int(cap) if cap is not None else 0
+        dictionary, cap = slot
+        return dictionary, int(cap) if cap is not None else 0

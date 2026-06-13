@@ -231,7 +231,7 @@ class DictRefs:
             input_text: str,
             *,
             segment_replace: Optional[Callable[[str, List[DictSlot], int], str]] = None,
-            union_replace: Optional[Callable[[str, StarterUnionT], str]] = None,
+            union_replace: Optional[Callable[[str, StarterUnionLike], str]] = None,
             validate_delegates: bool = True,
     ) -> str:
         """
@@ -267,14 +267,14 @@ class DictRefs:
                 if callable(build):
                     build()
 
-        def _merge_to_union(slot_list: List[DictSlot]) -> Optional[StarterUnionT]:
+        def _merge_to_union(slot_list: List[DictSlot]) -> Optional[StarterUnionLike]:
             if starter_union_cls is None:
                 return None
             merger = getattr(starter_union_cls, "merge_precedence", None)
             if callable(merger):
                 merged = merger(slot_list)
                 if self._is_starter_union_like(merged):
-                    return cast(StarterUnionT, merged)
+                    return cast(StarterUnionLike, merged)
             return None
 
         text = input_text
