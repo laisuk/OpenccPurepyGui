@@ -33,21 +33,21 @@ def parse_level(value: str) -> DeTofuLevel:
 
     value = value.strip().lower()
 
-    if value in ("all", "ext-b", "b"):
+    if value in ("all", "ext-b", "extb", "b"):
         return DeTofuLevel.ExtB
-    if value in ("ext-c", "c"):
+    if value in ("ext-c", "extc", "c"):
         return DeTofuLevel.ExtC
-    if value in ("ext-d", "d"):
-        return DeTofuLevel.ExtD  # see note below
-    if value in ("ext-e", "e"):
+    if value in ("ext-d", "extd", "d"):
+        return DeTofuLevel.ExtD
+    if value in ("ext-e", "exte", "e"):
         return DeTofuLevel.ExtE
-    if value in ("ext-f", "f"):
+    if value in ("ext-f", "extf", "f"):
         return DeTofuLevel.ExtF
-    if value in ("ext-g", "g"):
+    if value in ("ext-g", "extg", "g"):
         return DeTofuLevel.ExtG
-    if value in ("ext-h", "h"):
+    if value in ("ext-h", "exth", "h"):
         return DeTofuLevel.ExtH
-    if value in ("ext-i", "i"):
+    if value in ("ext-i", "exti", "i"):
         return DeTofuLevel.ExtI
 
     raise ValueError(
@@ -56,37 +56,11 @@ def parse_level(value: str) -> DeTofuLevel:
     )
 
 
-def _parse_extension(value: str) -> Optional[DeTofuLevel]:
-    value = value.strip()
-
-    table = {
-        "ExtB": DeTofuLevel.ExtB,
-        "B": DeTofuLevel.ExtB,
-        "b": DeTofuLevel.ExtB,
-        "ExtC": DeTofuLevel.ExtC,
-        "C": DeTofuLevel.ExtC,
-        "c": DeTofuLevel.ExtC,
-        "ExtD": DeTofuLevel.ExtD,
-        "D": DeTofuLevel.ExtD,
-        "d": DeTofuLevel.ExtD,
-        "ExtE": DeTofuLevel.ExtE,
-        "E": DeTofuLevel.ExtE,
-        "e": DeTofuLevel.ExtE,
-        "ExtF": DeTofuLevel.ExtF,
-        "F": DeTofuLevel.ExtF,
-        "f": DeTofuLevel.ExtF,
-        "ExtG": DeTofuLevel.ExtG,
-        "G": DeTofuLevel.ExtG,
-        "g": DeTofuLevel.ExtG,
-        "ExtH": DeTofuLevel.ExtH,
-        "H": DeTofuLevel.ExtH,
-        "h": DeTofuLevel.ExtH,
-        "ExtI": DeTofuLevel.ExtI,
-        "I": DeTofuLevel.ExtI,
-        "i": DeTofuLevel.ExtI,
-    }
-
-    return table.get(value)
+def _try_parse_level(value: Optional[str]) -> Optional[DeTofuLevel]:
+    try:
+        return parse_level(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
 
 
 def _first_scalar(value: Optional[str]) -> Optional[str]:
@@ -148,7 +122,7 @@ def parse_entries(text: str) -> Tuple[DeTofuEntry, ...]:
 
         tofu = _first_scalar(parts[0].strip())
         fallback = _first_scalar(parts[1].strip())
-        extension = _parse_extension(parts[2])
+        extension = _try_parse_level(parts[2])
 
         if tofu is None or fallback is None or extension is None:
             continue
