@@ -25,8 +25,7 @@ class DictionaryMaxlength:
         "hk_phrases", "hk_phrases_rev",
         "hk_variants_phrases", "hk_variants",
         "hk_variants_rev", "hk_variants_rev_phrases",
-        "jps_characters", "jps_phrases",
-        "jp_variants", "jp_variants_rev",
+        "jps_characters", "jps_characters_rev", "jps_phrases",
     )
 
     _provider = None
@@ -55,9 +54,8 @@ class DictionaryMaxlength:
         self.hk_variants_rev: Tuple[Dict[str, str], int] = ({}, 0)
         self.hk_variants_rev_phrases: Tuple[Dict[str, str], int] = ({}, 0)
         self.jps_characters: Tuple[Dict[str, str], int] = ({}, 0)
+        self.jps_characters_rev: Tuple[Dict[str, str], int] = ({}, 0)
         self.jps_phrases: Tuple[Dict[str, str], int] = ({}, 0)
-        self.jp_variants: Tuple[Dict[str, str], int] = ({}, 0)
-        self.jp_variants_rev: Tuple[Dict[str, str], int] = ({}, 0)
 
         self._is_shared_provider = False
 
@@ -304,9 +302,8 @@ class DictionaryMaxlength:
             'hk_variants_rev': "HKVariantsRev.txt",
             'hk_variants_rev_phrases': "HKVariantsRevPhrases.txt",
             'jps_characters': "JPShinjitaiCharacters.txt",
+            'jps_characters_rev': "JPShinjitaiCharactersRev.txt",
             'jps_phrases': "JPShinjitaiPhrases.txt",
-            'jp_variants': "JPVariants.txt",
-            'jp_variants_rev': "JPVariantsRev.txt",
         }
 
         # ------------------------------------------------------------------
@@ -589,9 +586,8 @@ class DictionaryMaxlength:
             "HKVariantsRev.txt",
             "HKVariantsRevPhrases.txt",
             "JPShinjitaiCharacters.txt",
+            "JPShinjitaiCharactersRev.txt",
             "JPShinjitaiPhrases.txt",
-            "JPVariants.txt",
-            "JPVariantsRev.txt",
         ]
 
         optional_files = {

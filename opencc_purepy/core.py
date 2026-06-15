@@ -259,7 +259,10 @@ class OpenCC:
         Normalize config to canonical lowercase OpenCC name.
 
         Returns:
-            str: Valid canonical config name. Falls back to "s2t" if invalid.
+            str: Valid canonical config name.
+
+        Raises:
+            ValueError: If the config is not a supported OpenCC conversion name.
         """
         if config is None:
             return "s2t"
@@ -275,10 +278,10 @@ class OpenCC:
                 return cfg
 
             self._last_error = "Invalid config: {}".format(config)
-            return "s2t"
+            raise ValueError(self._last_error)
 
         self._last_error = "Invalid config: {}".format(config)
-        return "s2t"
+        raise ValueError(self._last_error)
 
     def set_config(self, config: _ConfigLike) -> None:
         """
@@ -687,9 +690,9 @@ class OpenCC:
         elif config_key == "hk2t":
             refs = DictRefs(self.union_cache.ensure_indexed(UnionKey.HkRevPair))
         elif config_key == "t2jp":
-            refs = DictRefs(self.union_cache.ensure_indexed(UnionKey.JpVariantsOnly))
+            refs = DictRefs(self.union_cache.ensure_indexed(UnionKey.JpsCharactersRev))
         elif config_key == "jp2t":
-            refs = DictRefs(self.union_cache.ensure_indexed(UnionKey.JpRevTriple))
+            refs = DictRefs(self.union_cache.ensure_indexed(UnionKey.JpsPair))
         else:
             raise ValueError(f"Unsupported config: {config_key}")
 

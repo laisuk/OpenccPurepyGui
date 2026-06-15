@@ -19,8 +19,8 @@ class UnionKey(Enum):
     Hk2SpR1HkRevTriple = auto()
     HkVariantsPair = auto()
     HkRevPair = auto()
-    JpVariantsOnly = auto()
-    JpRevTriple = auto()
+    JpsCharactersRev = auto()
+    JpsPair = auto()
 
 
 class UnionCache:
@@ -85,10 +85,10 @@ class UnionCache:
             return [get_slot("hk_variants_phrases"), get_slot("hk_variants")]
         if key is UnionKey.HkRevPair:
             return [get_slot("hk_variants_rev_phrases"), get_slot("hk_variants_rev")]
-        if key is UnionKey.JpVariantsOnly:
-            return [get_slot("jp_variants")]
-        if key is UnionKey.JpRevTriple:
-            return [get_slot("jps_phrases"), get_slot("jps_characters"), get_slot("jp_variants_rev")]
+        if key is UnionKey.JpsCharactersRev:
+            return [get_slot("jps_characters_rev")]
+        if key is UnionKey.JpsPair:
+            return [get_slot("jps_phrases"), get_slot("jps_characters")]
 
         raise KeyError("UnionKey not handled: {}".format(key))
 

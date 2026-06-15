@@ -30,10 +30,8 @@ class DictSlot(str, Enum):
     HKVariantsRevPhrases = "hk_variants_rev_phrases"
 
     JPSCharacters = "jps_characters"
+    JPSCharactersRev = "jps_characters_rev"
     JPSPhrases = "jps_phrases"
-
-    JPVariants = "jp_variants"
-    JPVariantsRev = "jp_variants_rev"
 
 
 DictSlotLike = Union[DictSlot, str]
