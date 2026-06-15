@@ -30,7 +30,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1000, 708)
+        MainWindow.resize(1005, 708)
         icon = QIcon()
         icon.addFile(u":/images/resource/openccpurepygui.png", QSize(), QIcon.Normal, QIcon.Off)
         MainWindow.setWindowIcon(icon)
@@ -197,9 +197,8 @@ class Ui_MainWindow(object):
         self.tbSource = TextEditWidget(self.tab_main)
         self.tbSource.setObjectName(u"tbSource")
         font3 = QFont()
-        font3.setFamilies([u"Noto Sans SC"])
+        font3.setFamilies([u"Microsoft YaHei"])
         font3.setPointSize(12)
-        font3.setBold(False)
         self.tbSource.setFont(font3)
         self.tbSource.setToolTipDuration(-1)
         self.tbSource.setFrameShape(QFrame.Shape.Box)
@@ -562,7 +561,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1000, 22))
+        self.menubar.setGeometry(QRect(0, 0, 1005, 26))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuHelp = QMenu(self.menubar)

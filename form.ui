@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
+    <width>1005</width>
     <height>708</height>
    </rect>
   </property>
@@ -311,9 +311,8 @@
            <widget class="TextEditWidget" name="tbSource">
             <property name="font">
              <font>
-              <family>Noto Sans SC</family>
+              <family>Microsoft YaHei</family>
               <pointsize>12</pointsize>
-              <bold>false</bold>
              </font>
             </property>
             <property name="toolTipDuration">
@@ -337,9 +336,8 @@
            <widget class="QPlainTextEdit" name="tbDestination">
             <property name="font">
              <font>
-              <family>Noto Sans SC</family>
+              <family>Microsoft YaHei</family>
               <pointsize>12</pointsize>
-              <bold>false</bold>
              </font>
             </property>
             <property name="acceptDrops">
@@ -1023,8 +1021,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1000</width>
-     <height>22</height>
+     <width>1005</width>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1152,7 +1150,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_config"/>
   <buttongroup name="buttonGroup_region"/>
+  <buttongroup name="buttonGroup_config"/>
  </buttongroups>
 </ui>
