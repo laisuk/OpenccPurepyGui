@@ -131,18 +131,14 @@ def main():
         help="Enable punctuation conversion",
     )
     parser_office.add_argument(
+        "-f",
         "--format",
         metavar="<format>",
         type=_format_arg,
         help="Target Office format (e.g., docx, xlsx, pptx, odt, epub)",
     )
     parser_office.add_argument(
-        "--auto-ext",
-        action="store_true",
-        default=False,
-        help="Auto-append extension to output file",
-    )
-    parser_office.add_argument(
+        "-k",
         "--keep-font",
         action="store_true",
         default=True,
