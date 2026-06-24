@@ -79,6 +79,11 @@ def begins_with_dialog_opener(s: str) -> bool:
     return i < n and is_dialog_opener(s[i])
 
 
+def ends_with_dialog_closer(s: str) -> bool:
+    t = s.rstrip()
+    return bool(t) and is_dialog_closer(t[-1])
+
+
 # -----------------------------------------------------------------------------
 # Brackets (single source of truth: open → close)
 # -----------------------------------------------------------------------------

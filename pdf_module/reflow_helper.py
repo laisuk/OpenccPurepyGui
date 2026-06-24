@@ -37,7 +37,7 @@ from pdf_module.punct_sets import (
     contains_any_comma_like,
     is_colon_like,
     ends_with_colon_like,
-    ends_with_ellipsis,
+    ends_with_ellipsis, ends_with_dialog_closer,
 )
 
 """
@@ -854,59 +854,69 @@ def reflow_cjk_paragraphs_core(
                 continue
 
         # Final strong line punct ending check for current line text
-        if buffer and (not dialog_unclosed) and ((not buffer_has_unclosed_bracket) or len(buffer) > 120):
+        current_is_dialog_start = begins_with_dialog_opener(stripped)
+        stripped_ends_with_dialog_closer = ends_with_dialog_closer(stripped)
+
+        # 9a-0) Complete single-line dialog.
+        if current_is_dialog_start and stripped_ends_with_dialog_closer:
+            if buffer:
+                append_seg(buffer)
+                buffer = ""
+                d_reset()
+
+            append_seg(stripped)
+            d_reset()
+            continue
+
+        # 9a) Dialog start, unfinished dialog.
+        if current_is_dialog_start:
+            should_flush_prev = False
+
+            if buffer:
+                tb = buffer.rstrip()
+
+                if tb:
+                    last = tb[-1]
+
+                    should_flush_prev = (
+                            not dialog_unclosed and
+                            not buffer_has_unclosed_bracket and
+                            not is_comma_like(last) and
+                            not is_cjk(last)
+                    )
+
+            if should_flush_prev:
+                append_seg(buffer)
+
+            buffer = stripped
+            d_reset()
+            d_update(stripped)
+            continue
+
+        # Finalizer: exclude dialog closer lines; 9b handles those.
+        if buffer and (not stripped_ends_with_dialog_closer) and \
+                (not dialog_unclosed) and ((not buffer_has_unclosed_bracket) or len(buffer) > 120):
             last = last_non_whitespace(stripped)
             if (last is not None) and is_strong_sentence_end(last):
                 buffer += stripped
                 append_seg(buffer)
                 buffer = ""
                 d_reset()
-                d_update(stripped)
                 continue
 
-        # First line of a new paragraph
-        if not buffer:
-            buffer = stripped
-            d_reset()
-            d_update(stripped)
-            continue
-
-        current_is_dialog_start = begins_with_dialog_opener(stripped)
-
-        # If previous line ends with comma, do NOT flush even if new line starts dialog
-        if current_is_dialog_start:
-            tb = buffer.rstrip()
-            if tb:
-                last = tb[-1]
-                if (not is_comma_like(last)) and (not is_cjk(last)):  # <-- FIX: is_cjk_bmp
-                    append_seg(buffer)
-                    buffer = stripped
-                    d_reset()
-                    d_update(stripped)
-                    continue
-            else:
-                # Buffer is whitespace-only → treat like empty and flush
-                append_seg(buffer)
-                buffer = stripped
-                d_reset()
-                d_update(stripped)
-                continue
-
-        # 🔸 9b) Dialog end line: ends with dialog closer.
+        # 9b) Dialog end line
         last2 = last_two_non_whitespace(stripped)
         if last2 is not None:
             last_ch, prev_ch = last2
             if is_dialog_closer(last_ch):
                 punct_before_closer_is_strong = is_clause_or_end_punct(prev_ch)
 
-                # Snapshot bracket safety BEFORE appending current line
                 buffer_has_bracket_issue = buffer_has_unclosed_bracket
                 line_has_bracket_issue = has_unclosed_bracket(stripped)
 
                 buffer += stripped
                 d_update(stripped)
 
-                # dialog_unclosed might have changed after update; re-check like Rust
                 if (not is_unclosed()) and punct_before_closer_is_strong and (
                         (not buffer_has_bracket_issue) or line_has_bracket_issue or len(buffer) > 120
                 ):
@@ -915,6 +925,13 @@ def reflow_cjk_paragraphs_core(
                     d_reset()
 
                 continue
+
+        # First line of a new paragraph
+        if not buffer:
+            buffer = stripped
+            d_reset()
+            d_update(stripped)
+            continue
 
         # 8a) Strong sentence boundary (handles 。！？, OCR . / :, “.”)
         if (not dialog_unclosed) and (not buffer_has_unclosed_bracket) and ends_with_sentence_boundary(buffer):
