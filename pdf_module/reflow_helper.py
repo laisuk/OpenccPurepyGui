@@ -856,6 +856,12 @@ def reflow_cjk_paragraphs_core(
         # Final strong line punct ending check for current line text
         current_is_dialog_start = begins_with_dialog_opener(stripped)
         stripped_ends_with_dialog_closer = ends_with_dialog_closer(stripped)
+        stripped_has_unclosed_bracket = has_unclosed_bracket(stripped)
+
+        last = last_non_whitespace(stripped)
+        stripped_ends_with_strong_sentence_end = (
+                last is not None and is_strong_sentence_end(last)
+        )
 
         # 9a-0) Complete single-line dialog.
         if current_is_dialog_start and stripped_ends_with_dialog_closer:
@@ -895,14 +901,24 @@ def reflow_cjk_paragraphs_core(
 
         # Finalizer: exclude dialog closer lines; 9b handles those.
         if buffer and (not stripped_ends_with_dialog_closer) and \
-                (not dialog_unclosed) and ((not buffer_has_unclosed_bracket) or len(buffer) > 120):
-            last = last_non_whitespace(stripped)
-            if (last is not None) and is_strong_sentence_end(last):
-                buffer += stripped
-                append_seg(buffer)
-                buffer = ""
-                d_reset()
-                continue
+                (not dialog_unclosed) and \
+                ((not buffer_has_unclosed_bracket) or len(buffer) > 120) and \
+                stripped_ends_with_strong_sentence_end:
+            buffer += stripped
+            append_seg(buffer)
+            buffer = ""
+            d_reset()
+            continue
+
+        # Complete standalone sentence line.
+        # If there is no active buffer and this line is already complete,
+        # emit it directly instead of waiting for the next line.
+        if (not buffer) and \
+                (not stripped_ends_with_dialog_closer) and \
+                (not stripped_has_unclosed_bracket) and \
+                stripped_ends_with_strong_sentence_end:
+            append_seg(stripped)
+            continue
 
         # 9b) Dialog end line
         last2 = last_two_non_whitespace(stripped)
@@ -912,7 +928,7 @@ def reflow_cjk_paragraphs_core(
                 punct_before_closer_is_strong = is_clause_or_end_punct(prev_ch)
 
                 buffer_has_bracket_issue = buffer_has_unclosed_bracket
-                line_has_bracket_issue = has_unclosed_bracket(stripped)
+                line_has_bracket_issue = stripped_has_unclosed_bracket
 
                 buffer += stripped
                 d_update(stripped)
