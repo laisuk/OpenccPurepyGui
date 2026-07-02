@@ -857,14 +857,25 @@ def reflow_cjk_paragraphs_core(
         current_is_dialog_start = begins_with_dialog_opener(stripped)
         stripped_ends_with_dialog_closer = ends_with_dialog_closer(stripped)
         stripped_has_unclosed_bracket = has_unclosed_bracket(stripped)
+        stripped_has_unclosed_dialog_quote = has_unclosed_dialog_quote(stripped)
 
         last = last_non_whitespace(stripped)
         stripped_ends_with_strong_sentence_end = (
                 last is not None and is_strong_sentence_end(last)
         )
+        stripped_is_complete_standalone = (
+                stripped_ends_with_strong_sentence_end
+                or ends_with_colon_like(stripped)
+                or ends_with_ellipsis(stripped)
+        )
 
         # 9a-0) Complete single-line dialog.
-        if current_is_dialog_start and stripped_ends_with_dialog_closer:
+        if (
+                current_is_dialog_start
+                and stripped_ends_with_dialog_closer
+                and not stripped_has_unclosed_bracket
+                and not stripped_has_unclosed_dialog_quote
+        ):
             if buffer:
                 append_seg(buffer)
                 buffer = ""
@@ -903,7 +914,8 @@ def reflow_cjk_paragraphs_core(
         if buffer and (not stripped_ends_with_dialog_closer) and \
                 (not dialog_unclosed) and \
                 ((not buffer_has_unclosed_bracket) or len(buffer) > 120) and \
-                stripped_ends_with_strong_sentence_end:
+                (not stripped_has_unclosed_dialog_quote) and \
+                stripped_is_complete_standalone:
             buffer += stripped
             append_seg(buffer)
             buffer = ""
@@ -916,7 +928,8 @@ def reflow_cjk_paragraphs_core(
         if (not buffer) and \
                 (not stripped_ends_with_dialog_closer) and \
                 (not stripped_has_unclosed_bracket) and \
-                stripped_ends_with_strong_sentence_end:
+                (not stripped_has_unclosed_dialog_quote) and \
+                stripped_is_complete_standalone:
             append_seg(stripped)
             continue
 
