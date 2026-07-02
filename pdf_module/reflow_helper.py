@@ -869,24 +869,23 @@ def reflow_cjk_paragraphs_core(
                 or ends_with_ellipsis(stripped)
         )
 
-        # 9a-0) Complete single-line dialog.
-        if (
-                current_is_dialog_start
-                and stripped_ends_with_dialog_closer
-                and not stripped_has_unclosed_bracket
-                and not stripped_has_unclosed_dialog_quote
-        ):
-            if buffer:
-                append_seg(buffer)
-                buffer = ""
-                d_reset()
-
-            append_seg(stripped)
-            d_reset()
-            continue
-
         # 9a) Dialog start, unfinished dialog.
         if current_is_dialog_start:
+            # 9a-0) Complete single-line dialog.
+            if (
+                    stripped_ends_with_dialog_closer
+                    and not stripped_has_unclosed_bracket
+                    and not stripped_has_unclosed_dialog_quote
+            ):
+                if buffer:
+                    append_seg(buffer)
+                    buffer = ""
+                    d_reset()
+
+                append_seg(stripped)
+                d_reset()
+                continue
+
             should_flush_prev = False
 
             if buffer:
