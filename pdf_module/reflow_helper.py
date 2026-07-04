@@ -482,6 +482,80 @@ def is_visual_divider_line(s: str) -> bool:
     return total >= 3
 
 
+def begins_with_simple_list_starter(s: str) -> bool:
+    s = s.lstrip()
+
+    if s.startswith("- "):
+        return True
+
+    chars = list(s[:4])
+    length = len(chars)
+
+    # (1) / (12) / （1） / （12）
+    if length >= 3 and chars[0] == "(" and is_simple_list_number(chars[1]):
+        if chars[2] == ")":
+            return True
+
+        if length >= 4 and is_simple_list_number(chars[2]) and chars[3] == ")":
+            return True
+
+    if length >= 3 and chars[0] == "（" and is_simple_list_number(chars[1]):
+        if chars[2] == "）":
+            return True
+
+        if length >= 4 and is_simple_list_number(chars[2]) and chars[3] == "）":
+            return True
+
+    # 1) / 1） / 1、 / 1. / 一、 / 十一、
+    if length >= 2 and is_simple_list_number(chars[0]):
+        if is_list_close(chars[1]):
+            return True
+
+        if chars[1] == ".":
+            return length >= 3 and (chars[2] == " " or is_cjk(chars[2]))
+
+        # 12) / 12） / 12、 / 12. / 十一） / 十一、
+        if length >= 3 and is_simple_list_number(chars[1]):
+            if is_list_close(chars[2]):
+                return True
+
+            if chars[2] == ".":
+                return length >= 4 and (chars[3] == " " or is_cjk(chars[3]))
+
+    return False
+
+
+def is_list_close(ch: str) -> bool:
+    return ch in {")", "）", "、"}
+
+
+def is_simple_list_number(ch: str) -> bool:
+    return (
+            "0" <= ch <= "9"
+            or "０" <= ch <= "９"
+            or ch in {"一", "二", "三", "四", "五", "六", "七", "八", "九", "十"}
+    )
+
+
+def simple_list_has_unclosed_bracket(s: str) -> bool:
+    s = s.lstrip()
+
+    start = 0
+    chars = list(enumerate(s[:3]))
+
+    if len(chars) >= 2 and is_simple_list_number(chars[0][1]):
+        if chars[1][1] in {")", "）"}:
+            start = chars[1][0] + 1
+        elif (
+                len(chars) >= 3
+                and is_simple_list_number(chars[1][1])
+                and chars[2][1] in {")", "）"}
+        ):
+            start = chars[2][0] + 1
+
+    return has_unclosed_bracket(s[start:])
+
+
 # -------------------------------
 # Sentence Boundary start
 # -------------------------------
@@ -855,8 +929,15 @@ def reflow_cjk_paragraphs_core(
 
         # Final strong line punct ending check for current line text
         current_is_dialog_start = begins_with_dialog_opener(stripped)
+        current_is_list_start = begins_with_simple_list_starter(stripped)
         stripped_ends_with_dialog_closer = ends_with_dialog_closer(stripped)
-        stripped_has_unclosed_bracket = has_unclosed_bracket(stripped)
+
+        stripped_has_unclosed_bracket = (
+            simple_list_has_unclosed_bracket(stripped)
+            if current_is_list_start
+            else has_unclosed_bracket(stripped)
+        )
+
         stripped_has_unclosed_dialog_quote = has_unclosed_dialog_quote(stripped)
 
         last = last_non_whitespace(stripped)
@@ -869,11 +950,29 @@ def reflow_cjk_paragraphs_core(
                 or ends_with_ellipsis(stripped)
         )
 
-        # 9a) Dialog start, unfinished dialog.
-        if current_is_dialog_start:
+        # 9a) Dialog/list start, unfinished dialog/list.
+        if current_is_dialog_start or current_is_list_start:
             # 9a-0) Complete single-line dialog.
             if (
-                    stripped_ends_with_dialog_closer
+                    current_is_dialog_start
+                    and stripped_ends_with_dialog_closer
+                    and not stripped_has_unclosed_bracket
+                    and not stripped_has_unclosed_dialog_quote
+            ):
+                if buffer:
+                    append_seg(buffer)
+                    buffer = ""
+                    d_reset()
+
+                append_seg(stripped)
+                d_reset()
+                continue
+
+            # 9a-1) Complete single-line simple list.
+            # Flush previous buffer first, then emit this simple list as its own paragraph.
+            if (
+                    current_is_list_start
+                    and stripped_is_complete_standalone
                     and not stripped_has_unclosed_bracket
                     and not stripped_has_unclosed_dialog_quote
             ):
@@ -895,17 +994,25 @@ def reflow_cjk_paragraphs_core(
                     last = tb[-1]
 
                     should_flush_prev = (
-                            not dialog_unclosed and
-                            not buffer_has_unclosed_bracket and
-                            not is_comma_like(last) and
-                            not is_cjk(last)
+                        # Consecutive simple list items: previous item ends here.
+                            (current_is_list_start and begins_with_simple_list_starter(tb))
+                            or (
+                                    not dialog_unclosed and
+                                    not buffer_has_unclosed_bracket and
+                                    not is_comma_like(last) and
+                                    not is_cjk(last)
+                            )
                     )
 
             if should_flush_prev:
                 append_seg(buffer)
+                buffer = ""
 
-            buffer = stripped
-            d_reset()
+            buffer += stripped
+
+            if current_is_dialog_start:
+                d_reset()
+
             d_update(stripped)
             continue
 
