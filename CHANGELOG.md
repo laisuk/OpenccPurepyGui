@@ -17,6 +17,8 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 - Refactored `s2twp` from three conversion rounds to two rounds by combining Taiwan phrase and variant normalization
   into one round, matching upstream OpenCC behavior and improving conversion efficiency.
+- Optimized Reflow.
+- Update dictionary data.
 
 ---
 

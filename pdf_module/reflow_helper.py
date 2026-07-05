@@ -1040,26 +1040,40 @@ def reflow_cjk_paragraphs_core(
             continue
 
         # 9b) Dialog end line
-        last2 = last_two_non_whitespace(stripped)
-        if last2 is not None:
-            last_ch, prev_ch = last2
-            if is_dialog_closer(last_ch):
-                punct_before_closer_is_strong = is_clause_or_end_punct(prev_ch)
+        last_ch = last_non_whitespace(stripped)
+        if last_ch is not None and is_dialog_closer(last_ch):
+            last2 = last_two_non_whitespace(stripped)
+            if last2 is not None:
+                _, prev_ch = last2
+            else:
+                # Standalone dialog closer line. Look at the previous buffered text.
+                prev_ch = last_non_whitespace(buffer)
 
-                buffer_has_bracket_issue = buffer_has_unclosed_bracket
-                line_has_bracket_issue = stripped_has_unclosed_bracket
+            punct_before_closer_is_strong = (
+                    prev_ch is not None
+                    and is_clause_or_end_punct(prev_ch)
+            )
 
-                buffer += stripped
-                d_update(stripped)
+            buffer_has_bracket_issue = buffer_has_unclosed_bracket
+            line_has_bracket_issue = stripped_has_unclosed_bracket
 
-                if (not is_unclosed()) and punct_before_closer_is_strong and (
-                        (not buffer_has_bracket_issue) or line_has_bracket_issue or len(buffer) > 120
-                ):
-                    append_seg(buffer)
-                    buffer = ""
-                    d_reset()
+            buffer += stripped
+            d_update(stripped)
 
-                continue
+            if (
+                    not is_unclosed()
+                    and punct_before_closer_is_strong
+                    and (
+                    (not buffer_has_bracket_issue)
+                    or line_has_bracket_issue
+                    or len(buffer) > 120
+            )
+            ):
+                append_seg(buffer)
+                buffer = ""
+                d_reset()
+
+            continue
 
         # First line of a new paragraph
         if not buffer:
