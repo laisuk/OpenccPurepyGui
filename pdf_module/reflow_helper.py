@@ -485,7 +485,7 @@ def is_visual_divider_line(s: str) -> bool:
 def begins_with_simple_list_starter(s: str) -> bool:
     s = s.lstrip()
 
-    if s.startswith("- "):
+    if len(s) >= 2 and s[0] in "-*＊•‧▪◦○●※" and s[1].isspace():
         return True
 
     chars = list(s[:4])
