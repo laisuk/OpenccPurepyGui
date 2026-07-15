@@ -12,9 +12,14 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 ### Added
 
 - Added detofu() API function.
+- Added direct Hong Kong phrase conversion configs and APIs: `t2hkp` / `OpenCC.t2hkp()` and `hk2tp` /
+  `OpenCC.hk2tp()`.
 
 ### Changed
 
+- Flattened direct `t2twp` and `tw2tp` conversion from two dictionary passes to one using the Taiwan triple unions.
+- Renamed the internal Taiwan and Hong Kong triple union keys to `TwTriple`, `TwRevTriple`, `HkTriple`, and
+  `HkRevTriple`.
 - Refactored `s2twp` from three conversion rounds to two rounds by combining Taiwan phrase and variant normalization
   into one round, matching upstream OpenCC behavior and improving conversion efficiency.
 - Optimized Reflow.

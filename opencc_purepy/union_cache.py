@@ -9,14 +9,12 @@ class UnionKey(Enum):
     S2T_PUNCT = auto()
     T2S = auto()
     T2S_PUNCT = auto()
-    TwPhrasesOnly = auto()
     TwVariantsPair = auto()
-    S2TwpR2TwTriple = auto()
-    TwPhrasesRevOnly = auto()
+    TwTriple = auto()
     TwRevPair = auto()
-    Tw2SpR1TwRevTriple = auto()
-    S2HkpR2HkTriple = auto()
-    Hk2SpR1HkRevTriple = auto()
+    TwRevTriple = auto()
+    HkTriple = auto()
+    HkRevTriple = auto()
     HkVariantsPair = auto()
     HkRevPair = auto()
     JpsCharactersRev = auto()
@@ -65,21 +63,17 @@ class UnionCache:
             return [get_slot("ts_phrases"), get_slot("ts_characters")]
         if key is UnionKey.T2S_PUNCT:
             return [get_slot("ts_phrases"), get_slot("ts_characters"), get_slot("ts_punctuations")]
-        if key is UnionKey.TwPhrasesOnly:
-            return [get_slot("tw_phrases")]
         if key is UnionKey.TwVariantsPair:
             return [get_slot("tw_variants_phrases"), get_slot("tw_variants")]
-        if key is UnionKey.S2TwpR2TwTriple:
+        if key is UnionKey.TwTriple:
             return [get_slot("tw_phrases"), get_slot("tw_variants_phrases"), get_slot("tw_variants")]
-        if key is UnionKey.TwPhrasesRevOnly:
-            return [get_slot("tw_phrases_rev")]
         if key is UnionKey.TwRevPair:
             return [get_slot("tw_variants_rev_phrases"), get_slot("tw_variants_rev")]
-        if key is UnionKey.Tw2SpR1TwRevTriple:
+        if key is UnionKey.TwRevTriple:
             return [get_slot("tw_phrases_rev"), get_slot("tw_variants_rev_phrases"), get_slot("tw_variants_rev")]
-        if key is UnionKey.S2HkpR2HkTriple:
+        if key is UnionKey.HkTriple:
             return [get_slot("hk_phrases"), get_slot("hk_variants_phrases"), get_slot("hk_variants")]
-        if key is UnionKey.Hk2SpR1HkRevTriple:
+        if key is UnionKey.HkRevTriple:
             return [get_slot("hk_phrases_rev"), get_slot("hk_variants_rev_phrases"), get_slot("hk_variants_rev")]
         if key is UnionKey.HkVariantsPair:
             return [get_slot("hk_variants_phrases"), get_slot("hk_variants")]

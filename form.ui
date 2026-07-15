@@ -133,6 +133,11 @@
         </item>
         <item>
          <property name="text">
+          <string>t2hkp (繁 -&gt; 繁/港/惯)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>tw2s (繁/台 -&gt; 简)</string>
          </property>
         </item>
@@ -159,6 +164,11 @@
         <item>
          <property name="text">
           <string>hk2t (繁/港 -&gt; 繁)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>hk2tp (繁/港 -&gt; 繁/惯)</string>
          </property>
         </item>
         <item>
@@ -1022,7 +1032,7 @@
      <x>0</x>
      <y>0</y>
      <width>1005</width>
-     <height>26</height>
+     <height>33</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

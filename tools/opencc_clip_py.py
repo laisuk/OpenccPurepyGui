@@ -23,8 +23,8 @@ BLUE = "\033[1;34m"
 RESET = "\033[0m"
 
 CONFIGS: List[str] = [
-    "s2t", "t2s", "s2tw", "tw2s", "s2twp", "tw2sp", "s2hk", "hk2s",
-    "t2tw", "tw2t", "t2twp", "tw2t", "tw2tp", "t2hk", "hk2t", "t2jp", "jp2t",
+    "s2t", "t2s", "s2tw", "tw2s", "s2twp", "tw2sp", "s2hk", "hk2s", "s2hkp", "hk2sp",
+    "t2tw", "tw2t", "t2twp", "tw2tp", "t2hk", "t2hkp", "hk2t", "hk2tp", "t2jp", "jp2t",
     "auto"
 ]
 

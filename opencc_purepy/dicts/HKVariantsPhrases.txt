@@ -3,7 +3,7 @@
 # Format: key	value(s) (values separated by spaces)
 # License: Apache-2.0 (see LICENSE)
 # Source: https://github.com/ByVoid/OpenCC
-# Used in configs: s2hk.json, t2hk.json
+# Used in configs: s2hk.json, s2hkp.json, t2hk.json, t2hkp.json
 #
 # Notes:
 # - This file contains phrase-level exceptions for forward Hong Kong variant
