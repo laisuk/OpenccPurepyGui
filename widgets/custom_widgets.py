@@ -17,14 +17,14 @@ class TextEditWidget(QPlainTextEdit):
 
     content_filename = ""
 
-    def dragEnterEvent(self, event: QDragEnterEvent):
-        mime_data = event.mimeData()
+    def dragEnterEvent(self, e: QDragEnterEvent):
+        mime_data = e.mimeData()
         # Check if the dragged data contains text/uri-list
         if mime_data.hasUrls() or mime_data.hasText():
-            event.acceptProposedAction()
+            e.acceptProposedAction()
 
-    def dropEvent(self, event: QDropEvent):
-        mime_data = event.mimeData()
+    def dropEvent(self, e: QDropEvent):
+        mime_data = e.mimeData()
         # Check if the dropped data contains text/uri-list
         if mime_data.hasUrls():
             file_path = mime_data.urls()[0].toLocalFile()
@@ -33,23 +33,23 @@ class TextEditWidget(QPlainTextEdit):
 
             if ext == ".pdf":
                 self.pdfDropped.emit(file_path)
-                event.acceptProposedAction()
+                e.acceptProposedAction()
                 return
 
             if ext in (".docx", ".odt", ".epub"):
                 self.openXmlDropped.emit(file_path)
-                event.acceptProposedAction()
+                e.acceptProposedAction()
                 return
 
             # Read the content of the file and set it to QTextEdit
             self.load_file(file_path)
             self.fileDropped.emit(file_path)  # <-- emit with path
-            event.acceptProposedAction()
+            e.acceptProposedAction()
         elif mime_data.hasText():
             self.document().setPlainText(mime_data.text())
             self.content_filename = ""
             self.fileDropped.emit("")
-            event.acceptProposedAction()
+            e.acceptProposedAction()
 
     def load_file(self, file_path):
         try:

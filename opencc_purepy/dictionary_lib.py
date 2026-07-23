@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 from threading import Lock
 from typing import Dict, Tuple, Union, Optional, Mapping, List
@@ -16,7 +18,7 @@ class DictionaryMaxlength:
     """
 
     # Immutable, subclass-overridable
-    DICT_FIELDS: Tuple[str, ...] = (
+    DICT_FIELDS: tuple[str, ...] = (
         "st_characters", "st_phrases", "st_punctuations",
         "ts_characters", "ts_phrases", "ts_punctuations",
         "tw_phrases", "tw_phrases_rev",
@@ -282,7 +284,7 @@ class DictionaryMaxlength:
 
         instance = cls()
 
-        default_paths = {
+        default_paths: Dict[str, PathLike] = {
             'st_characters': "STCharacters.txt",
             'st_phrases': "STPhrases.txt",
             'st_punctuations': "STPunctuations.txt",

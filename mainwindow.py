@@ -88,8 +88,10 @@ class MainWindow(QMainWindow):
         self.ui.rbStd.clicked.connect(self.std_hk_select)
         self.ui.rbHK.clicked.connect(self.std_hk_select)
         self.ui.rbZhTw.clicked.connect(self.zhtw_select)
-        self.ui.tabWidget.currentChanged[int].connect(self.tab_bar_changed)
-        self.ui.cbZhTw.clicked[bool].connect(self.cbzhtw_clicked)
+        # self.ui.tabWidget.currentChanged[int].connect(self.tab_bar_changed)
+        self.ui.tabWidget.currentChanged.connect(self.tab_bar_changed)
+        # self.ui.cbZhTw.clicked[bool].connect(self.cbzhtw_clicked)
+        self.ui.cbZhTw.clicked.connect(self.cbzhtw_clicked)
         self.ui.btnAdd.clicked.connect(self.btn_add_clicked)
         self.ui.btnRemove.clicked.connect(self.btn_remove_clicked)
         self.ui.btnClear.clicked.connect(self.btn_clear_clicked)
@@ -414,7 +416,7 @@ class MainWindow(QMainWindow):
 
         filename = getattr(self.ui.tbSource, "content_filename", None)
         if isinstance(filename, str):
-            base = os.path.basename(str(filename))
+            base = os.path.basename(filename)
             self.ui.lblFilename.setText(base)
             # self.statusBar().showMessage(f"File: {filename}")
 

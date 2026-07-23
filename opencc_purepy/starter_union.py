@@ -38,7 +38,7 @@ class StarterUnion:
 
         if len(slot_list) == 1:
             d, m_len = slot_list[0]
-            return StarterUnion(merged_map=d, cap=int(m_len))
+            return StarterUnion(merged_map=d, cap=m_len)
 
         merged: Dict[str, str] = {}
         max_len = 0
@@ -54,7 +54,7 @@ class StarterUnion:
         for d, m_len in reversed(slot_list):
             if d:
                 merged.update(d)
-            max_len = max(max_len, int(m_len))
+            max_len = max(max_len, m_len)
 
         return StarterUnion(merged_map=merged, cap=max_len)
 

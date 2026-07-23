@@ -24,7 +24,7 @@ class DeTofuEntry:
     extension: DeTofuLevel
 
 
-_BUILTIN_ENTRIES: Optional[Tuple[DeTofuEntry, ...]] = None
+_BUILTIN_ENTRIES: Optional[tuple[DeTofuEntry, ...]] = None
 
 
 def parse_level(value: str) -> DeTofuLevel:
@@ -104,7 +104,7 @@ def _enumerate_scalars(text: str) -> Iterator[str]:
             i += 1
 
 
-def parse_entries(text: str) -> Tuple[DeTofuEntry, ...]:
+def parse_entries(text: str) -> tuple[DeTofuEntry, ...]:
     entries = []
 
     if not text:
@@ -136,7 +136,7 @@ def _builtin_tofu_path() -> Path:
     return Path(__file__).resolve().parent / "dicts" / "TSCharactersTofu.txt"
 
 
-def get_builtin_entries() -> Tuple[DeTofuEntry, ...]:
+def get_builtin_entries() -> tuple[DeTofuEntry, ...]:
     global _BUILTIN_ENTRIES
 
     if _BUILTIN_ENTRIES is None:
@@ -179,7 +179,7 @@ class DeTofuMap:
         items = pairs.items() if isinstance(pairs, Mapping) else pairs
 
         for key, value in items:
-            tofu = _first_scalar(key)
+            tofu = _first_scalar(str(key))
             fallback = _first_scalar(value)
 
             if tofu is not None and fallback is not None:

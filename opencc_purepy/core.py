@@ -71,7 +71,7 @@ class OpenccConfig(Enum):
     T2JP = "t2jp"
     JP2T = "jp2t"
 
-    value: str
+    # value: str
 
     def to_canonical_name(self) -> str:
         """Return OpenCC canonical config name (e.g. 's2t')."""
@@ -520,7 +520,7 @@ class OpenCC:
         bmp_cap = union.bmp_cap
         astral_mask = union.astral_mask
         astral_cap = union.astral_cap
-        global_cap = int(union.cap) if union.cap else 0
+        global_cap = union.cap if union.cap else 0
 
         while i < n:
             starter = segment[i]
