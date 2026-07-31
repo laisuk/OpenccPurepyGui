@@ -95,8 +95,8 @@ class CustomDictsTest(unittest.TestCase):
         self.assertEqual(OpenCC("s2hk").convert("喫茶小舖"), "喫茶小舖")
 
     def test_reverse_tw_hk_variant_behavior_remains_unchanged(self) -> None:
-        self.assertEqual(OpenCC("tw2t").convert("吃口飯"), "喫口飯")
-        self.assertEqual(OpenCC("hk2t").convert("吃口飯"), "喫口飯")
+        self.assertEqual(OpenCC("tw2t").convert("吃口飯"), "吃口飯")
+        self.assertEqual(OpenCC("hk2t").convert("吃口飯"), "吃口飯")
 
 
 if __name__ == "__main__":

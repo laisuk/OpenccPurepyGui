@@ -7,8 +7,8 @@ from typing import Dict, Tuple, Union, Optional, Mapping, List
 from .dict_slot import DictSlot, DictSlotLike
 
 PathLike = Union[str, Path]
-SlotPathMap = Mapping[DictSlotLike, PathLike]
-SlotPairsMap = Optional[Mapping[DictSlotLike, Mapping[str, str]]]
+SlotPathMap = Dict[DictSlotLike, PathLike]
+SlotPairsMap = Optional[Dict[DictSlotLike, Mapping[str, str]]]
 
 
 class DictionaryMaxlength:

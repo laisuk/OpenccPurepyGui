@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 from opencc_purepy import OpenCC
 from opencc_purepy.office_helper import convert_office_doc, OFFICE_FORMATS
+from opencc_purepy.utils import parse_custom_dict_spec
 
 
 def main(args):
@@ -82,12 +83,19 @@ def main(args):
         print(f"ℹ️  Auto-extension applied: {output_file}", file=sys.stderr)
 
     try:
+        specs = [parse_custom_dict_spec(s) for s in (args.custom_dict or [])]
+        opencc = OpenCC.from_dict_files(config, specs) if specs else OpenCC(config)
+    except Exception as ex:
+        print(f"❌  Invalid --custom-dict: {ex}", file=sys.stderr)
+        return 1
+
+    try:
         # Perform Office document conversion
         success, message = convert_office_doc(
             input_file,
             output_file,
             office_format,
-            OpenCC(config),
+            opencc,
             punct,
             keep_font,
         )

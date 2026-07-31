@@ -3,6 +3,7 @@ import os
 import sys
 
 from opencc_purepy import OpenCC
+from opencc_purepy.utils import parse_custom_dict_spec
 
 
 def main(args):
@@ -32,7 +33,12 @@ def main(args):
         return 1
 
     # Plain text conversion fallback
-    opencc = OpenCC(args.config)
+    try:
+        specs = [parse_custom_dict_spec(s) for s in (args.custom_dict or [])]
+        opencc = OpenCC.from_dict_files(args.config, specs) if specs else OpenCC(args.config)
+    except Exception as ex:
+        print(f"❌  Invalid --custom-dict: {ex}", file=sys.stderr)
+        return 1
 
     # Prompt user if input is from terminal
     if args.input is None and sys.stdin.isatty():

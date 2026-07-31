@@ -1,6 +1,8 @@
 import os
+import sys
 
 from .dictionary_lib import DictionaryMaxlength
+from .utils import parse_custom_dict_spec, custom_dict_specs_to_maps
 
 BLUE = "\033[1;34m"
 RESET = "\033[0m"
@@ -52,6 +54,14 @@ def main(args):
     dictionaries = DictionaryMaxlength.from_dicts(
         base_dir=args.dicts,
     )
+
+    try:
+        specs = [parse_custom_dict_spec(s) for s in (args.custom_dict or [])]
+        overrides, appends = custom_dict_specs_to_maps(specs)
+        dictionaries.with_custom_dict_files(overrides=overrides, appends=appends)
+    except Exception as ex:
+        print(f"❌  Invalid --custom-dict: {ex}", file=sys.stderr)
+        return 1
 
     # ------------------------------------------------------------------
     # Serialize output
