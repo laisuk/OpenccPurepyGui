@@ -1,11 +1,12 @@
 import re
 from enum import Enum
 from multiprocessing import Pool, cpu_count
-
 from typing import Dict, Iterable, List, Mapping, Optional, Tuple, Union, cast
-from .utils import CustomDictSpec, custom_dict_specs_to_maps
+
+from .utils import CustomDictSpec
 from .detofu import DeTofuLevel, DeTofuMap, parse_level, detofu
 from .dict_refs import DictRefs, StarterUnionLike
+from .dict_slot import DictSlot
 from .dictionary_lib import DictionaryMaxlength, PathLike, SlotPathMap
 from .union_cache import UnionCache, UnionKey
 
@@ -80,6 +81,19 @@ class OpenccConfig(Enum):
 
     @classmethod
     def parse(cls, s: str) -> "OpenccConfig":
+        """Normalize a supported OpenCC configuration name.
+
+        Args:
+            s: Configuration name. Surrounding whitespace and letter case are
+                ignored.
+
+        Returns:
+            The matching OpenCC configuration.
+
+        Raises:
+            ValueError: If s is not a string or names an unsupported
+                configuration.
+        """
         if not isinstance(s, str):
             raise ValueError("Invalid config: {}".format(s))
         return cls(s.strip().lower())
@@ -263,36 +277,62 @@ class OpenCC:
             config: _ConfigLike = None,
             specs: Optional[Iterable[CustomDictSpec]] = None,
     ) -> "OpenCC":
-        """Create an OpenCC instance from packaged dictionaries and custom files.
+        """
+        Create an ``OpenCC`` instance from packaged JSON dictionaries plus
+        one or more custom dictionary files.
 
-        This post-load convenience constructor loads the bundled
-        dictionary_maxlength.json first, then applies each CustomDictSpec
-        through DictionaryMaxlength.with_custom_dict_files().
+        This is the post-load custom-file convenience constructor. It loads
+        the bundled ``dictionary_maxlength.json`` data with
+        ``DictionaryMaxlength.from_json()`` first, then applies each
+        ``CustomDictSpec`` through ``with_custom_dict_files()``.
 
-        Append mode merges custom entries into the built-in slot with
-        late-comer-wins duplicate handling. Override mode replaces the selected
-        slot before appends are applied.
+        Use this when you want to keep the packaged dictionaries and add or
+        replace selected slots from OpenCC-compatible UTF-8 text files. For
+        loading a full raw TXT dictionary directory, use
+        ``OpenCC.from_dicts()`` instead.
 
-        Example:
-            >>> from opencc_purepy import DictSlot, OpenCC
-            >>> from opencc_purepy.utils import CustomDictSpec
-            >>> cc = OpenCC.from_dict_files(
-            ...     config="hk2sp",
-            ...     specs=[
-            ...         CustomDictSpec(
-            ...             DictSlot.HKPhrasesRev,
-            ...             "append",
-            ...             "./my_hk_dict.txt",
-            ...         ),
-            ...     ],
-            ... )
+        Spec format:
+
+            ``CustomDictSpec(slot, mode, path)``
+
+        ``mode`` must be ``"append"`` or ``"override"``. Append mode merges
+        custom entries into the built-in slot with late-comer-wins duplicate
+        handling. Override mode replaces the selected slot before appends are
+        applied.
+
+        Examples
+        --------
+        >>> from opencc_purepy import DictSlot, OpenCC
+        >>> from opencc_purepy.utils import CustomDictSpec
+        >>> cc = OpenCC.from_dict_files(
+        ...     config="hk2sp",
+        ...     specs=[
+        ...         CustomDictSpec(DictSlot.HKPhrasesRev, "append", "./my_hk_dict.txt"),
+        ...     ],
+        ... )
+
+        :param config:
+            OpenCC configuration name. Defaults to ``s2t`` when omitted.
+
+        :param specs:
+            Iterable of ``CustomDictSpec`` values describing slot, mode, and
+            file path for each custom dictionary file.
+
+        :return:
+            ``OpenCC`` instance using packaged JSON dictionaries plus custom
+            file changes.
         """
         dictionary = DictionaryMaxlength.from_json()
-        overrides, appends = custom_dict_specs_to_maps(specs)
-        dictionary.with_custom_dict_files(
-            overrides=overrides,
-            appends=appends,
-        )
+
+        for spec in specs or ():
+            if spec.mode == "override":
+                dictionary.with_custom_dict_files(overrides={spec.slot: spec.path})
+            elif spec.mode == "append":
+                dictionary.with_custom_dict_files(appends={spec.slot: spec.path})
+            else:
+                raise ValueError(
+                    "Invalid custom dictionary mode: {}".format(spec.mode)
+                )
 
         return cls(config, dictionary=dictionary)
 
@@ -333,7 +373,7 @@ class OpenCC:
         """
         self.config = self._normalize_config(config)
 
-    def get_config(self):
+    def get_config(self) -> str:
         """
         Get the current conversion config.
 
@@ -342,15 +382,20 @@ class OpenCC:
         return self.config
 
     @classmethod
-    def supported_configs(cls):
+    def supported_configs(cls) -> List[str]:
         """
         Return a list of supported conversion config strings.
 
         :return: List of config names
         """
-        return cls.CONFIG_LIST
+        return list(cls.CONFIG_LIST)
 
-    def get_last_error(self):
+    @staticmethod
+    def available_slots() -> List[str]:
+        """Return the canonical names of all available dictionary slots."""
+        return [slot.canonical_name() for slot in DictSlot]
+
+    def get_last_error(self) -> Optional[str]:
         """
         Retrieve the last error message, if any.
 
@@ -767,7 +812,7 @@ class OpenCC:
             translate_table = cast(_PunctuationTranslateTable, PUNCT_S2T_MAP)
         return text.translate(translate_table)
 
-    def s2t(self, input_text, punctuation=False):
+    def s2t(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Simplified Chinese to Traditional Chinese.
 
@@ -778,7 +823,7 @@ class OpenCC:
         refs = self._get_dict_refs("s2t_punct" if punctuation else "s2t")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
 
-    def t2s(self, input_text, punctuation=False):
+    def t2s(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Traditional Chinese to Simplified Chinese.
 
@@ -789,7 +834,7 @@ class OpenCC:
         refs = self._get_dict_refs("t2s_punct" if punctuation else "t2s")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
 
-    def s2tw(self, input_text, punctuation=False):
+    def s2tw(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Simplified Chinese to Traditional Chinese (Taiwan Standard).
 
@@ -800,7 +845,7 @@ class OpenCC:
         refs = self._get_dict_refs("s2tw_punct" if punctuation else "s2tw")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
 
-    def tw2s(self, input_text, punctuation=False):
+    def tw2s(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Traditional Chinese (Taiwan) to Simplified Chinese.
 
@@ -811,7 +856,7 @@ class OpenCC:
         refs = self._get_dict_refs("tw2s_punct" if punctuation else "tw2s")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
 
-    def s2twp(self, input_text, punctuation=False):
+    def s2twp(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Simplified Chinese to Traditional (Taiwan) with phrase and variant normalization.
 
@@ -825,7 +870,7 @@ class OpenCC:
         refs = self._get_dict_refs("s2twp_punct" if punctuation else "s2twp")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
 
-    def tw2sp(self, input_text, punctuation=False):
+    def tw2sp(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Traditional (Taiwan) with phrases to Simplified Chinese.
 
@@ -836,7 +881,7 @@ class OpenCC:
         refs = self._get_dict_refs("tw2sp_punct" if punctuation else "tw2sp")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
 
-    def s2hkp(self, input_text, punctuation=False):
+    def s2hkp(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Simplified Chinese to Hong Kong Traditional with phrase and variant normalization.
 
@@ -850,7 +895,7 @@ class OpenCC:
         refs = self._get_dict_refs("s2hkp_punct" if punctuation else "s2hkp")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
 
-    def hk2sp(self, input_text, punctuation=False):
+    def hk2sp(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Hong Kong Traditional with phrases and variants to Simplified Chinese.
 
@@ -861,7 +906,7 @@ class OpenCC:
         refs = self._get_dict_refs("hk2sp_punct" if punctuation else "hk2sp")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
 
-    def s2hk(self, input_text, punctuation=False):
+    def s2hk(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Simplified Chinese to Traditional (Hong Kong Standard).
 
@@ -872,7 +917,7 @@ class OpenCC:
         refs = self._get_dict_refs("s2hk_punct" if punctuation else "s2hk")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
 
-    def hk2s(self, input_text, punctuation=False):
+    def hk2s(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Traditional (Hong Kong) to Simplified Chinese.
 

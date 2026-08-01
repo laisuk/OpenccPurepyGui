@@ -3,11 +3,20 @@ from __future__ import print_function
 import argparse
 import sys
 
+from .core import OpenCC
+
 try:
     from importlib.metadata import version, PackageNotFoundError
 except ImportError:
     version = None
     PackageNotFoundError = Exception
+
+CONFIG_HELP = "Supported configurations: {}. Default: s2t.".format(
+    ", ".join(OpenCC.supported_configs())
+)
+SLOTS_HELP = "Available slots: {}.".format(
+    ", ".join(OpenCC.available_slots())
+)
 
 
 def _get_version():
@@ -39,6 +48,16 @@ def _format_arg(value):
     if normalized in OFFICE_FORMATS:
         return normalized
     raise argparse.ArgumentTypeError("invalid office format: {}".format(value))
+
+
+def _detofu_arg(value):
+    from .detofu import parse_level
+
+    try:
+        parse_level(value)
+        return value
+    except (TypeError, ValueError) as ex:
+        raise argparse.ArgumentTypeError(str(ex))
 
 
 def _run_convert(args):
@@ -96,7 +115,7 @@ def main():
         "--config",
         metavar="<conversion>",
         type=_config_arg,
-        help="Conversion configuration",
+        help=CONFIG_HELP,
     )
     parser_convert.add_argument(
         "-p",
@@ -106,14 +125,35 @@ def main():
         help="Punctuation conversion: Enable/Disable",
     )
     parser_convert.add_argument(
+        "--detofu",
+        nargs="?",
+        const="ExtB",
+        default=None,
+        type=_detofu_arg,
+        metavar="<level>",
+        help=(
+            "Apply tofu-safe fallback after conversion. "
+            "Levels: all/ExtB, ExtC, ExtD, ExtE, ExtF, ExtG, ExtH, ExtI."
+        ),
+    )
+    parser_convert.add_argument(
+        "--detofu-file",
+        metavar="<file>",
+        help=(
+            "Load additional detofu fallback mappings from a UTF-8 text file. "
+            "Custom mappings override built-in mappings; requires --detofu."
+        ),
+    )
+    parser_convert.add_argument(
         "-D",
         "--custom-dict",
         action="append",
         metavar="<slot:mode:path>",
         help=(
-            "Load custom dictionary file. "
-            "Format: slot:mode:path, e.g. STPhrases:append:custom.txt. "
-            "Can be used multiple times."
+                "Load custom dictionary file. "
+                "Format: slot:mode:path, e.g. STPhrases:append:custom.txt. "
+                "Can be used multiple times."
+                " " + SLOTS_HELP
         ),
     )
     parser_convert.add_argument("--in-enc", metavar="<encoding>", default="UTF-8", help="Input encoding")
@@ -132,7 +172,7 @@ def main():
         "--config",
         metavar="<conversion>",
         type=_config_arg,
-        help="Conversion configuration",
+        help=CONFIG_HELP,
     )
     parser_office.add_argument(
         "-p",
@@ -146,20 +186,20 @@ def main():
         "--format",
         metavar="<format>",
         type=_format_arg,
-        help="Target Office format (e.g., docx, xlsx, pptx, odt, epub)",
+        help="Document format override (e.g., docx, xlsx, pptx, odt, epub)",
     )
     parser_office.add_argument(
         "-k",
         "--keep-font",
         action="store_true",
         default=True,
-        help="Preserve font-family information in Office content (Default: True)",
+        help=argparse.SUPPRESS,
     )
     parser_office.add_argument(
         "--no-keep-font",
         action="store_false",
         dest="keep_font",
-        help="Do not preserve font-family information in Office content (Overrides --keep-font)",
+        help="Do not preserve font-family information in Office content",
     )
     parser_office.add_argument(
         "-D",
@@ -167,9 +207,10 @@ def main():
         action="append",
         metavar="<slot:mode:path>",
         help=(
-            "Load custom dictionary file. "
-            "Format: slot:mode:path, e.g. STPhrases:append:custom.txt. "
-            "Can be used multiple times."
+                "Load custom dictionary file. "
+                "Format: slot:mode:path, e.g. STPhrases:append:custom.txt. "
+                "Can be used multiple times."
+                " " + SLOTS_HELP
         ),
     )
     parser_office.set_defaults(func=_run_office)
@@ -190,7 +231,10 @@ def main():
         "-o",
         "--output",
         metavar="<filename>",
-        help="Write generated dictionary to <filename>. If not specified, a default filename is used.",
+        help=(
+            "Write generated dictionary to <filename>. "
+            "If not specified, a default filename is used."
+        ),
     )
     parser_dictgen.add_argument(
         '-c',
@@ -217,9 +261,10 @@ def main():
         action="append",
         metavar="<slot:mode:path>",
         help=(
-            "Load custom dictionary file. "
-            "Format: slot:mode:path, e.g. STPhrases:append:custom.txt. "
-            "Can be used multiple times."
+                "Load custom dictionary file. "
+                "Format: slot:mode:path, e.g. STPhrases:append:custom.txt. "
+                "Can be used multiple times."
+                " " + SLOTS_HELP
         ),
     )
 

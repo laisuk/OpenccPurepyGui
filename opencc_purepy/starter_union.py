@@ -1,31 +1,15 @@
-from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List
 
-DictSlot = Tuple[Dict[str, str], int]
+from .dict_refs import DictSlot, StarterUnionLike
 
 
 @dataclass
-class StarterUnion:
-    """Merged, precedence-aware union of 1..N dictionary *slots* **plus**
-    optional per-starter length index (mask + cap), derived from keys.
-
-    This version assumes the legacy JSON (no precomputed caps/masks). We build
-    masks/caps lazily from `merged_map` via :meth:`build_starter_index`.
-
-    Precedence: **earlier** slots win; later slots only fill missing keys.
-    `cap` is the *global* maximum phrase length across slots.
-
-    Mask/Cap semantics (same as opencc-fmmseg):
-    - For each starter `ch`, `mask` uses bit layout:
-      bit 0 -> len==1, bit 1 -> len==2, ..., bit 63 -> len>=64 (CAP bucket).
-    - `cap` arrays store the maximum length (in characters) per starter.
-    - BMP starters (<= 0xFFFF) are dense arrays; astral are sparse dicts.
-    """
+class StarterUnion(StarterUnionLike):
+    """Precedence-aware merged dictionary slot with lazy per-starter indexes."""
 
     merged_map: Dict[str, str]
     cap: int
-
     bmp_mask: List[int] = field(default_factory=lambda: [0] * 0x10000)
     bmp_cap: List[int] = field(default_factory=lambda: [0] * 0x10000)
     astral_mask: Dict[str, int] = field(default_factory=dict)
@@ -34,67 +18,55 @@ class StarterUnion:
 
     @staticmethod
     def merge_precedence(slots: Iterable[DictSlot]) -> "StarterUnion":
-        slot_list: List[DictSlot] = list(slots)
+        slot_list = list(slots)
 
         if len(slot_list) == 1:
-            d, m_len = slot_list[0]
-            return StarterUnion(merged_map=d, cap=m_len)
+            dictionary, max_len = slot_list[0]
+            return StarterUnion(merged_map=dictionary, cap=max_len)
 
         merged: Dict[str, str] = {}
         max_len = 0
-        # for d, m_len in slot_list:
-        #     if d:
-        #         for k, v in d.items():
-        #             if k not in merged:
-        #                 merged[k] = v
-        #     max_len = max(max_len, int(m_len))
 
-        # reverse update preserves "first slot wins"
-        # later update from earlier slot overrides lower-precedence entries
-        for d, m_len in reversed(slot_list):
-            if d:
-                merged.update(d)
-            max_len = max(max_len, m_len)
+        # Later update from earlier slots preserves existing conversion precedence:
+        # the first slot in the requested order wins for duplicate keys.
+        for dictionary, slot_max_len in reversed(slot_list):
+            if dictionary:
+                merged.update(dictionary)
+            max_len = max(max_len, slot_max_len)
 
         return StarterUnion(merged_map=merged, cap=max_len)
 
     def build_starter_index(self) -> None:
-        """Populate per-starter masks and caps by scanning `merged_map` keys.
-        Safe to call multiple times; subsequent calls are no-ops.
-        """
+        """Populate per-starter masks and caps from merged_map keys."""
         if self._indexed:
             return
 
         bmp_mask = self.bmp_mask
         bmp_cap = self.bmp_cap
-        a_mask = self.astral_mask
-        a_cap = self.astral_cap
+        astral_mask = self.astral_mask
+        astral_cap = self.astral_cap
 
-        def bit_for(length: int) -> int:
-            if length <= 0:
-                return 0
-            if length >= 64:
-                return 1 << 63
-            return 1 << (length - 1)
-
-        for key in self.merged_map.keys():
+        for key in self.merged_map:
             if not key:
                 continue
-            starter = key[0]
+
             key_len = len(key)
-            b = bit_for(key_len)
+            if key_len >= 64:
+                bit = 1 << 63
+            else:
+                bit = 1 << (key_len - 1)
+
+            starter = key[0]
             code = ord(starter)
 
             if code <= 0xFFFF:
-                idx = code
-                bmp_mask[idx] |= b
-                if key_len > bmp_cap[idx]:
-                    bmp_cap[idx] = key_len
+                bmp_mask[code] |= bit
+                if key_len > bmp_cap[code]:
+                    bmp_cap[code] = key_len
             else:
-                prev = a_mask.get(starter, 0)
-                a_mask[starter] = prev | b
-                if key_len > a_cap.get(starter, 0):
-                    a_cap[starter] = key_len
+                astral_mask[starter] = astral_mask.get(starter, 0) | bit
+                if key_len > astral_cap.get(starter, 0):
+                    astral_cap[starter] = key_len
 
         self._indexed = True
 

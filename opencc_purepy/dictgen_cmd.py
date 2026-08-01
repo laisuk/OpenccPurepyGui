@@ -2,7 +2,7 @@ import os
 import sys
 
 from .dictionary_lib import DictionaryMaxlength
-from .utils import parse_custom_dict_spec, custom_dict_specs_to_maps
+from .utils import parse_custom_dict_spec
 
 BLUE = "\033[1;34m"
 RESET = "\033[0m"
@@ -19,6 +19,9 @@ def main(args):
             - format (str): Output format, currently supports 'json'.
             - output (str): Output file path or None for default.
             - dicts (str): Optional custom dictionary directory.
+            - compact (bool): Whether to write compact JSON.
+            - no_sort (bool): Whether to preserve dictionary insertion order.
+            - custom_dict (list[str] | None): Ordered custom dictionary specs.
 
     Returns:
         int: Exit code (0 for success).
@@ -32,8 +35,8 @@ def main(args):
         if args.dicts is not None:
             DictionaryMaxlength.validate_dicts_dir(args.dicts)
 
-    except FileNotFoundError as e:
-        print("Error: {}".format(e))
+    except (OSError, ValueError) as e:
+        print("Error: {}".format(e), file=sys.stderr)
         return 1
 
     # ------------------------------------------------------------------
@@ -51,32 +54,28 @@ def main(args):
     # Generate dictionary data
     # ------------------------------------------------------------------
 
-    dictionaries = DictionaryMaxlength.from_dicts(
-        base_dir=args.dicts,
-    )
-
     try:
+        dictionaries = DictionaryMaxlength.from_dicts(base_dir=args.dicts)
         specs = [parse_custom_dict_spec(s) for s in (args.custom_dict or [])]
-        overrides, appends = custom_dict_specs_to_maps(specs)
-        dictionaries.with_custom_dict_files(overrides=overrides, appends=appends)
-    except Exception as ex:
-        print(f"❌  Invalid --custom-dict: {ex}", file=sys.stderr)
+        for spec in specs:
+            if spec.mode == "override":
+                dictionaries.with_custom_dict_files(overrides={spec.slot: spec.path})
+            else:
+                dictionaries.with_custom_dict_files(appends={spec.slot: spec.path})
+
+        if args.format == "json":
+            dictionaries.serialize_to_json(
+                output_file_path,
+                pretty=not args.compact,
+                sort_keys=not args.no_sort,
+            )
+    except (OSError, UnicodeError, ValueError) as ex:
+        print("❌  Dictionary generation failed: {}".format(ex), file=sys.stderr)
         return 1
 
-    # ------------------------------------------------------------------
-    # Serialize output
-    # ------------------------------------------------------------------
-
-    if args.format == "json":
-        dictionaries.serialize_to_json(
-            output_file_path,
-            pretty=not args.compact,
-            sort_keys=not args.no_sort,
-        )
-
-        print(
-            f"{BLUE}Dictionary saved in JSON format at: "
-            f"{output_file_path}{RESET}"
-        )
+    print(
+        f"{BLUE}Dictionary saved in JSON format at: "
+        f"{output_file_path}{RESET}"
+    )
 
     return 0

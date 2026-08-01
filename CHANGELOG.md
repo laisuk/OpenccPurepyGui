@@ -17,6 +17,8 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ### Changed
 
+- Synced the embedded `opencc-purepy` v1.4.2 runtime refinements, including sequential custom dictionary application so repeated `-D` options preserve command-line order and late entries win as expected.
+- Hardened the bundled CLI error handling, configuration and dictionary-slot normalization, DeTofu validation, and punctuation dictionary data.
 - Flattened direct `t2twp` and `tw2tp` conversion from two dictionary passes to one using the Taiwan triple unions.
 - Renamed the internal Taiwan and Hong Kong triple union keys to `TwTriple`, `TwRevTriple`, `HkTriple`, and
   `HkRevTriple`.

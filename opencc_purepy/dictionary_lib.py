@@ -61,12 +61,15 @@ class DictionaryMaxlength:
 
         self._is_shared_provider = False
 
-    def __repr__(self):
-        count = sum(bool(v[0]) for v in self.__dict__.values())
+    def __repr__(self) -> str:
+        count = sum(
+            bool(getattr(self, field)[0])
+            for field in self.DICT_FIELDS
+        )
         return "<DictionaryMaxlength with {} loaded dicts>".format(count)
 
     @classmethod
-    def get_provider(cls):
+    def get_provider(cls) -> "DictionaryMaxlength":
         """
         Return a shared dictionary provider loaded from precompiled JSON.
         :return: DictionaryMaxlength instance
@@ -87,7 +90,7 @@ class DictionaryMaxlength:
             )
 
     @classmethod
-    def new(cls):
+    def new(cls) -> "DictionaryMaxlength":
         """
         Backward-compatible alias for the shared dictionary provider.
         :return: DictionaryMaxlength instance
@@ -524,16 +527,8 @@ class DictionaryMaxlength:
 
     @staticmethod
     def _normalize_slot(slot: DictSlotLike) -> str:
-        if isinstance(slot, DictSlot):
-            return slot.value
-
-        if slot in DictSlot._value2member_map_:
-            return slot
-
-        try:
-            return DictSlot.__members__[slot].value
-        except KeyError:
-            raise ValueError("Unknown dictionary slot: {}".format(slot)) from None
+        """Return the serialized field name for a public dictionary slot."""
+        return DictSlot.parse(slot).value
 
     @classmethod
     def _normalize_slot_path_map(

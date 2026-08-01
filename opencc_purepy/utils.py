@@ -1,13 +1,17 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Literal, Optional, Tuple
+from typing import Iterable, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from .dict_slot import DictSlot
 from .dictionary_lib import PathLike, SlotPathMap
 
-CustomDictMode = Literal["append", "override"]
+if TYPE_CHECKING:
+    from typing import Literal
+
+    CustomDictMode = Literal["append", "override"]
+else:
+    CustomDictMode = str
 
 
 @dataclass(frozen=True)
@@ -88,6 +92,10 @@ def parse_custom_dict_specs(
 
     Return value order is ``(overrides, appends)``.
 
+    Because mappings can hold only one path per slot and mode, later records
+    replace earlier records with the same slot. Use ``OpenCC.from_dict_files()``
+    when repeated files or mixed modes must be applied sequentially.
+
     For API code that already has ``CustomDictSpec`` instances, use
     ``custom_dict_specs_to_maps()`` instead.
     """
@@ -122,6 +130,10 @@ def custom_dict_specs_to_maps(
     check file existence.
 
     Return value order is ``(overrides, appends)``.
+
+    Because mappings can hold only one path per slot and mode, later records
+    replace earlier records with the same slot. Use ``OpenCC.from_dict_files()``
+    when repeated files or mixed modes must be applied sequentially.
     """
     overrides: SlotPathMap = {}
     appends: SlotPathMap = {}

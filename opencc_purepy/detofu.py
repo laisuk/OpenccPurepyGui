@@ -7,6 +7,8 @@ from typing import Dict, Iterable, Iterator, Mapping, Optional, Tuple, Union
 
 
 class DeTofuLevel(IntEnum):
+    """Minimum CJK Unified Ideographs extension to replace."""
+
     ExtB = 0
     ExtC = 1
     ExtD = 2
@@ -19,6 +21,8 @@ class DeTofuLevel(IntEnum):
 
 @dataclass(frozen=True)
 class DeTofuEntry:
+    """A single unsupported-character fallback mapping."""
+
     tofu: str
     fallback: str
     extension: DeTofuLevel
@@ -28,6 +32,18 @@ _BUILTIN_ENTRIES: Optional[tuple[DeTofuEntry, ...]] = None
 
 
 def parse_level(value: str) -> DeTofuLevel:
+    """Parse a DeTofu level name.
+
+    Args:
+        value: Level name such as ``all``, ``ext-b``, or ``ext-c``.
+
+    Returns:
+        The normalized minimum extension level.
+
+    Raises:
+        TypeError: If ``value`` is ``None``.
+        ValueError: If the level name is unsupported.
+    """
     if value is None:
         raise TypeError("value must not be None")
 
@@ -105,6 +121,18 @@ def _enumerate_scalars(text: str) -> Iterator[str]:
 
 
 def parse_entries(text: str) -> tuple[DeTofuEntry, ...]:
+    """Parse tab-separated DeTofu mappings.
+
+    Blank lines, comments, malformed rows, and rows with unknown extension
+    levels are ignored. Only the first Unicode scalar from each mapping field
+    is used.
+
+    Args:
+        text: Mapping text in ``tofu<TAB>fallback<TAB>level`` format.
+
+    Returns:
+        The valid parsed entries in input order.
+    """
     entries = []
 
     if not text:
@@ -137,6 +165,7 @@ def _builtin_tofu_path() -> Path:
 
 
 def get_builtin_entries() -> tuple[DeTofuEntry, ...]:
+    """Return the lazily loaded built-in DeTofu entries."""
     global _BUILTIN_ENTRIES
 
     if _BUILTIN_ENTRIES is None:
@@ -151,12 +180,15 @@ def get_builtin_entries() -> tuple[DeTofuEntry, ...]:
 
 
 class DeTofuMap:
+    """A character fallback map filtered by CJK extension level."""
+
     def __init__(self, level: DeTofuLevel, mapping: Dict[str, str]) -> None:
         self._level = level
         self._map = mapping
 
     @classmethod
     def builtin(cls, level: DeTofuLevel) -> "DeTofuMap":
+        """Create a map from the packaged DeTofu dictionary."""
         mapping: Dict[str, str] = {}
 
         for entry in get_builtin_entries():
@@ -166,6 +198,7 @@ class DeTofuMap:
         return cls(level, mapping)
 
     def with_custom_file(self, path: Union[str, Path]) -> "DeTofuMap":
+        """Merge compatible DeTofu entries from a UTF-8 text file."""
         text = Path(path).read_text(encoding="utf-8")
         return self._with_custom_entries(parse_entries(text))
 
@@ -176,6 +209,11 @@ class DeTofuMap:
                 Iterable[Tuple[str, str]]
             ]
     ) -> "DeTofuMap":
+        """Merge custom character fallback pairs into this map.
+
+        Only the first Unicode scalar of each key and value is used. Later
+        pairs replace earlier mappings.
+        """
         items = pairs.items() if isinstance(pairs, Mapping) else pairs
 
         for key, value in items:
@@ -188,6 +226,7 @@ class DeTofuMap:
         return self
 
     def convert(self, text: Optional[str]) -> str:
+        """Replace mapped characters while preserving all other text."""
         if not text or not self._map:
             return text or ""
 
@@ -205,6 +244,18 @@ def detofu(
         text: Optional[str],
         level: Union[DeTofuLevel, str] = DeTofuLevel.ExtB,
 ) -> str:
+    """Replace unsupported CJK extension characters with built-in fallbacks.
+
+    Args:
+        text: Text to process. ``None`` is treated as an empty string.
+        level: Minimum extension level to replace, as an enum or level name.
+
+    Returns:
+        Text with applicable fallback characters substituted.
+
+    Raises:
+        ValueError: If a string level name is unsupported.
+    """
     if isinstance(level, str):
         level = parse_level(level)
 

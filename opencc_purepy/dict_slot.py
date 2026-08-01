@@ -71,5 +71,9 @@ class DictSlot(str, Enum):
 
         raise ValueError("Unknown dictionary slot: {}".format(value))
 
+    def canonical_name(self) -> str:
+        """Return the public canonical dictionary slot name."""
+        return self.name
+
 
 DictSlotLike = Union[DictSlot, str]
