@@ -19,6 +19,7 @@ class UnionKey(Enum):
     HkRevPair = auto()
     JpsCharactersRev = auto()
     JpsPair = auto()
+    StPunctOnly = auto()
 
 
 class UnionCache:
@@ -83,6 +84,8 @@ class UnionCache:
             return [get_slot("jps_characters_rev")]
         if key is UnionKey.JpsPair:
             return [get_slot("jps_phrases"), get_slot("jps_characters")]
+        if key is UnionKey.StPunctOnly:
+            return [get_slot("st_punctuations")]
 
         raise KeyError("UnionKey not handled: {}".format(key))
 

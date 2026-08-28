@@ -125,6 +125,20 @@ def main():
         help="Punctuation conversion: Enable/Disable",
     )
     parser_convert.add_argument(
+        "-n",
+        "--norm-compat",
+        action="store_true",
+        default=False,
+        help="Normalize CJK Compatibility Ideographs before conversion",
+    )
+    parser_convert.add_argument(
+        "-E",
+        "--norm-compat-extended",
+        action="store_true",
+        default=False,
+        help="Apply extended Unicode compatibility normalization before conversion",
+    )
+    parser_convert.add_argument(
         "--detofu",
         nargs="?",
         const="ExtB",

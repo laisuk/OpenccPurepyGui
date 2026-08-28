@@ -161,7 +161,7 @@ def parse_entries(text: str) -> tuple[DeTofuEntry, ...]:
 
 
 def _builtin_tofu_path() -> Path:
-    return Path(__file__).resolve().parent / "dicts" / "TSCharactersTofu.txt"
+    return Path(__file__).parent / "dicts" / "CharactersTofu.txt"
 
 
 def get_builtin_entries() -> tuple[DeTofuEntry, ...]:

@@ -5,3 +5,10 @@
 ##########################################################
 from .core import OpenCC, OpenccConfig
 from .dict_slot import DictSlot, DictSlotLike
+
+__all__ = [
+    "OpenCC",
+    "OpenccConfig",
+    "DictSlot",
+    "DictSlotLike",
+]

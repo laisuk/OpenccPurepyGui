@@ -73,6 +73,11 @@ def parse_custom_dict_spec(spec: str) -> CustomDictSpec:
             "Invalid --custom-dict spec {!r}: path is empty".format(spec)
         )
 
+    if not Path(path).is_file():
+        raise ValueError(
+            "Custom dictionary file not found: {}".format(path)
+        )
+
     return CustomDictSpec(
         slot=DictSlot.parse(slot),
         mode=mode,
@@ -147,3 +152,23 @@ def custom_dict_specs_to_maps(
             raise ValueError("Invalid custom dictionary mode: {}".format(spec.mode))
 
     return overrides, appends
+
+
+def ensure_distinct_paths(
+        input_path: Optional[PathLike],
+        output_path: Optional[PathLike],
+) -> None:
+    """Ensure input and output do not refer to the same normalized path."""
+    import os
+    if input_path is None or output_path is None:
+        return
+
+    input_norm = os.path.normcase(
+        os.path.normpath(os.path.abspath(input_path))
+    )
+    output_norm = os.path.normcase(
+        os.path.normpath(os.path.abspath(output_path))
+    )
+
+    if input_norm == output_norm:
+        raise ValueError("Input and output files must be different.")

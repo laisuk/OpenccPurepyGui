@@ -42,6 +42,30 @@ class TestCli(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, "第二")
 
+    def test_convert_norm_compat(self):
+        result = self._run(
+            "convert", "-c", "t2s", "-n",
+            input_text="天龍八部書裡的喬峰是契丹人",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "天龙八部书里的乔峰是契丹人")
+
+    def test_convert_norm_compat_extended(self):
+        result = self._run(
+            "convert", "-c", "t2s", "-E",
+            input_text="聼聼竒羙⽟䂖甁噐⾳",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "听听奇美玉石瓶器音")
+
+    def test_convert_norm_compat_extended_takes_precedence(self):
+        result = self._run(
+            "convert", "-c", "t2s", "-n", "-E",
+            input_text="聼聼竒羙⽟䂖甁噐⾳",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "听听奇美玉石瓶器音")
+
     def test_convert_reports_invalid_detofu_without_traceback(self):
         result = self._run("convert", "--detofu", "invalid", input_text="汉字")
         self.assertNotEqual(result.returncode, 0)
@@ -90,6 +114,10 @@ class TestCli(unittest.TestCase):
         self.assertIn("Supported configurations: s2t", convert_help.stdout)
         self.assertIn("s2t.", convert_help.stdout)
         self.assertIn("JPSCharactersRev", convert_help.stdout)
+        self.assertIn("-n", convert_help.stdout)
+        self.assertIn("--norm-compat", convert_help.stdout)
+        self.assertIn("-E", convert_help.stdout)
+        self.assertIn("--norm-compat-extended", convert_help.stdout)
         self.assertEqual(office_help.returncode, 0)
         self.assertIn("Document format override", office_help.stdout)
         self.assertNotIn("--keep-font", office_help.stdout)

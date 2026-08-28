@@ -14,7 +14,7 @@ class StarterUnion(StarterUnionLike):
     bmp_cap: List[int] = field(default_factory=lambda: [0] * 0x10000)
     astral_mask: Dict[str, int] = field(default_factory=dict)
     astral_cap: Dict[str, int] = field(default_factory=dict)
-    _indexed: bool = False
+    indexed: bool = False
 
     @staticmethod
     def merge_precedence(slots: Iterable[DictSlot]) -> "StarterUnion":
@@ -38,7 +38,7 @@ class StarterUnion(StarterUnionLike):
 
     def build_starter_index(self) -> None:
         """Populate per-starter masks and caps from merged_map keys."""
-        if self._indexed:
+        if self.indexed:
             return
 
         bmp_mask = self.bmp_mask
@@ -68,8 +68,4 @@ class StarterUnion(StarterUnionLike):
                 if key_len > astral_cap.get(starter, 0):
                     astral_cap[starter] = key_len
 
-        self._indexed = True
-
-    @property
-    def indexed(self) -> bool:
-        return self._indexed
+        self.indexed = True

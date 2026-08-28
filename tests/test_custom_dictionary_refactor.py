@@ -24,12 +24,14 @@ class DictionarySlotRefactorTest(unittest.TestCase):
 
     def test_dict_slot_parse_rejects_invalid_values(self) -> None:
         with self.assertRaisesRegex(TypeError, "DictSlot or str"):
+            # pyrefly: ignore [bad-argument-type]
             DictSlot.parse(42)
 
         with self.assertRaisesRegex(ValueError, "Unknown dictionary slot"):
             DictSlot.parse("not_a_slot")
 
-    def test_custom_spec_preserves_windows_drive_path(self) -> None:
+    @patch("opencc_purepy.utils.Path.is_file", return_value=True)
+    def test_custom_spec_preserves_windows_drive_path(self, _is_file) -> None:
         parsed = parse_custom_dict_spec(
             r"STPhrases:append:C:\dictionaries\custom.txt"
         )

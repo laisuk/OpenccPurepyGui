@@ -21,6 +21,7 @@ class StarterUnionLike(Protocol):
     astral_mask: Dict[str, int]
     astral_cap: Dict[str, int]
     cap: int
+    indexed: bool
 
     def build_starter_index(self) -> None:
         ...
@@ -142,7 +143,7 @@ class DictRefs:
 
             if self._is_starter_union_like(round_input) and union_replace is not None:
                 union = cast(StarterUnionLike, round_input)
-                if not getattr(union, "_indexed", False):
+                if not union.indexed:
                     union.build_starter_index()
                 text = union_replace(text, union)
                 continue

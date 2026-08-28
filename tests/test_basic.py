@@ -197,11 +197,41 @@ class TestOpenCC(unittest.TestCase):
         result = OpenCC("t2s").convert(traditional, punctuation=True)
         self.assertEqual(result, "“汉字转换测试”")
 
-    def test_punctuation_applies_to_variant_configs(self):
+    def test_traditional_region_and_jp_punctuation_plans(self):
+        methods = (
+            OpenCC("t2tw").t2tw,
+            OpenCC("t2twp").t2twp,
+            OpenCC("tw2t").tw2t,
+            OpenCC("tw2tp").tw2tp,
+            OpenCC("t2hk").t2hk,
+            OpenCC("t2hkp").t2hkp,
+            OpenCC("hk2t").hk2t,
+            OpenCC("hk2tp").hk2tp,
+            OpenCC("t2jp").t2jp,
+            OpenCC("jp2t").jp2t,
+        )
+        simplified_style = "“”‘’"
+        traditional_style = "「」『』"
+
+        for convert in methods:
+            with self.subTest(config=convert.__name__, punctuation=True):
+                self.assertEqual(
+                    convert(simplified_style, punctuation=True),
+                    traditional_style,
+                )
+
+            with self.subTest(config=convert.__name__, punctuation=False):
+                self.assertEqual(
+                    convert(simplified_style, punctuation=False),
+                    simplified_style,
+                )
+
         converter = OpenCC("t2tw")
-        result = converter.convert("“軟體”", punctuation=True)
-        self.assertIn("「", result)
-        self.assertIn("」", result)
+        plain_refs = converter._get_dict_refs("t2tw")
+        punct_refs = converter._get_dict_refs("t2tw_punct")
+        self.assertIsNot(plain_refs, punct_refs)
+        self.assertIsNone(plain_refs.round_2)
+        self.assertIs(punct_refs.round_2, converter.union_cache.ensure_indexed(UnionKey.StPunctOnly))
 
     def test_segment_replace_matches_direct_conversion_for_short_punctuated_text(self):
         refs = self.converter._get_dict_refs("s2t")
@@ -417,6 +447,40 @@ class TestOpenCC(unittest.TestCase):
         cc = OpenCC("t2s")
 
         self.assertEqual(cc.detofu("abc𱁬xyz", "all"), "abc𱁬xyz")
+
+    def test_normalize_compat(self):
+        cc = OpenCC("t2s")
+
+        text = "天龍八部書裡的喬峰是契丹人"
+        result = cc.normalize_compat(text)
+
+        self.assertEqual(result, "天龍八部書裡的喬峰是契丹人")
+
+    def test_normalize_unicode_compat(self):
+        cc = OpenCC("t2s")
+
+        text = "聼聼竒羙甁噐"
+        result = cc.normalize_unicode_compat(text)
+
+        self.assertEqual(result, "聽聽奇美瓶器")
+
+    def test_normalize_compat_extended(self):
+        cc = OpenCC("t2s")
+
+        text = "聼聼竒羙⽟䂖甁噐⾳"
+        result = cc.normalize_compat_extended(text)
+
+        self.assertEqual(result, "聽聽奇美玉石瓶器音")
+
+    def test_normalize_compat_extended_then_convert(self):
+        cc = OpenCC("t2s")
+
+        text = "聼聼竒羙⽟䂖甁噐⾳"
+        normalized = cc.normalize_compat_extended(text)
+        converted = cc.convert(normalized)
+
+        self.assertEqual(normalized, "聽聽奇美玉石瓶器音")
+        self.assertEqual(converted, "听听奇美玉石瓶器音")
 
 
 if __name__ == "__main__":

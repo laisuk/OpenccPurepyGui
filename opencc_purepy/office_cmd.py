@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from opencc_purepy import OpenCC
 from opencc_purepy.office_helper import convert_office_doc, OFFICE_FORMATS
-from opencc_purepy.utils import parse_custom_dict_spec
+from opencc_purepy.utils import parse_custom_dict_spec, ensure_distinct_paths
 
 
 def main(args):
@@ -55,6 +55,12 @@ def main(args):
         return 1
     if not Path(input_file).is_file():
         print(f"❌ Input file not found: {input_file}", file=sys.stderr)
+        return 1
+
+    try:
+        ensure_distinct_paths(args.input, args.output)
+    except ValueError as ex:
+        print(f"❌  {ex}", file=sys.stderr)
         return 1
 
     # Determine office format from file extension if not provided
