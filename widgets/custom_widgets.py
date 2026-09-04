@@ -1,8 +1,14 @@
 from pathlib import Path
+from typing import Iterable, List, Set
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
-from PySide6.QtWidgets import QPlainTextEdit, QListWidget, QAbstractItemView, QListWidgetItem
+from PySide6.QtWidgets import QPlainTextEdit, QListWidget, QAbstractItemView
+
+RECURSIVE_FOLDERS = True
+# Optional: restrict types (None = accept all files)
+# ACCEPT_EXTENSIONS = None
+ACCEPT_EXTENSIONS = {".txt", ".md", ".docx", ".xlsx", ".pptx", ".odt", ".ods", ".odp", ".epub", ".pdf"}
 
 
 class TextEditWidget(QPlainTextEdit):
@@ -42,7 +48,7 @@ class TextEditWidget(QPlainTextEdit):
                 return
 
             # Read the content of the file and set it to QTextEdit
-            self.load_file(file_path)
+            # self.load_file(file_path)
             self.fileDropped.emit(file_path)  # <-- emit with path
             e.acceptProposedAction()
         elif mime_data.hasText():
@@ -60,6 +66,31 @@ class TextEditWidget(QPlainTextEdit):
             self.document().setPlainText(f"Error loading file: {e}")
 
 
+def _iter_files_safe(root: Path) -> Iterable[Path]:
+    """
+    Yield files from `root`:
+    - if root is a file: yield it
+    - if root is a dir: yield contained files (recursive depending on flag)
+    Never yields directories.
+    """
+    if root.is_file():
+        yield root
+        return
+
+    if not root.is_dir():
+        return
+
+    it = root.rglob("*") if RECURSIVE_FOLDERS else root.glob("*")
+    for p in it:
+        # Avoid following weird entries; only real files
+        try:
+            if p.is_file():
+                yield p
+        except OSError:
+            # Permission/IO issues while stating individual files
+            continue
+
+
 class DragListWidget(QListWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -70,7 +101,8 @@ class DragListWidget(QListWidget):
         self.setDropIndicatorShown(True)
         self.setDefaultDropAction(Qt.DropAction.CopyAction)
         self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
-        self.setSortingEnabled(True)
+        # IMPORTANT: disable Qt auto-sorting; we do our own "PDF to bottom" sort
+        self.setSortingEnabled(False)
 
     def dragEnterEvent(self, event: QDragEnterEvent):
         mime_data = event.mimeData()
@@ -79,19 +111,51 @@ class DragListWidget(QListWidget):
             event.acceptProposedAction()
 
     def dropEvent(self, event: QDropEvent):
-        mime_data = event.mimeData()
-        if mime_data.hasUrls():
-            # Get the list of dropped file URLs
-            file_urls = [url.toLocalFile() for url in mime_data.urls()]
-            # Check if the file is not already in the list, then add it
-            for file_url in file_urls:
-                if not self.is_item_in_list(file_url):
-                    item = QListWidgetItem(file_url)
-                    self.addItem(item)
-            event.acceptProposedAction()
+        mime = event.mimeData()
+        if not mime.hasUrls():
+            return
 
-    def is_item_in_list(self, item_text):
-        # Check if the item with given text is already in the list
-        items = self.findItems(item_text, Qt.MatchFlag.MatchExactly)
-        return len(items) > 0
+        # IMPORTANT: ensure Qt won't auto-sort against us
+        if self.isSortingEnabled():
+            self.setSortingEnabled(False)
 
+        # 1) Collect existing items
+        all_paths: List[str] = []
+        existing: Set[str] = set()
+        for i in range(self.count()):
+            s = self.item(i).text()
+            all_paths.append(s)
+            existing.add(s)
+
+        # 2) Add dropped files / expand dropped folders (dedupe)
+        for url in mime.urls():
+            raw = url.toLocalFile()
+            if not raw:
+                continue
+
+            root = Path(raw)
+            try:
+                for f in _iter_files_safe(root):
+                    ext = f.suffix.lower()
+                    if ACCEPT_EXTENSIONS is not None and ext not in ACCEPT_EXTENSIONS:
+                        continue
+
+                    s = str(f)
+                    if s not in existing:
+                        existing.add(s)
+                        all_paths.append(s)
+            except OSError:
+                continue
+
+        # 3) Sort: PDFs to bottom
+        def sort_key(pth: str):
+            file_ext = Path(pth).suffix.lower()
+            return file_ext == ".pdf", pth.casefold()
+
+        all_paths.sort(key=sort_key)
+
+        # 4) Rebuild list
+        self.clear()
+        self.addItems(all_paths)
+
+        event.acceptProposedAction()

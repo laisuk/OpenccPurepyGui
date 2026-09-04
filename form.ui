@@ -113,6 +113,11 @@
         </item>
         <item>
          <property name="text">
+          <string>s2hkp (简 -&gt; 繁/港/惯)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>t2s (繁 -&gt; 简)</string>
          </property>
         </item>
@@ -159,6 +164,11 @@
         <item>
          <property name="text">
           <string>hk2s (繁/港 -&gt; 简)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>hk2sp (繁/港 -&gt; 简/惯)</string>
          </property>
         </item>
         <item>
@@ -246,13 +256,16 @@
        <layout class="QHBoxLayout" name="horizontalLayout_idioms">
         <item>
          <widget class="QCheckBox" name="cbZhTw">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="font">
            <font>
             <pointsize>10</pointsize>
            </font>
           </property>
           <property name="text">
-           <string>ZH/TW Idioms （惯用语）</string>
+           <string>Regional Terms （地区用语）</string>
           </property>
          </widget>
         </item>
@@ -1032,7 +1045,7 @@
      <x>0</x>
      <y>0</y>
      <width>1005</width>
-     <height>33</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1160,7 +1173,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>

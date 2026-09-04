@@ -9,9 +9,9 @@ from pathlib import Path
 from typing import Optional, Callable
 
 import PySide6
-from PySide6.QtCore import Qt, Slot, QThread
-from PySide6.QtGui import QGuiApplication, QTextCursor
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton
+from PySide6.QtCore import Qt, Slot, QThread, QEvent
+from PySide6.QtGui import QGuiApplication, QTextCursor, QMouseEvent
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton, QMenu
 
 from opencc_purepy import OpenCC
 from openxml_module.epub_helper import (
@@ -53,6 +53,13 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        self._current_text_encoding = "utf-8"
+
+        self.ui.lblFilename.installEventFilter(self)
+        self.ui.lblFilename.setToolTip(
+            "Click to reload the opened text file with another encoding"
+        )
+
         # state
         # self._pdf_thread: QThread | None = None
         self._pdf_thread: Optional[QThread] = None
@@ -63,16 +70,16 @@ class MainWindow(QMainWindow):
 
         # shared Cancel button (hidden by default)
         self._cancel_button = QPushButton("Cancel", self)
-        self._cancel_button.setAutoDefault(False) # type: ignore
-        self._cancel_button.setDefault(False) # type: ignore
-        self._cancel_button.setFlat(True) # type: ignore
-        self._cancel_button.setStyleSheet( # type: ignore
+        self._cancel_button.setAutoDefault(False)  # type: ignore
+        self._cancel_button.setDefault(False)  # type: ignore
+        self._cancel_button.setFlat(True)  # type: ignore
+        self._cancel_button.setStyleSheet(  # type: ignore
             "QPushButton { padding: 2px 8px; margin: 0px; }"
         )
-        self._cancel_button.hide() # type: ignore
+        self._cancel_button.hide()  # type: ignore
         self._cancel_click_handler = None  # type: Optional[object]
         # self._cancel_pdf_button.clicked.connect(self.on_pdf_cancel_clicked)  # type: ignore
-        self.statusBar().addPermanentWidget(self._cancel_button) # type: ignore
+        self.statusBar().addPermanentWidget(self._cancel_button)  # type: ignore
 
         self.ui.tabWidget.setCurrentIndex(0)
         self.ui.btnCopy.clicked.connect(self.btn_copy_click)
@@ -85,9 +92,9 @@ class MainWindow(QMainWindow):
         self.ui.btnClearTbSource.clicked.connect(self.btn_clear_tb_source_clicked)
         self.ui.btnClearTbDestination.clicked.connect(self.btn_clear_tb_destination_clicked)
         self.ui.tbSource.textChanged.connect(self.update_char_count)
-        self.ui.rbStd.clicked.connect(self.std_hk_select)
-        self.ui.rbHK.clicked.connect(self.std_hk_select)
-        self.ui.rbZhTw.clicked.connect(self.zhtw_select)
+        self.ui.rbStd.clicked.connect(self.std_select)
+        self.ui.rbHK.clicked.connect(self.zhtw_hk_select)
+        self.ui.rbZhTw.clicked.connect(self.zhtw_hk_select)
         # self.ui.tabWidget.currentChanged[int].connect(self.tab_bar_changed)
         self.ui.tabWidget.currentChanged.connect(self.tab_bar_changed)
         # self.ui.cbZhTw.clicked[bool].connect(self.cbzhtw_clicked)
@@ -197,27 +204,27 @@ class MainWindow(QMainWindow):
         # Create worker + thread
         self._pdf_thread = QThread(self)
         self._pdf_worker = PdfExtractWorker(filename, add_header)
-        self._pdf_worker.moveToThread(self._pdf_thread) # type: ignore
+        self._pdf_worker.moveToThread(self._pdf_thread)  # type: ignore
 
         # Thread start → worker.run
         self._pdf_thread.started.connect(self._pdf_worker.run)  # type: ignore
 
         # Connect worker signals → caller-provided handlers
         if on_progress is not None:
-            self._pdf_worker.progress.connect(on_progress) # type: ignore
+            self._pdf_worker.progress.connect(on_progress)  # type: ignore
         if on_finished is not None:
-            self._pdf_worker.finished.connect(on_finished) # type: ignore
+            self._pdf_worker.finished.connect(on_finished)  # type: ignore
         if on_error is not None:
-            self._pdf_worker.error.connect(on_error) # type: ignore
+            self._pdf_worker.error.connect(on_error)  # type: ignore
 
         # Cleanup
-        self._pdf_worker.finished.connect(self._pdf_thread.quit) # type: ignore
-        self._pdf_worker.error.connect(self._pdf_thread.quit) # type: ignore
+        self._pdf_worker.finished.connect(self._pdf_thread.quit)  # type: ignore
+        self._pdf_worker.error.connect(self._pdf_thread.quit)  # type: ignore
         self._pdf_thread.finished.connect(self._pdf_worker.deleteLater)  # type: ignore
         self._pdf_thread.finished.connect(self._on_pdf_thread_finished)  # type: ignore
 
         # Start background thread
-        self._pdf_thread.start() # type: ignore
+        self._pdf_thread.start()  # type: ignore
 
     @Slot(int, int)
     def _on_pdf_progress(self, current: int, total: int) -> None:
@@ -276,7 +283,7 @@ class MainWindow(QMainWindow):
         """
         Thread finished; clear references so another extraction can be started.
         """
-        self._pdf_thread.deleteLater() # type: ignore
+        self._pdf_thread.deleteLater()  # type: ignore
         self._pdf_thread = None
         self._pdf_worker = None
 
@@ -332,12 +339,13 @@ class MainWindow(QMainWindow):
 
     # ====== Batch Processing End ======
 
-    def _on_tb_source_file_dropped(self, path: str):
-        self.detect_source_text_info()
+    def _on_tb_source_file_dropped(self, path: str) -> None:
         if not path:
+            self.detect_source_text_info()
             self.statusBar().showMessage("Text contents dropped")
-        else:
-            self.statusBar().showMessage("File dropped: " + path)
+            return
+
+        self._load_file_to_editor(path)
 
     def _on_tb_source_non_pdf_dropped(self, filename: str) -> None:
         self._load_file_to_editor(filename)
@@ -430,7 +438,7 @@ class MainWindow(QMainWindow):
         """
         self._pdf_sequential_active = True
         self._cancel_pdf_extraction = False
-        self._cancel_button.show() # type: ignore
+        self._cancel_button.show()  # type: ignore
         self.ui.btnReflow.setEnabled(False)
 
         # Track last progress for nicer "cancelled at page X/Y" message
@@ -481,7 +489,7 @@ class MainWindow(QMainWindow):
         finally:
             self._pdf_sequential_active = False
             self._cancel_pdf_extraction = False
-            self._cancel_button.hide() # type: ignore
+            self._cancel_button.hide()  # type: ignore
             self.ui.btnReflow.setEnabled(True)
 
     def reflow_cjk_paragraphs(self) -> None:
@@ -553,14 +561,16 @@ class MainWindow(QMainWindow):
 
         self.statusBar().showMessage("Reflow complete (CJK-aware)")
 
-    def std_hk_select(self):
-        self.ui.cbZhTw.setCheckState(Qt.CheckState.Unchecked)
+    def std_select(self):
+        # self.ui.cbZhTw.setCheckState(Qt.CheckState.Unchecked)
+        self.ui.cbZhTw.setEnabled(False)
 
-    def zhtw_select(self):
-        self.ui.cbZhTw.setCheckState(Qt.CheckState.Checked)
+    def zhtw_hk_select(self):
+        # self.ui.cbZhTw.setCheckState(Qt.CheckState.Checked)
+        self.ui.cbZhTw.setEnabled(True)
 
     def cbzhtw_clicked(self, status: bool) -> None:
-        if status:
+        if status and self.ui.rbStd.isChecked():
             self.ui.rbZhTw.setChecked(True)
 
     def btn_paste_click(self):
@@ -650,6 +660,7 @@ class MainWindow(QMainWindow):
             # =========================================================
             # TXT fallback
             # =========================================================
+            self._current_text_encoding = "utf-8"
             contents = _read_text_file(filename)
             self._load_text_to_editor(filename, contents)
 
@@ -668,16 +679,20 @@ class MainWindow(QMainWindow):
 
         if self.ui.rbS2t.isChecked():
             if self.ui.rbHK.isChecked():
-                return "s2hk"
+                return "s2hkp" if self.ui.cbZhTw.isChecked() else "s2hk"
+
             if self.ui.rbStd.isChecked():
                 return "s2t"
+
             return "s2twp" if self.ui.cbZhTw.isChecked() else "s2tw"
 
         if self.ui.rbT2s.isChecked():
             if self.ui.rbHK.isChecked():
-                return "hk2s"
+                return "hk2sp" if self.ui.cbZhTw.isChecked() else "hk2s"
+
             if self.ui.rbStd.isChecked():
                 return "t2s"
+
             return "tw2sp" if self.ui.cbZhTw.isChecked() else "tw2s"
 
         return "s2tw"
@@ -949,6 +964,87 @@ class MainWindow(QMainWindow):
 
     def cb_manual_activated(self):
         self.ui.rbManual.setChecked(True)
+
+    # Reload TbSource Text with Encoding
+
+    def eventFilter(self, watched, event):
+        if watched is self.ui.lblFilename:
+            if event.type() == QEvent.Type.MouseButtonPress:
+                if isinstance(event, QMouseEvent):
+                    if event.button() == Qt.MouseButton.LeftButton:
+                        self._show_encoding_menu()
+                        return True
+
+        return super().eventFilter(watched, event)
+
+    def _show_encoding_menu(self) -> None:
+        filename = self.ui.tbSource.content_filename
+        if not filename:
+            return
+
+        if (
+                filename.lower().endswith(".pdf")
+                or is_docx(filename)
+                or is_odt(filename)
+                or is_epub(filename)
+        ):
+            self.statusBar().showMessage(
+                "Encoding selection is only available for plain text files."
+            )
+            return
+
+        menu = QMenu(self)
+
+        encodings = (
+            ("UTF-8", "utf-8-sig"),
+            ("GB18030 / GBK", "gb18030"),
+            ("Big5 / CP950", "cp950"),
+            ("Big5-HKSCS", "big5hkscs"),
+            ("UTF-16 LE", "utf-16le"),
+            ("UTF-16 BE", "utf-16be"),
+        )
+
+        for label, encoding in encodings:
+            action = menu.addAction(label)
+            assert action is not None
+
+            action.setCheckable(True)
+            action.setChecked(encoding == self._current_text_encoding)
+            action.triggered.connect(
+                lambda _checked=False, enc=encoding:
+                self._reload_current_text_file(enc)
+            )
+
+        self._encoding_menu = menu
+
+        pos = self.ui.lblFilename.mapToGlobal(
+            self.ui.lblFilename.rect().bottomLeft()
+        )
+        menu.popup(pos)
+
+    def _reload_current_text_file(self, encoding: str) -> None:
+        filename = self.ui.tbSource.content_filename
+
+        if not filename:
+            return
+
+        try:
+            with open(filename, "r", encoding=encoding) as f:
+                contents = f.read()
+
+            self._current_text_encoding = encoding
+            self._load_text_to_editor(filename, contents)
+
+            self.statusBar().showMessage(
+                f"Reloaded as {encoding}: {filename}"
+            )
+
+        except (OSError, UnicodeError, LookupError) as ex:
+            QMessageBox.critical(
+                self,
+                "Encoding Error",
+                f"Failed to reload file using {encoding}:\n{ex}",
+            )
 
 
 def btn_exit_click():
