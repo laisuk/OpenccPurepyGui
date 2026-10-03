@@ -11,14 +11,22 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ### Added
 
-- Added detofu() API function.
+- Added normCompat(), detofu() API function.
+- Added Editor font picker.
 - Added direct Hong Kong phrase conversion configs and APIs: `t2hkp` / `OpenCC.t2hkp()` and `hk2tp` /
   `OpenCC.hk2tp()`.
 
 ### Changed
 
-- Synced the embedded `opencc-purepy` v1.4.2 runtime refinements, including sequential custom dictionary application so repeated `-D` options preserve command-line order and late entries win as expected.
-- Hardened the bundled CLI error handling, configuration and dictionary-slot normalization, DeTofu validation, and punctuation dictionary data.
+- Synced the embedded `opencc-purepy` package with upstream v1.4.4 development: shared normalization/conversion/DeTofu
+  pipeline, Office/EPUB CLI options and filename conversion, transactional document output, and refined PPTX part
+  selection.
+- Adapted GUI batch Office conversion to the upstream text callback API while preserving punctuation conversion and
+  fonts.
+- Synced the embedded `opencc-purepy` v1.4.2 runtime refinements, including sequential custom dictionary application so
+  repeated `-D` options preserve command-line order and late entries win as expected.
+- Hardened the bundled CLI error handling, configuration and dictionary-slot normalization, DeTofu validation, and
+  punctuation dictionary data.
 - Flattened direct `t2twp` and `tw2tp` conversion from two dictionary passes to one using the Taiwan triple unions.
 - Renamed the internal Taiwan and Hong Kong triple union keys to `TwTriple`, `TwRevTriple`, `HkTriple`, and
   `HkRevTriple`.

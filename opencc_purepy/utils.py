@@ -1,13 +1,16 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Optional, Tuple
+from typing import Callable, Iterable, Optional, Tuple
 from typing import TYPE_CHECKING
 
 from .dict_slot import DictSlot
 from .dictionary_lib import PathLike, SlotPathMap
 
 if TYPE_CHECKING:
+    import argparse
     from typing import Literal
+
+    from .core import OpenCC
 
     CustomDictMode = Literal["append", "override"]
 else:
@@ -172,3 +175,49 @@ def ensure_distinct_paths(
 
     if input_norm == output_norm:
         raise ValueError("Input and output files must be different.")
+
+
+TextConverter = Callable[[str], str]
+
+
+def make_text_converter(
+        opencc: "OpenCC",
+        args: "argparse.Namespace",
+) -> TextConverter:
+    """
+    Build the shared text transformation pipeline.
+
+    The caller owns argument validation, OpenCC construction, dictionaries,
+    I/O, and command-specific behavior.
+
+    Processing order:
+        Normalize -> Convert -> DeTofu
+    """
+    norm_extended = getattr(args, "norm_compat_extended", False)
+    norm_compat = getattr(args, "norm_compat", False)
+    punct = getattr(args, "punct", False)
+
+    detofu: Optional[str] = getattr(args, "detofu", None)
+    detofu_file: Optional[str] = getattr(args, "detofu_file", None)
+
+    def convert_text(text: str) -> str:
+        if norm_extended:
+            text = opencc.normalize_compat_extended(text)
+        elif norm_compat:
+            text = opencc.normalize_compat(text)
+
+        text = opencc.convert(text, punct)
+
+        if detofu is not None:
+            if detofu_file is not None:
+                text = opencc.detofu_with_custom_file(
+                    text,
+                    detofu,
+                    detofu_file,
+                )
+            else:
+                text = opencc.detofu(text, detofu)
+
+        return text
+
+    return convert_text

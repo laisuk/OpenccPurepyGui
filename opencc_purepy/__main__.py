@@ -196,6 +196,43 @@ def main():
         help="Enable punctuation conversion",
     )
     parser_office.add_argument(
+        "-n",
+        "--norm-compat",
+        action="store_true",
+        default=False,
+        help="Normalize CJK Compatibility Ideographs before conversion. (Default: False)",
+    )
+    parser_office.add_argument(
+        "-E",
+        "--norm-compat-extended",
+        action="store_true",
+        default=False,
+        help=(
+            "Normalize extended Unicode compatibility forms before conversion. "
+            "(Default: False)"
+        ),
+    )
+    parser_office.add_argument(
+        "--detofu",
+        nargs="?",
+        const="ExtB",
+        default=None,
+        type=_detofu_arg,
+        metavar="<level>",
+        help=(
+            "Apply tofu-safe fallback after conversion. "
+            "Levels: all/ExtB, ExtC, ExtD, ExtE, ExtF, ExtG, ExtH, ExtI."
+        ),
+    )
+    parser_office.add_argument(
+        "--detofu-file",
+        metavar="<file>",
+        help=(
+            "Load additional detofu fallback mappings from a UTF-8 text file. "
+            "Custom mappings override built-in mappings; requires --detofu."
+        ),
+    )
+    parser_office.add_argument(
         "-f",
         "--format",
         metavar="<format>",
@@ -226,6 +263,13 @@ def main():
                 "Can be used multiple times."
                 " " + SLOTS_HELP
         ),
+    )
+    parser_office.add_argument(
+        "-F",
+        "--convert-filename",
+        action="store_true",
+        default=False,
+        help="Convert the generated output filename using the same text pipeline",
     )
     parser_office.set_defaults(func=_run_office)
 

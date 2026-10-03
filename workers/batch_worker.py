@@ -93,9 +93,8 @@ class BatchWorker(QObject):
                 str(file_path),
                 str(output),
                 ext_no_dot,
-                self._converter,
-                self._is_punctuation,
-                True,
+                lambda text: self._converter.convert(text, self._is_punctuation),
+                keep_font=True,
             )
             if success:
                 self.log.emit(f"{idx}: {output} -> {message} -> Done.")

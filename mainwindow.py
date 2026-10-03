@@ -1187,7 +1187,7 @@ if __name__ == "__main__":
     app = QApplication()
     app.setOrganizationName("Laisuk")
     app.setApplicationName("OpenccPurepyGui")
-    app.setApplicationVersion("1.2.0")
+    app.setApplicationVersion("1.2.3")
     app.setStyle("WindowsVista")
     widget = MainWindow()
     widget.show()
