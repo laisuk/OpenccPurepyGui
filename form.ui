@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1005</width>
+    <width>1027</width>
     <height>708</height>
    </rect>
   </property>
@@ -506,6 +506,25 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="btnNormCompat">
+              <property name="maximumSize">
+               <size>
+                <width>30</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <pointsize>10</pointsize>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>N</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QPushButton" name="btnClearTbSource">
               <property name="maximumSize">
                <size>
@@ -597,6 +616,24 @@
               </property>
               <property name="margin">
                <number>5</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnDeTofu">
+              <property name="maximumSize">
+               <size>
+                <width>30</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <pointsize>10</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>豆</string>
               </property>
              </widget>
             </item>
@@ -982,6 +1019,17 @@
         </item>
         <item>
          <widget class="QComboBox" name="cbSaveTarget">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+           </font>
+          </property>
           <property name="currentIndex">
            <number>1</number>
           </property>
@@ -1044,7 +1092,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1005</width>
+     <width>1027</width>
      <height>26</height>
     </rect>
    </property>
@@ -1064,11 +1112,14 @@
     <property name="title">
      <string>Settings</string>
     </property>
-    <addaction name="actionConvert_filename"/>
+    <addaction name="actionConvertFilename"/>
     <addaction name="separator"/>
     <addaction name="actionAddPdfPageHeader"/>
     <addaction name="actionCompactPdfText"/>
     <addaction name="actionAutoReflow"/>
+    <addaction name="separator"/>
+    <addaction name="actionSelectEditorFont"/>
+    <addaction name="separator"/>
     <addaction name="actionUsePdfTextExtractWorker"/>
    </widget>
    <addaction name="menuFile"/>
@@ -1106,7 +1157,7 @@
     <enum>QAction::MenuRole::NoRole</enum>
    </property>
   </action>
-  <action name="actionConvert_filename">
+  <action name="actionConvertFilename">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -1153,6 +1204,11 @@
    </property>
    <property name="text">
     <string>Auto-Reflow PDF Text</string>
+   </property>
+  </action>
+  <action name="actionSelectEditorFont">
+   <property name="text">
+    <string>Select Editor Font ...</string>
    </property>
   </action>
  </widget>
