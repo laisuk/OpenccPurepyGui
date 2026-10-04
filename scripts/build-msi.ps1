@@ -1,32 +1,37 @@
 param(
-    # WiX source
+    # WiX source maintained in source control.
     [string]$Wxs = "installer\Product.wxs",
 
-    # Nuitka/PySide dist folder
+    # Nuitka standalone distribution.
     [string]$DistDir = "mainwindow.dist",
 
-    # MSI metadata (MSI requires x.y.z)
-    [string]$Ver = "1.2.0",
+    # VERSION is the single source of truth.
+    [string]$VersionFile = "VERSION",
 
-    # For filename only
+    # Used for output filename.
     [string]$Arch = "win-x64",
 
-    # WiX intermediate/output folder
-    [string]$WixOut = "installer",
+    # Generated WiX intermediates.
+    [string]$BuildDir = "installer\build",
 
-    # Output MSI name (optional override)
+    # Final MSI output directory.
+    [string]$OutputDir = "installer",
+
+    # Optional final MSI filename override.
     [string]$MsiName = "",
 
-    # Extra: open the output folder when done
+    # Open output directory after a successful build.
     [switch]$OpenOutput
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-# ----------------------------
-# Pretty logging helpers
-# ----------------------------
+
+# ============================================================
+# Helpers
+# ============================================================
+
 function Write-Section([string]$Title) {
     Write-Host ""
     Write-Host ("=" * 72)
@@ -34,126 +39,283 @@ function Write-Section([string]$Title) {
     Write-Host ("=" * 72)
 }
 
-function Write-Info([string]$Msg)  { Write-Host "[*] $Msg" }
-function Write-Ok([string]$Msg)    { Write-Host "[+] $Msg" }
-function Write-Warn([string]$Msg)  { Write-Warning $Msg }
-function Fail([string]$Msg)        { throw $Msg }
+function Write-Info([string]$Message) {
+    Write-Host "[*] $Message"
+}
 
-function Require-File([string]$Path, [string]$What) {
-    if (-not (Test-Path $Path)) { Fail "Missing $($What): $Path" }
+function Write-Ok([string]$Message) {
+    Write-Host "[+] $Message"
+}
+
+function Fail([string]$Message) {
+    throw $Message
+}
+
+function Require-File(
+    [string]$Path,
+    [string]$Description
+) {
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        Fail "Missing $Description`: $Path"
+    }
+}
+
+function Require-Directory(
+    [string]$Path,
+    [string]$Description
+) {
+    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+        Fail "Missing $Description`: $Path"
+    }
 }
 
 function Require-Command([string]$Name) {
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
-        Fail "Required tool '$Name' not found in PATH. Install WiX Toolset and ensure heat/candle/light are available."
+        Fail (
+            "Required WiX 3 tool '$Name' was not found in PATH. " +
+            "Ensure WiX Toolset 3 heat/candle/light are available."
+        )
     }
 }
 
-# ----------------------------
-# Resolve inputs
-# ----------------------------
-Require-File $Wxs "WiX source (.wxs)"
-Require-File $DistDir "dist directory"
+function Invoke-Checked(
+    [string]$Command,
+    [string[]]$Arguments
+) {
+    & $Command @Arguments
 
-$DistDir = (Resolve-Path $DistDir).Path
-$Wxs     = (Resolve-Path $Wxs).Path
-
-if ([string]::IsNullOrWhiteSpace($MsiName)) {
-    $MsiName = "$WixOut\OpenccPurepyGui-$Ver-$Arch-setup.msi"
+    if ($LASTEXITCODE -ne 0) {
+        Fail "$Command failed with exit code $LASTEXITCODE."
+    }
 }
 
-# WiX paths
-New-Item -ItemType Directory -Force -Path $WixOut | Out-Null
-$WixOut = (Resolve-Path $WixOut).Path
+function Read-Version([string]$Path) {
+    Require-File $Path "VERSION file"
 
-$appFilesWxs = Join-Path $WixOut "AppFiles.wxs"
-$objProduct  = Join-Path $WixOut "Product.wixobj"
-$objAppFiles = Join-Path $WixOut "AppFiles.wixobj"
-$outMsi      = Join-Path (Get-Location) $MsiName
+    foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
+        $value = $line.Trim()
 
-# Tools
+        if ($value -and -not $value.StartsWith("#")) {
+            return $value
+        }
+    }
+
+    Fail "VERSION file does not contain a valid version: $Path"
+}
+
+
+# ============================================================
+# Validate inputs
+# ============================================================
+
+$Version = Read-Version $VersionFile
+
+Require-File $Wxs "WiX product source"
+Require-Directory $DistDir "Nuitka distribution"
+
+$mainExe = Join-Path $DistDir "OpenccPurepyGui.exe"
+Require-File $mainExe "Nuitka application executable"
+
 Require-Command "heat"
 Require-Command "candle"
 Require-Command "light"
 
-Write-Section "Inputs"
+
+# ============================================================
+# Resolve paths
+# ============================================================
+
+$Wxs = (Resolve-Path -LiteralPath $Wxs).Path
+$DistDir = (Resolve-Path -LiteralPath $DistDir).Path
+
+New-Item -ItemType Directory -Force -Path $BuildDir | Out-Null
+New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
+
+$BuildDir = (Resolve-Path -LiteralPath $BuildDir).Path
+$OutputDir = (Resolve-Path -LiteralPath $OutputDir).Path
+
+if ([string]::IsNullOrWhiteSpace($MsiName)) {
+    $MsiName = "OpenccPurepyGui-$Version-$Arch-setup.msi"
+}
+
+$appFilesWxs = Join-Path $BuildDir "AppFiles.wxs"
+$objProduct = Join-Path $BuildDir "Product.wixobj"
+$objAppFiles = Join-Path $BuildDir "AppFiles.wixobj"
+
+$outMsi = Join-Path $OutputDir $MsiName
+
+
+# ============================================================
+# Summary
+# ============================================================
+
+Write-Section "MSI build"
+
+Write-Info "Version : $Version"
 Write-Info "WXS     : $Wxs"
 Write-Info "DistDir : $DistDir"
-Write-Info "WixOut  : $WixOut"
-Write-Info "Version : $Ver"
+Write-Info "BuildDir: $BuildDir"
 Write-Info "Arch    : $Arch"
 Write-Info "Output  : $outMsi"
 
-# ----------------------------
-# 1) Harvest dist -> AppFiles.wxs
-# ----------------------------
-Write-Section "Harvest dist folder (heat)"
+
+# ============================================================
+# Clean generated intermediates
+# ============================================================
+
+Write-Section "Clean generated WiX files"
+
+$generatedFiles = @(
+    $appFilesWxs,
+    $objProduct,
+    $objAppFiles,
+    $outMsi,
+    (Join-Path $OutputDir "OpenccPurepyGui-$Version-$Arch-setup.wixpdb")
+)
+
+foreach ($file in $generatedFiles) {
+    if (Test-Path -LiteralPath $file) {
+        Remove-Item -LiteralPath $file -Force
+    }
+}
+
+Write-Ok "Generated files cleaned"
+
+
+# ============================================================
+# 1) Harvest Nuitka distribution
+# ============================================================
+
+Write-Section "Harvest Nuitka distribution (heat)"
+
 Write-Info "Generating: $appFilesWxs"
 
-# Notes:
-# -dr INSTALLFOLDER : put harvested files under your INSTALLFOLDER directory
-# -cg AppFiles      : matches <ComponentGroupRef Id="AppFiles" />
-# -gg               : generate stable GUIDs
-# -srd              : suppress root directory element (we already have INSTALLFOLDER)
-# -sfrag            : output as fragment
-# -sreg             : suppress self-reg harvesting (silences HEAT5150 for non-COM DLLs)
-# -var var.SourceDir: use $(var.SourceDir) in generated Source paths
-& heat dir "$DistDir" `
-    -nologo `
-    -dr INSTALLFOLDER `
-    -cg AppFiles `
-    -gg `
-    -srd `
-    -sfrag `
-    -sreg `
-    -var var.SourceDir `
-    -out "$appFilesWxs"
+$heatArgs = @(
+    "dir",
+    $DistDir,
 
-Require-File $appFilesWxs "heat output (AppFiles.wxs)"
-Write-Ok "Harvested files -> AppFiles.wxs"
+    "-nologo",
 
-# ----------------------------
-# 2) Compile .wxs -> .wixobj
-# ----------------------------
-Write-Section "Compile (candle)"
-Write-Info "Compiling Product.wxs -> $objProduct"
-& candle `
-    -nologo `
-    -ext WixUIExtension `
-    -dSourceDir="$DistDir" `
-    -dAppVersion="$Ver" `
-    -out "$objProduct" `
-    "$Wxs"
+    # Attach harvested files below Product.wxs INSTALLFOLDER.
+    "-dr", "INSTALLFOLDER",
 
-Write-Info "Compiling AppFiles.wxs -> $objAppFiles"
-& candle `
-    -nologo `
-    -dSourceDir="$DistDir" `
-    -out "$objAppFiles" `
-    "$appFilesWxs"
+    # Product.wxs references this component group.
+    "-cg", "AppFiles",
 
-Require-File $objProduct  "candle output (Product.wixobj)"
-Require-File $objAppFiles "candle output (AppFiles.wixobj)"
-Write-Ok "Compiled .wxs -> .wixobj"
+    # Author component GUIDs automatically.
+    # Generated AppFiles.wxs therefore remains disposable.
+    "-ag",
 
-# ----------------------------
-# 3) Link .wixobj -> .msi
-# ----------------------------
-Write-Section "Link (light)"
-Write-Info "Linking -> $outMsi"
+    # Product.wxs already declares INSTALLFOLDER.
+    "-srd",
 
-# -sval: suppress ICE validation errors (keep if you want “best-effort” builds)
-& light `
-    -nologo `
-    -ext WixUIExtension `
-    -sval `
-    -out "$outMsi" `
-    "$objProduct" "$objAppFiles"
+    # Suppress COM/self-registration harvesting.
+    "-sreg",
+    "-scom",
+
+    # Generate fragments.
+    "-sfrag",
+
+    # Keep source paths relocatable for candle.
+    "-var", "var.SourceDir",
+
+    "-out", $appFilesWxs
+)
+
+Invoke-Checked "heat" $heatArgs
+
+Require-File $appFilesWxs "generated AppFiles.wxs"
+
+Write-Ok "Harvested Nuitka distribution"
+
+
+# ============================================================
+# 2) Compile Product.wxs
+# ============================================================
+
+Write-Section "Compile WiX sources (candle)"
+
+Write-Info "Compiling Product.wxs"
+
+$productArgs = @(
+    "-nologo",
+    "-arch", "x64",
+    "-ext", "WixUIExtension",
+
+    "-dSourceDir=$DistDir",
+    "-dAppVersion=$Version",
+
+    "-out", $objProduct,
+    $Wxs
+)
+
+Invoke-Checked "candle" $productArgs
+
+Require-File $objProduct "Product.wixobj"
+
+
+# ============================================================
+# 3) Compile generated AppFiles.wxs
+# ============================================================
+
+Write-Info "Compiling AppFiles.wxs"
+
+$appFilesArgs = @(
+    "-nologo",
+    "-arch", "x64",
+
+    "-dSourceDir=$DistDir",
+
+    "-out", $objAppFiles,
+    $appFilesWxs
+)
+
+Invoke-Checked "candle" $appFilesArgs
+
+Require-File $objAppFiles "AppFiles.wixobj"
+
+Write-Ok "Compiled WiX sources"
+
+
+# ============================================================
+# 4) Link MSI
+# ============================================================
+
+Write-Section "Link MSI (light)"
+
+Write-Info "Linking: $outMsi"
+
+$lightArgs = @(
+    "-nologo",
+
+    "-ext", "WixUIExtension",
+
+    # Preserve current behavior. Remove this later if you want
+    # full MSI ICE validation during release builds.
+    "-sval",
+
+    "-cultures:en-us",
+
+    "-out", $outMsi,
+
+    $objProduct,
+    $objAppFiles
+)
+
+Invoke-Checked "light" $lightArgs
 
 Require-File $outMsi "final MSI"
-Write-Ok "Built MSI: $outMsi"
+
+
+# ============================================================
+# Done
+# ============================================================
+
+Write-Section "Build complete"
+
+Write-Ok "Version: $Version"
+Write-Ok "MSI: $outMsi"
 
 if ($OpenOutput) {
-    Write-Info "Opening output folder..."
-    Start-Process -FilePath (Split-Path -Parent $outMsi)
+    Start-Process -FilePath $OutputDir
 }

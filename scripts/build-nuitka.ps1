@@ -2,61 +2,108 @@ param(
     [switch]$OneFile = $false, # --onefile vs --standalone
     [switch]$Release = $true, # add --lto=yes
     [switch]$Console = $false, # show console window (default: hidden)
-    [switch]$Clean = $false, # remove previous .build/.dist
+    [switch]$Clean = $false, # remove previous Nuitka build output
     [switch]$AssumeYes = $true, # auto-yes for tool downloads
-    [string]$Entry = "mainwindow.py", # entry script
-    [string]$OutputName = "OpenccPurepyGui.exe", # final exe name
-    [string]$Version = "1.2.0", # Build version
+    [string]$Entry = "mainwindow.py",
+    [string]$OutputName = "OpenccPurepyGui.exe",
     [string]$Icon = "resource/openccpurepygui.ico",
-    [string]$PythonExe = "python"              # which Python to use (e.g. 'py -3.13')
+    [string]$PythonExe = "python"
 )
 
 $ErrorActionPreference = "Stop"
 
-# Basic checks
-if (-not (Test-Path $Entry))
+function Fail([string]$Message)
 {
-    Write-Error "Entry file '$Entry' not found."
+    Write-Error $Message
+    exit 1
 }
 
-if (-not (Test-Path $Icon))
+function Require-File([string]$Path, [string]$Description)
+{
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf))
+    {
+        Fail "$Description not found: '$Path'"
+    }
+}
+
+function Read-Version([string]$Path)
+{
+    Require-File $Path "VERSION file"
+
+    foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8)
+    {
+        $value = $line.Trim()
+        if ($value -and -not $value.StartsWith("#"))
+        {
+            return $value
+        }
+    }
+
+    Fail "VERSION file does not contain a valid version: '$Path'"
+}
+
+# Project / version
+Require-File $Entry "Entry file"
+
+$VersionFile = "VERSION"
+$Version = Read-Version $VersionFile
+
+if (-not (Test-Path -LiteralPath $Icon -PathType Leaf))
 {
     Write-Warning "Icon '$Icon' not found. The build will continue without a custom icon."
 }
 
-# Optional clean
+# Clean previous Nuitka output
 if ($Clean)
 {
-    Get-ChildItem -Force -Directory | Where-Object {
-        $_.Name -like "*.build" -or $_.Name -like "*.dist"
-    } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+    Get-ChildItem -Force -Directory |
+            Where-Object {
+                $_.Name -like "*.build" -or
+                        $_.Name -like "*.dist" -or
+                        $_.Name -like "*.onefile-build"
+            } |
+            Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-# Detect PDFium platform folder (match pdfium_loader.py convention)
-function Get-PdfiumPlatformFolder {
-    # Windows-only in this script (you're building on Windows)
-    $is64 = [Environment]::Is64BitProcess
-    if ($is64) { return "win-x64" } else { return "win-x86" }
+# Detect PDFium platform folder (matches pdfium_loader.py convention).
+function Get-PdfiumPlatformFolder
+{
+    if ([Environment]::Is64BitProcess)
+    {
+        return "win-x64"
+    }
+    return "win-x86"
 }
 
-# Common Nuitka args
+# Common Nuitka arguments
 $common = @(
     "--enable-plugin=pyside6",
+
     "--include-package=opencc_purepy",
+    "--include-package=helpers",
+    "--include-package=openxml_module",
+    "--include-package=pdf_module",
+    "--include-package=services",
+    "--include-package=widgets",
+    "--include-package=workers",
+
     "--include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts",
+
+    # QApplication reads this at runtime.
+    "--include-data-files=VERSION=VERSION",
 
     "--msvc=latest",
     "--output-filename=$OutputName"
 )
 
-# Bundle PDFium native if present
+# Bundle PDFium native library when available.
 $pdfiumPlat = Get-PdfiumPlatformFolder
-$pdfiumDir  = "pdf_module/pdfium/$pdfiumPlat"
-$pdfiumDll  = Join-Path $pdfiumDir "pdfium.dll"
+$pdfiumDir = "pdf_module/pdfium/$pdfiumPlat"
+$pdfiumDll = Join-Path $pdfiumDir "pdfium.dll"
 
-if (Test-Path $pdfiumDll)
+if (Test-Path -LiteralPath $pdfiumDll -PathType Leaf)
 {
-    $common += @("--include-raw-dir=$pdfiumDir=$pdfiumDir")
+    $common += "--include-raw-dir=$pdfiumDir=$pdfiumDir"
     Write-Host "PDFium: bundling natives from '$pdfiumDir'"
 }
 else
@@ -64,33 +111,44 @@ else
     Write-Warning "PDFium: missing '$pdfiumDll' (PDF will be disabled in this build)"
 }
 
-# (Optional) include GUI resources; uncomment if you have a /resource folder to ship
-# $common += @("--include-data-dir=resource=resource")
-
-if (Test-Path $Icon)
+# resource_rc.py embeds Qt resources, so the whole resource directory is not
+# copied into the runtime distribution. The ICO is still used at build time.
+if (Test-Path -LiteralPath $Icon -PathType Leaf)
 {
-    $common += @("--windows-icon-from-ico=$Icon")
+    $common += "--windows-icon-from-ico=$Icon"
 }
 
-# GUI app by default (no console)
 if (-not $Console)
 {
-    $common += @("--windows-console-mode=disable")
+    $common += "--windows-console-mode=disable"
 }
 
-# Release flags
 if ($Release)
 {
-    $common += @("--lto=yes")
+    $common += "--lto=yes"
 }
 
-# CI-friendly (no interactive prompts for dependency tools)
 if ($AssumeYes)
 {
-    $common += @("--assume-yes-for-downloads")
+    $common += "--assume-yes-for-downloads"
 }
 
+# Build mode
+if ($OneFile)
+{
+    $mode = @(
+        "--onefile",
+        "--onefile-tempdir-spec={CACHE_DIR}/OpenccPurepyGui/$Version/"
+    )
+}
+else
+{
+    $mode = @("--standalone")
+}
+
+# Summary
 Write-Host "Nuitka build starting..."
+Write-Host "  Version:     $Version"
 Write-Host "  OneFile:     $OneFile"
 Write-Host "  Release:     $Release"
 Write-Host "  Console:     $Console"
@@ -99,40 +157,31 @@ Write-Host "  Entry:       $Entry"
 Write-Host "  PythonExe:   $PythonExe"
 Write-Host ""
 
-# --- build ---
-$mode = if ($OneFile)
-{
-    @(
-        "--onefile",
-        "--onefile-tempdir-spec={CACHE_DIR}/OpenccPurepyGui/$($Version)/"
-    )
-}
-else
-{
-    "--standalone"
-}
+# Build
+Write-Host "Invoking: $PythonExe -m nuitka $( ($mode + $common) -join ' ' ) $Entry"
 
-Write-Host "Invoking: $PythonExe -m nuitka $mode $( $common -join ' ' ) $Entry"
-& $PythonExe -m nuitka $mode $common $Entry
+& $PythonExe -m nuitka @mode @common $Entry
 $code = $LASTEXITCODE
 
 if ($code -ne 0)
 {
-    Write-Error "`nBuild failed with exit code $code."
-    exit $code
+    Fail "Build failed with exit code $code."
 }
 
-# Success
+# Result
 $base = [IO.Path]::GetFileNameWithoutExtension($Entry)
 $distDir = "$base.dist"
-$outHint = if ($OneFile)
+
+if ($OneFile)
 {
-    (Join-Path (Get-Location) $OutputName)
+    $outHint = Join-Path (Get-Location) $OutputName
 }
 else
 {
-    (Join-Path $distDir $OutputName)
+    $outHint = Join-Path $distDir $OutputName
 }
 
-Write-Host "`nBuild finished successfully."
-Write-Host "Output: $outHint"
+Write-Host ""
+Write-Host "Build finished successfully."
+Write-Host "Version: $Version"
+Write-Host "Output:  $outHint"

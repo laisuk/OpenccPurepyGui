@@ -7,12 +7,16 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ---
 
-## [1.2.3] - Unreleased
+## [1.3.0] - 2026-10-05
 
 ### Added
 
-- Added normCompat(), detofu() API function.
-- Added Editor font picker.
+- Added `normCompat()` and `detofu()` API functions.
+- Added an editor font picker.
+- Added automatic CJK text encoding detection when opening or dropping plain text files, with detected encodings
+  reflected in the encoding selector.
+- Added manual text encoding selection and reload support for UTF-8, GB18030/GBK, Big5/CP950, Big5-HKSCS, UTF-16 LE, and
+  UTF-16 BE.
 - Added direct Hong Kong phrase conversion configs and APIs: `t2hkp` / `OpenCC.t2hkp()` and `hk2tp` /
   `OpenCC.hk2tp()`.
 
@@ -32,8 +36,10 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
   `HkRevTriple`.
 - Refactored `s2twp` from three conversion rounds to two rounds by combining Taiwan phrase and variant normalization
   into one round, matching upstream OpenCC behavior and improving conversion efficiency.
-- Optimized Reflow.
-- Update dictionary data.
+- Optimized dictionary matching with precomputed descending starter-indexed candidate-length tuples, substantially
+  reducing conversion overhead.
+- Optimized text reflow.
+- Updated dictionary data.
 
 ---
 
