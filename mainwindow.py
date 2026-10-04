@@ -37,6 +37,41 @@ from helpers.cjk_encoding_detector import detect_cjk_encoding
 from ui_form import Ui_MainWindow
 
 
+def read_version_file() -> str:
+    """
+    Read VERSION file from project root or bundled runtime.
+
+    Rules:
+    - Ignore empty lines
+    - Ignore lines starting with '#'
+    - First valid line (after strip) is the version
+    - Fallback to "0.0.0" if anything fails
+    """
+    try:
+        # PyInstaller support
+        base_path = getattr(sys, "_MEIPASS", None)
+        root = (
+            Path(base_path)
+            if isinstance(base_path, str)
+            else Path(__file__).resolve().parent
+        )
+        version_file = root / "VERSION"
+
+        if not version_file.is_file():
+            return "0.0.0"
+
+        with version_file.open("r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    return line
+
+    except (OSError, UnicodeError):
+        pass
+
+    return "0.0.0"
+
+
 def _detect_text_encoding(data: bytes) -> str:
     detected = detect_cjk_encoding(data)
     encoding = detected.encoding or "utf-8-sig"
@@ -1238,7 +1273,7 @@ if __name__ == "__main__":
     app = QApplication()
     app.setOrganizationName("Laisuk")
     app.setApplicationName("OpenccPurepyGui")
-    app.setApplicationVersion("1.2.3")
+    app.setApplicationVersion(read_version_file())
     app.setStyle("WindowsVista")
     widget = MainWindow()
     widget.show()
