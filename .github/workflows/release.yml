@@ -20,10 +20,20 @@ jobs:
             artifact_suffix: linux-x64
             archive_name: OpenccPurepyGui-${{ github.ref_name }}-linux-x64.tar.gz
 
+          - os: ubuntu-24.04-arm
+            artifact_suffix: linux-arm64
+            archive_name: OpenccPurepyGui-${{ github.ref_name }}-linux-arm64.tar.gz
+
           - os: windows-latest
             artifact_suffix: win-x64
             archive_name: OpenccPurepyGui-${{ github.ref_name }}-win-x64.zip
             msi_name: OpenccPurepyGui-${{ github.ref_name }}-win-x64-setup.msi
+            pdfium_plat: win-x64
+
+          - os: windows-11-arm
+            artifact_suffix: win-arm64
+            archive_name: OpenccPurepyGui-${{ github.ref_name }}-win-arm64.zip
+            pdfium_plat: win-arm64
 
           - os: macos-15-intel
             artifact_suffix: macos-x64
@@ -100,22 +110,22 @@ jobs:
       - name: Build (Linux, Nuitka)
         if: runner.os == 'Linux'
         shell: bash
-        env:
-          PDFIUM_PLAT: linux-x64
         run: |
+          # Linux special case:
+          # Do not force libpdfium.so through --include-raw-dir.
+          # Nuitka recognizes .so files as extension/shared libraries, and forcing
+          # the same file as raw data causes a distribution-path conflict.
           python -m nuitka \
             --standalone \
             --enable-plugin=pyside6 \
             --include-package=opencc_purepy \
             --include-package=helpers \
             --include-package=openxml_module \
-            --include-package=pdf_module \
             --include-package=services \
             --include-package=widgets \
             --include-package=workers \
             --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts \
             --include-data-files=VERSION=VERSION \
-            --include-raw-dir=pdf_module/pdfium/${PDFIUM_PLAT}=pdf_module/pdfium/${PDFIUM_PLAT} \
             --output-filename=OpenccPurepyGui \
             --lto=yes \
             --assume-yes-for-downloads \
@@ -130,9 +140,15 @@ jobs:
             $iconFlag = "--windows-icon-from-ico=resource/openccpurepygui.ico"
           }
 
+          $pdfiumPlat = "${{ matrix.pdfium_plat }}"
+          $pdfiumDir = "pdf_module/pdfium/$pdfiumPlat"
+
           $pdfiumFlag = ""
-          if (Test-Path "pdf_module/pdfium/win-x64/pdfium.dll") {
-            $pdfiumFlag = "--include-raw-dir=pdf_module/pdfium/win-x64=pdf_module/pdfium/win-x64"
+          if (Test-Path "$pdfiumDir/pdfium.dll") {
+            $pdfiumFlag = "--include-raw-dir=$pdfiumDir=$pdfiumDir"
+          }
+          else {
+            Write-Warning "PDFium DLL missing: $pdfiumDir/pdfium.dll"
           }
 
           python -m nuitka `
@@ -141,7 +157,6 @@ jobs:
             --include-package=opencc_purepy `
             --include-package=helpers `
             --include-package=openxml_module `
-            --include-package=pdf_module `
             --include-package=services `
             --include-package=widgets `
             --include-package=workers `
@@ -155,8 +170,8 @@ jobs:
             $iconFlag `
             mainwindow.py      
 
-      - name: Build MSI (Windows, WiX 3.14)
-        if: runner.os == 'Windows'
+      - name: Build MSI (Windows x64, WiX 3.14)
+        if: matrix.artifact_suffix == 'win-x64'
         shell: pwsh
         env:
           MSI_NAME: ${{ matrix.msi_name }}
@@ -229,7 +244,6 @@ jobs:
             --include-package=opencc_purepy \
             --include-package=helpers \
             --include-package=openxml_module \
-            --include-package=pdf_module \
             --include-package=services \
             --include-package=widgets \
             --include-package=workers \
@@ -277,7 +291,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload artifact (MSI)
-        if: runner.os == 'Windows'
+        if: matrix.artifact_suffix == 'win-x64'
         uses: actions/upload-artifact@v7
         with:
           name: OpenccPurepyGui-${{ github.ref_name }}-win-x64-msi
