@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Optional, Sequence, Set
 
 from .dict_refs import DictSlot, StarterUnionLike
 
@@ -15,6 +15,10 @@ class StarterUnion(StarterUnionLike):
     astral_mask: Dict[str, int] = field(default_factory=dict)
     astral_cap: Dict[str, int] = field(default_factory=dict)
     indexed: bool = False
+    # Private acceleration data: preserve constructor, repr, and equality.
+    _starter_lengths: Optional[Dict[str, Sequence[int]]] = field(
+        default=None, init=False, repr=False, compare=False
+    )
 
     @staticmethod
     def merge_precedence(slots: Iterable[DictSlot]) -> "StarterUnion":
@@ -37,7 +41,7 @@ class StarterUnion(StarterUnionLike):
         return StarterUnion(merged_map=merged, cap=max_len)
 
     def build_starter_index(self) -> None:
-        """Populate per-starter masks and caps from merged_map keys."""
+        """Populate per-starter indexes from merged_map keys."""
         if self.indexed:
             return
 
@@ -45,6 +49,7 @@ class StarterUnion(StarterUnionLike):
         bmp_cap = self.bmp_cap
         astral_mask = self.astral_mask
         astral_cap = self.astral_cap
+        lengths: Dict[str, Set[int]] = {}
 
         for key in self.merged_map:
             if not key:
@@ -57,6 +62,10 @@ class StarterUnion(StarterUnionLike):
                 bit = 1 << (key_len - 1)
 
             starter = key[0]
+            starter_lengths = lengths.get(starter)
+            if starter_lengths is None:
+                starter_lengths = lengths[starter] = set()
+            starter_lengths.add(key_len)
             code = ord(starter)
 
             if code <= 0xFFFF:
@@ -67,5 +76,12 @@ class StarterUnion(StarterUnionLike):
                 astral_mask[starter] = astral_mask.get(starter, 0) | bit
                 if key_len > astral_cap.get(starter, 0):
                     astral_cap[starter] = key_len
+
+        # Many starters have identical length patterns; share their tuples.
+        patterns: Dict[Sequence[int], Sequence[int]] = {}
+        self._starter_lengths = {}
+        for starter, values in lengths.items():
+            descending = tuple(sorted(values, reverse=True))
+            self._starter_lengths[starter] = patterns.setdefault(descending, descending)
 
         self.indexed = True

@@ -13,6 +13,7 @@ from PySide6.QtCore import Qt, Slot, QThread, QEvent, QSettings
 from PySide6.QtGui import QGuiApplication, QTextCursor, QMouseEvent, QFont, QActionGroup
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton, QMenu, QFontDialog
 
+from workers.batch_worker import BatchWorker
 from opencc_purepy import OpenCC
 from openxml_module.epub_helper import (
     is_epub,
@@ -27,21 +28,13 @@ from openxml_module.openxml_helper import (
 from pdf_module.pdf_extract_worker import PdfExtractWorker
 from pdf_module.pdf_helper import build_progress_bar, extract_pdf_text_core
 from pdf_module.reflow_helper import reflow_cjk_paragraphs_core
+from helpers.cjk_encoding_detector import detect_cjk_encoding
+
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
 #     pyside2-uic form.ui -o ui_form.py
 from ui_form import Ui_MainWindow
-from workers.batch_worker import BatchWorker
-
-
-def _read_text_file(filename: str) -> str:
-    try:
-        with open(filename, "r", encoding="utf-8-sig") as f:
-            return f.read()
-    except UnicodeDecodeError:
-        with open(filename, "r", encoding="utf-8", errors="replace") as f:
-            return f.read()
 
 
 class MainWindow(QMainWindow):
@@ -52,6 +45,7 @@ class MainWindow(QMainWindow):
         self._batch_thread = None
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.resize(1000, 700)
 
         self._current_text_encoding = "utf-8-sig"
 
@@ -786,8 +780,20 @@ class MainWindow(QMainWindow):
             # =========================================================
             # TXT fallback
             # =========================================================
-            self._current_text_encoding = "utf-8-sig"
-            contents = _read_text_file(filename)
+            with open(filename, "rb") as f:
+                data = f.read()
+
+            detected = detect_cjk_encoding(data)
+            encoding = detected.encoding or "utf-8-sig"
+
+            if encoding == "utf-8":
+                encoding = "utf-8-sig"
+            self._current_text_encoding = encoding
+
+            contents = data.decode(
+                self._current_text_encoding,
+                errors="replace",
+            )
             self._load_text_to_editor(filename, contents)
 
         except (OSError, UnicodeError, ValueError) as e:
@@ -1124,7 +1130,7 @@ class MainWindow(QMainWindow):
         encodings = (
             ("UTF-8", "utf-8-sig"),
             ("GB18030 / GBK", "gb18030"),
-            ("Big5 / CP950", "cp950"),
+            ("Big5 / CP950", "big5"),
             ("Big5-HKSCS", "big5hkscs"),
             ("UTF-16 LE", "utf-16le"),
             ("UTF-16 BE", "utf-16be"),

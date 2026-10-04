@@ -547,10 +547,7 @@ class OpenCC:
                 )
             return "".join(results)
 
-        return "".join(
-            OpenCC.convert_union_indexed(text[s:e], union)
-            for (s, e) in ranges
-        )
+        return convert_union_ranges_indexed(text, ranges, union)
 
     @staticmethod
     def convert_union(segment: str, union: StarterUnionLike) -> str:
@@ -565,6 +562,13 @@ class OpenCC:
         if not segment:
             return segment
 
+        if getattr(union, "_starter_lengths", None) is not None:
+            return convert_union_ranges_indexed(
+                segment, ((0, len(segment)),), union
+            )
+
+        # Keep supporting duck-typed unions and older indexed objects that only
+        # provide the original mask/cap indexes.
         n = len(segment)
         i = 0
         merged_map = union.merged_map
@@ -1313,8 +1317,45 @@ def convert_range_group(args):
 
 def convert_range_group_union(args: Tuple[str, List[Tuple[int, int]], StarterUnionLike]) -> str:
     text, group_ranges, union = args
-    conv = OpenCC.convert_union_indexed
-    return ''.join(
-        conv(text[start:end], union)
-        for start, end in group_ranges
-    )
+    return convert_union_ranges_indexed(text, group_ranges, union)
+
+
+def convert_union_ranges_indexed(
+        text: str,
+        ranges: Iterable[Tuple[int, int]],
+        union: StarterUnionLike,
+) -> str:
+    """Convert ranges in one loop without matching across their ends."""
+    lengths = getattr(union, "_starter_lengths", None)
+    if lengths is None:
+        return "".join(
+            OpenCC.convert_union_indexed(text[start:end], union)
+            for start, end in ranges
+        )
+
+    get = union.merged_map.get
+    length_get = lengths.get
+    cap = union.cap
+    out = []
+    append = out.append
+    n = len(text)
+    for start, end in ranges:
+        # Match the slicing semantics of the original range-group helper.
+        if start < 0 or end < 0 or end > n:
+            start, end, _ = slice(start, end).indices(n)
+        i = start
+        while i < end:
+            starter = text[i]
+            remaining = end - i
+            for length in length_get(starter, ()):
+                if length > remaining or (cap and length > cap):
+                    continue
+                replacement = get(text[i:i + length])
+                if replacement is not None:
+                    append(replacement)
+                    i += length
+                    break
+            else:
+                append(starter)
+                i += 1
+    return "".join(out)
