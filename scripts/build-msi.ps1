@@ -51,7 +51,7 @@ function Fail([string]$Message) {
     throw $Message
 }
 
-function Require-File(
+function Confirm-File(
     [string]$Path,
     [string]$Description
 ) {
@@ -60,7 +60,7 @@ function Require-File(
     }
 }
 
-function Require-Directory(
+function Confirm-Directory(
     [string]$Path,
     [string]$Description
 ) {
@@ -69,7 +69,7 @@ function Require-Directory(
     }
 }
 
-function Require-Command([string]$Name) {
+function Confirm-Command([string]$Name) {
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
         Fail (
             "Required WiX 3 tool '$Name' was not found in PATH. " +
@@ -90,7 +90,7 @@ function Invoke-Checked(
 }
 
 function Read-Version([string]$Path) {
-    Require-File $Path "VERSION file"
+    Confirm-File $Path "VERSION file"
 
     foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
         $value = $line.Trim()
@@ -110,15 +110,15 @@ function Read-Version([string]$Path) {
 
 $Version = Read-Version $VersionFile
 
-Require-File $Wxs "WiX product source"
-Require-Directory $DistDir "Nuitka distribution"
+Confirm-File $Wxs "WiX product source"
+Confirm-Directory $DistDir "Nuitka distribution"
 
 $mainExe = Join-Path $DistDir "OpenccPurepyGui.exe"
-Require-File $mainExe "Nuitka application executable"
+Confirm-File $mainExe "Nuitka application executable"
 
-Require-Command "heat"
-Require-Command "candle"
-Require-Command "light"
+Confirm-Command "heat"
+Confirm-Command "candle"
+Confirm-Command "light"
 
 
 # ============================================================
@@ -224,7 +224,7 @@ $heatArgs = @(
 
 Invoke-Checked "heat" $heatArgs
 
-Require-File $appFilesWxs "generated AppFiles.wxs"
+Confirm-File $appFilesWxs "generated AppFiles.wxs"
 
 Write-Ok "Harvested Nuitka distribution"
 
@@ -251,7 +251,7 @@ $productArgs = @(
 
 Invoke-Checked "candle" $productArgs
 
-Require-File $objProduct "Product.wixobj"
+Confirm-File $objProduct "Product.wixobj"
 
 
 # ============================================================
@@ -272,7 +272,7 @@ $appFilesArgs = @(
 
 Invoke-Checked "candle" $appFilesArgs
 
-Require-File $objAppFiles "AppFiles.wixobj"
+Confirm-File $objAppFiles "AppFiles.wixobj"
 
 Write-Ok "Compiled WiX sources"
 
@@ -304,7 +304,7 @@ $lightArgs = @(
 
 Invoke-Checked "light" $lightArgs
 
-Require-File $outMsi "final MSI"
+Confirm-File $outMsi "final MSI"
 
 
 # ============================================================

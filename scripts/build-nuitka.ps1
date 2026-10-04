@@ -18,7 +18,7 @@ function Fail([string]$Message)
     exit 1
 }
 
-function Require-File([string]$Path, [string]$Description)
+function Confirm-File([string]$Path, [string]$Description)
 {
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf))
     {
@@ -28,7 +28,7 @@ function Require-File([string]$Path, [string]$Description)
 
 function Read-Version([string]$Path)
 {
-    Require-File $Path "VERSION file"
+    Confirm-File $Path "VERSION file"
 
     foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8)
     {
@@ -43,7 +43,7 @@ function Read-Version([string]$Path)
 }
 
 # Project / version
-Require-File $Entry "Entry file"
+Confirm-File $Entry "Entry file"
 
 $VersionFile = "VERSION"
 $Version = Read-Version $VersionFile
@@ -80,13 +80,6 @@ $common = @(
     "--enable-plugin=pyside6",
 
     "--include-package=opencc_purepy",
-    "--include-package=helpers",
-    "--include-package=openxml_module",
-    "--include-package=pdf_module",
-    "--include-package=services",
-    "--include-package=widgets",
-    "--include-package=workers",
-
     "--include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts",
 
     # QApplication reads this at runtime.
