@@ -133,28 +133,28 @@ Supported document formats include:
 OpenccPurepyGui supports the standard conversion configurations provided
 by `opencc-purepy`, including:
 
-Configuration Conversion
-  --------------- ----------------------------------------------------------
-`s2t`           Simplified Chinese → Traditional Chinese
-`t2s`           Traditional Chinese → Simplified Chinese
-`s2tw`          Simplified Chinese → Taiwan Traditional
-`tw2s`          Taiwan Traditional → Simplified Chinese
-`s2twp`         Simplified Chinese → Taiwan Traditional with phrases
-`tw2sp`         Taiwan Traditional with phrases → Simplified Chinese
-`s2hk`          Simplified Chinese → Hong Kong Traditional
-`hk2s`          Hong Kong Traditional → Simplified Chinese
-`s2hkp`         Simplified Chinese → Hong Kong Traditional with phrases
-`hk2sp`         Hong Kong Traditional with phrases → Simplified Chinese
-`t2tw`          Traditional Chinese → Taiwan Traditional
-`tw2t`          Taiwan Traditional → Traditional Chinese
-`t2twp`         Traditional Chinese → Taiwan Traditional with phrases
-`tw2tp`         Taiwan Traditional with phrases → Traditional Chinese
-`t2hk`          Traditional Chinese → Hong Kong Traditional
-`hk2t`          Hong Kong Traditional → Traditional Chinese
-`t2hkp`         Traditional Chinese → Hong Kong Traditional with phrases
-`hk2tp`         Hong Kong Traditional with phrases → Traditional Chinese
-`t2jp`          Traditional Chinese → Japanese Shinjitai
-`jp2t`          Japanese Shinjitai → Traditional Chinese
+| Configuration | Conversion                                               |
+|---------------|----------------------------------------------------------|
+| `s2t`         | Simplified Chinese → Traditional Chinese                 |
+| `t2s`         | Traditional Chinese → Simplified Chinese                 |
+| `s2tw`        | Simplified Chinese → Taiwan Traditional                  |
+| `tw2s`        | Taiwan Traditional → Simplified Chinese                  |
+| `s2twp`       | Simplified Chinese → Taiwan Traditional with phrases     |
+| `tw2sp`       | Taiwan Traditional with phrases → Simplified Chinese     |
+| `s2hk`        | Simplified Chinese → Hong Kong Traditional               |
+| `hk2s`        | Hong Kong Traditional → Simplified Chinese               |
+| `s2hkp`       | Simplified Chinese → Hong Kong Traditional with phrases  |
+| `hk2sp`       | Hong Kong Traditional with phrases → Simplified Chinese  |
+| `t2tw`        | Traditional Chinese → Taiwan Traditional                 |
+| `tw2t`        | Taiwan Traditional → Traditional Chinese                 |
+| `t2twp`       | Traditional Chinese → Taiwan Traditional with phrases    |
+| `tw2tp`       | Taiwan Traditional with phrases → Traditional Chinese    |
+| `t2hk`        | Traditional Chinese → Hong Kong Traditional              |
+| `hk2t`        | Hong Kong Traditional → Traditional Chinese              |
+| `t2hkp`       | Traditional Chinese → Hong Kong Traditional with phrases |
+| `hk2tp`       | Hong Kong Traditional with phrases → Traditional Chinese |
+| `t2jp`        | Traditional Chinese → Japanese Shinjitai                 |
+| `jp2t`        | Japanese Shinjitai → Traditional Chinese                 |
 
 ---
 
