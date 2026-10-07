@@ -1179,6 +1179,7 @@ class MainWindow(QMainWindow):
             ("GB18030 / GBK", "gb18030"),
             ("Big5 / CP950", "big5"),
             ("Big5-HKSCS", "big5hkscs"),
+            ("Shift-JIS / CP932", "cp932"),
             ("UTF-16 LE", "utf-16le"),
             ("UTF-16 BE", "utf-16be"),
         )
