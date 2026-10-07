@@ -1197,8 +1197,7 @@ class MainWindow(QMainWindow):
             group.addAction(action)
 
             action.triggered.connect(
-                lambda _checked=False, enc=encoding:
-                self._reload_current_text_file(enc)
+                lambda _checked=False, enc=encoding: self._reload_current_text_file(enc)
             )
 
         self._encoding_menu = menu
