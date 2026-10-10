@@ -1,17 +1,24 @@
 import ctypes
 import os
 import sys
+import platform
+
 from pathlib import Path
 
 
 def _detect_platform_folder() -> str:
-    is_64bit = sys.maxsize > 2**32
+    is_64bit = sys.maxsize > 2 ** 32
 
     if sys.platform.startswith(("win32", "cygwin")):
-        arch = "x64" if is_64bit else "x86"
+        machine = platform.machine().lower()
+        if machine in ("arm64", "aarch64"):
+            arch = "arm64"
+        else:
+            arch = "x64" if is_64bit else "x86"
         return f"win-{arch}"
+
     elif sys.platform.startswith("linux"):
-        machine = os.uname().machine
+        machine = os.uname().machine.lower()
         if "aarch64" in machine or "arm64" in machine:
             arch = "arm64"
         elif "64" in machine:
@@ -19,9 +26,11 @@ def _detect_platform_folder() -> str:
         else:
             arch = "x86"
         return f"linux-{arch}"
+
     elif sys.platform.startswith("darwin"):
         arch = "arm64" if os.uname().machine == "arm64" else "x64"
         return f"macos-{arch}"
+
     else:
         raise RuntimeError(f"Unsupported platform: {sys.platform}")
 
