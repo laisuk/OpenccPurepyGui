@@ -10,11 +10,14 @@ from typing import Optional, Callable
 
 import PySide6
 from PySide6.QtCore import Qt, Slot, QThread, QEvent, QSettings
-from PySide6.QtGui import QGuiApplication, QTextCursor, QMouseEvent, QFont, QActionGroup
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton, QMenu, QFontDialog
+from PySide6.QtGui import QGuiApplication, QTextCursor, QMouseEvent, QFont, QActionGroup, QIcon
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton, QMenu, QFontDialog, \
+    QWidget, QVBoxLayout
 
 from workers.batch_worker import BatchWorker
-from opencc_purepy import OpenCC
+from widgets.dictionary_widget import DictionaryWidget
+from opencc_purepy import DictSlot, OpenCC
+from opencc_purepy.utils import CustomDictSpec
 from openxml_module.epub_helper import (
     is_epub,
     extract_epub_all_text,
@@ -221,6 +224,48 @@ class MainWindow(QMainWindow):
         self.ui.tbSource.openXmlDropped.connect(self._on_tb_source_non_pdf_dropped)
 
         self.converter = OpenCC()
+        self.dictionary_tab = QWidget(self.ui.tabWidget)
+        self.dictionary_tab.setObjectName("tabDictionary")
+        dictionary_font = self.ui.tabWidget.font()
+        dictionary_font.setPointSize(10)
+        self.dictionary_tab.setFont(dictionary_font)
+        dictionary_layout = QVBoxLayout(self.dictionary_tab)
+        dictionary_layout.setObjectName("dictionaryLayout")
+        self.dictionary_widget = DictionaryWidget(OpenCC.available_slots(), self.dictionary_tab)
+        dictionary_layout.addWidget(self.dictionary_widget)
+        self.ui.tabWidget.addTab(
+            self.dictionary_tab, QIcon(":/images/resource/icons8-dictionary-64.png"), "Dictionary（字典）"
+        )
+        self.dictionary_widget.apply_requested.connect(self.apply_custom_dictionaries)
+
+    def apply_custom_dictionaries(self, rows: list) -> None:
+        if self._batch_thread is not None:
+            self.ui.statusbar.showMessage("Wait until batch conversion has finished before applying dictionaries.")
+            return
+        try:
+            specs: list[CustomDictSpec] = []
+            slots = OpenCC.available_slots()
+            for index, row in enumerate(rows, start=1):
+                path = row["path"].strip()
+                if not path:
+                    continue
+                if row["slot"] not in slots or row["mode"] not in ("append", "override"):
+                    raise ValueError(f"Row {index}: invalid dictionary slot or mode")
+                specs.append(CustomDictSpec(
+                    slot=DictSlot.parse(row["slot"]),
+                    mode=row["mode"],
+                    path=path,
+                ))
+            candidate = OpenCC.from_dict_files(self.get_current_config(), specs)
+        except Exception as error:
+            self.ui.statusbar.showMessage(f"Dictionary application failed: {error}")
+            QMessageBox.warning(self, "Custom Dictionary", str(error))
+            return
+        self.converter = candidate
+        self.dictionary_widget.set_active_count(len(specs))
+        self.ui.statusbar.showMessage(
+            f"Custom dictionaries applied ({len(specs)} files)." if specs else "Default dictionary restored."
+        )
 
     def show_cancel_button(self, handler) -> None:
         """Show Cancel button and connect to the given handler (no warnings)."""
