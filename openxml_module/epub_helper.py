@@ -400,26 +400,29 @@ def _sanitize_xml_like_bytes(b: bytes) -> bytes:
 
 def _sanitize_xhtml_bytes(b: bytes) -> bytes:
     """
-    XHTML often contains:
-    - <!DOCTYPE ...> with entity definitions
-    - named entities like &nbsp;
+    Sanitize XHTML for ElementTree parsing.
 
-    ElementTree cannot resolve named entities without DTD,
-    so we:
-    - strip DOCTYPE
-    - convert named entities to Unicode via html.unescape
-      (but only safely for named entities; keep numeric entities intact)
+    - Strip DOCTYPE declarations.
+    - Convert HTML named entities into XML-safe numeric character references.
+    - Preserve unknown entities as literal text by escaping their ampersands.
+    - Leave existing numeric character references unchanged.
     """
     s = b.decode("utf-8", errors="replace")
 
     # Strip DOCTYPE (XmlReader ignores it)
     s = _DOCTYPE_RE.sub("", s)
 
-    # Convert named entities to Unicode to avoid undefined entity parse errors.
-    # We only replace &name; patterns; numeric entities remain as-is.
+    # Convert HTML named entities into XML-safe numeric character references.
+    # Escape unknown entities as literal text to prevent XML parsing errors.
+    # Numeric entities are left unchanged.
     def repl(m: re.Match[str]) -> str:
-        ent = m.group(0)  # like "&nbsp;"
-        return html.unescape(ent)
+        ent = m.group(0)
+        decoded = html.unescape(ent)
+
+        if decoded == ent:
+            return "&amp;" + ent[1:]
+
+        return "".join(f"&#{ord(c)};" for c in decoded)
 
     s = _ENTITY_RE.sub(repl, s)
 

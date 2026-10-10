@@ -7,6 +7,16 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ---
 
+## [1.4.0] - Unreleased
+
+### Fixed
+
+- Fixed EPUB extraction of HTML named entities by converting them
+  into XML-safe numeric character references, preventing XHTML
+  parsing errors while preserving inline text spacing.
+
+---
+
 ## [1.3.0] - 2026-10-05
 
 ### Added
