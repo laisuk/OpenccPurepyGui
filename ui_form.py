@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'form.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.10.2
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -32,18 +32,18 @@ class Ui_MainWindow(object):
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(1155, 831)
         icon = QIcon()
-        icon.addFile(u":/images/resource/openccpurepygui.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon.addFile(u":/images/resource/openccpurepygui.png", QSize(), QIcon.Normal, QIcon.Off)
         MainWindow.setWindowIcon(icon)
         self.actionExit = QAction(MainWindow)
         self.actionExit.setObjectName(u"actionExit")
         icon1 = QIcon()
-        icon1.addFile(u":/images/resource/exit.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon1.addFile(u":/images/resource/exit.png", QSize(), QIcon.Normal, QIcon.Off)
         self.actionExit.setIcon(icon1)
         self.actionExit.setMenuRole(QAction.MenuRole.NoRole)
         self.actionAbout = QAction(MainWindow)
         self.actionAbout.setObjectName(u"actionAbout")
         icon2 = QIcon()
-        icon2.addFile(u":/images/resource/information.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon2.addFile(u":/images/resource/information.png", QSize(), QIcon.Normal, QIcon.Off)
         self.actionAbout.setIcon(icon2)
         self.actionAbout.setMenuRole(QAction.MenuRole.NoRole)
         self.actionConvertFilename = QAction(MainWindow)
@@ -65,6 +65,9 @@ class Ui_MainWindow(object):
         self.actionAutoReflow.setChecked(True)
         self.actionSelectEditorFont = QAction(MainWindow)
         self.actionSelectEditorFont.setObjectName(u"actionSelectEditorFont")
+        self.actionAutoDetectCjkEncoding = QAction(MainWindow)
+        self.actionAutoDetectCjkEncoding.setObjectName(u"actionAutoDetectCjkEncoding")
+        self.actionAutoDetectCjkEncoding.setCheckable(True)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout_3 = QVBoxLayout(self.centralwidget)
@@ -212,15 +215,15 @@ class Ui_MainWindow(object):
         self.verticalLayout_frame.setContentsMargins(0, 0, 0, 0)
         self.tbSource = TextEditWidget(self.frameSource)
         self.tbSource.setObjectName(u"tbSource")
-        self.tbSource.setToolTipDuration(-1)
-        self.tbSource.setMidLineWidth(0)
         font2 = QFont()
         font2.setFamilies([u"Microsoft YaHei"])
         font2.setPointSize(13)
         font2.setBold(False)
         self.tbSource.setFont(font2)
+        self.tbSource.setToolTipDuration(-1)
         self.tbSource.setFrameShape(QFrame.Shape.NoFrame)
         self.tbSource.setLineWidth(0)
+        self.tbSource.setMidLineWidth(0)
         self.tbSource.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
 
         self.verticalLayout_frame.addWidget(self.tbSource)
@@ -256,12 +259,12 @@ class Ui_MainWindow(object):
 
         self.lblSourceCode = QLabel(self.frameSource)
         self.lblSourceCode.setObjectName(u"lblSourceCode")
-        self.lblSourceCode.setMinimumSize(QSize(0, 28))
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.lblSourceCode.sizePolicy().hasHeightForWidth())
         self.lblSourceCode.setSizePolicy(sizePolicy)
+        self.lblSourceCode.setMinimumSize(QSize(0, 28))
         font4 = QFont()
         font4.setPointSize(12)
         font4.setBold(False)
@@ -299,11 +302,11 @@ class Ui_MainWindow(object):
         self.btnReflow = QPushButton(self.frameSource)
         self.btnReflow.setObjectName(u"btnReflow")
         self.btnReflow.setMinimumSize(QSize(0, 28))
-        icon3 = QIcon()
-        icon3.addFile(u":/images/resource/icons8-refresh-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnReflow.setIcon(icon3)
         self.btnReflow.setMaximumSize(QSize(30, 16777215))
         self.btnReflow.setFont(font3)
+        icon3 = QIcon()
+        icon3.addFile(u":/images/resource/icons8-refresh-48.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.btnReflow.setIcon(icon3)
         self.btnReflow.setIconSize(QSize(18, 18))
 
         self.horizontalLayout_source.addWidget(self.btnReflow)
@@ -331,12 +334,12 @@ class Ui_MainWindow(object):
 
         self.btnPaste = QPushButton(self.frameSource)
         self.btnPaste.setObjectName(u"btnPaste")
-        self.btnPaste.setMinimumSize(QSize(0, 28))
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.btnPaste.sizePolicy().hasHeightForWidth())
         self.btnPaste.setSizePolicy(sizePolicy1)
+        self.btnPaste.setMinimumSize(QSize(0, 28))
         self.btnPaste.setFont(font5)
 
         self.horizontalLayout_source.addWidget(self.btnPaste)
@@ -363,14 +366,14 @@ class Ui_MainWindow(object):
         self.verticalLayout_frameDestination.setContentsMargins(0, 0, 0, 0)
         self.tbDestination = QPlainTextEdit(self.frameDestination)
         self.tbDestination.setObjectName(u"tbDestination")
-        self.tbDestination.setAcceptDrops(False)
-        self.tbDestination.setMidLineWidth(0)
-        self.tbDestination.setUndoRedoEnabled(False)
-        self.tbDestination.setReadOnly(True)
         self.tbDestination.setFont(font2)
+        self.tbDestination.setAcceptDrops(False)
         self.tbDestination.setFrameShape(QFrame.Shape.NoFrame)
         self.tbDestination.setLineWidth(0)
+        self.tbDestination.setMidLineWidth(0)
         self.tbDestination.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.tbDestination.setUndoRedoEnabled(False)
+        self.tbDestination.setReadOnly(True)
 
         self.verticalLayout_frameDestination.addWidget(self.tbDestination)
 
@@ -403,9 +406,9 @@ class Ui_MainWindow(object):
 
         self.lblDestinationCode = QLabel(self.frameDestination)
         self.lblDestinationCode.setObjectName(u"lblDestinationCode")
-        self.lblDestinationCode.setMinimumSize(QSize(0, 28))
         sizePolicy.setHeightForWidth(self.lblDestinationCode.sizePolicy().hasHeightForWidth())
         self.lblDestinationCode.setSizePolicy(sizePolicy)
+        self.lblDestinationCode.setMinimumSize(QSize(0, 28))
         self.lblDestinationCode.setFont(font4)
         self.lblDestinationCode.setMargin(1)
 
@@ -446,9 +449,9 @@ class Ui_MainWindow(object):
 
         self.btnCopy = QPushButton(self.frameDestination)
         self.btnCopy.setObjectName(u"btnCopy")
-        self.btnCopy.setMinimumSize(QSize(0, 28))
         sizePolicy1.setHeightForWidth(self.btnCopy.sizePolicy().hasHeightForWidth())
         self.btnCopy.setSizePolicy(sizePolicy1)
+        self.btnCopy.setMinimumSize(QSize(0, 28))
         self.btnCopy.setFont(font5)
 
         self.horizontalLayout_deatination.addWidget(self.btnCopy)
@@ -470,7 +473,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.addLayout(self.horizontalLayout_textBox)
 
         icon4 = QIcon()
-        icon4.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon4.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Normal, QIcon.Off)
         self.tabWidget.addTab(self.tab_main, icon4, "")
         self.tab_batch = QWidget()
         self.tab_batch.setObjectName(u"tab_batch")
@@ -541,7 +544,7 @@ class Ui_MainWindow(object):
         font8.setBold(False)
         self.btnPreview.setFont(font8)
         icon5 = QIcon()
-        icon5.addFile(u":/images/resource/visual.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon5.addFile(u":/images/resource/visual.png", QSize(), QIcon.Normal, QIcon.Off)
         self.btnPreview.setIcon(icon5)
         self.btnPreview.setIconSize(QSize(16, 16))
 
@@ -578,7 +581,7 @@ class Ui_MainWindow(object):
         self.btnOutDir.setMaximumSize(QSize(30, 16777215))
         self.btnOutDir.setFont(font3)
         icon6 = QIcon()
-        icon6.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon6.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Normal, QIcon.Off)
         self.btnOutDir.setIcon(icon6)
         self.btnOutDir.setIconSize(QSize(18, 18))
 
@@ -601,7 +604,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addLayout(self.horizontalLayout_listbox_action)
 
         icon7 = QIcon()
-        icon7.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon7.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Normal, QIcon.Off)
         self.tabWidget.addTab(self.tab_batch, icon7, "")
 
         self.verticalLayout_3.addWidget(self.tabWidget)
@@ -614,9 +617,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout_process.setObjectName(u"horizontalLayout_process")
         self.btnProcess = QPushButton(self.centralwidget)
         self.btnProcess.setObjectName(u"btnProcess")
-        icon8 = QIcon()
-        icon8.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnProcess.setIcon(icon8)
         sizePolicy1.setHeightForWidth(self.btnProcess.sizePolicy().hasHeightForWidth())
         self.btnProcess.setSizePolicy(sizePolicy1)
         self.btnProcess.setMinimumSize(QSize(100, 0))
@@ -624,6 +624,9 @@ class Ui_MainWindow(object):
         font10.setPointSize(14)
         font10.setBold(True)
         self.btnProcess.setFont(font10)
+        icon8 = QIcon()
+        icon8.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.btnProcess.setIcon(icon8)
         self.btnProcess.setIconSize(QSize(28, 28))
 
         self.horizontalLayout_process.addWidget(self.btnProcess)
@@ -727,6 +730,7 @@ class Ui_MainWindow(object):
         self.menuFile.addAction(self.actionExit)
         self.menuHelp.addAction(self.actionAbout)
         self.menuSettings.addAction(self.actionConvertFilename)
+        self.menuSettings.addAction(self.actionAutoDetectCjkEncoding)
         self.menuSettings.addSeparator()
         self.menuSettings.addAction(self.actionAddPdfPageHeader)
         self.menuSettings.addAction(self.actionCompactPdfText)
@@ -759,6 +763,7 @@ class Ui_MainWindow(object):
         self.actionUsePdfTextExtractWorker.setText(QCoreApplication.translate("MainWindow", u"Use  PDF Text Extract Worker", None))
         self.actionAutoReflow.setText(QCoreApplication.translate("MainWindow", u"Auto-Reflow PDF Text", None))
         self.actionSelectEditorFont.setText(QCoreApplication.translate("MainWindow", u"Select Editor Font ...", None))
+        self.actionAutoDetectCjkEncoding.setText(QCoreApplication.translate("MainWindow", u"Auto-Detect CJK Text Encoding", None))
         self.rbS2t.setText(QCoreApplication.translate("MainWindow", u"zh-Hans \uff08\u7b80\uff09 To zh-Hant \uff08\u7e41\uff09", None))
         self.rbT2s.setText(QCoreApplication.translate("MainWindow", u"zh-Hant \uff08\u7e41\uff09 To zh-Hans \uff08\u7b80\uff09", None))
         self.rbManual.setText(QCoreApplication.translate("MainWindow", u"Manual (\u81ea\u5b9a\u4e49) :", None))

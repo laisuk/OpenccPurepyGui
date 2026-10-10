@@ -7,6 +7,7 @@ from opencc_purepy.office_helper import OFFICE_FORMATS, convert_office_doc
 # reuse your existing helpers
 from pdf_module.pdf_helper import sanitize_invisible
 from pdf_module.reflow_helper import reflow_cjk_paragraphs_core
+from helpers.plain_text_encoding import decode_plain_text
 
 
 class BatchWorker(QObject):
@@ -27,6 +28,7 @@ class BatchWorker(QObject):
             compact_pdf: bool,
             convert_filename: bool,
             parent: Optional[QObject] = None,
+            auto_detect_cjk_encoding: bool = False,
     ) -> None:
         super().__init__(parent)
         self._files = [Path(p) for p in files]
@@ -40,6 +42,7 @@ class BatchWorker(QObject):
         self._auto_reflow_pdf = auto_reflow_pdf
         self._compact_pdf = compact_pdf
         self.convert_filename = convert_filename
+        self._auto_detect_cjk_encoding = auto_detect_cjk_encoding
 
         self._cancel_requested = False
 
@@ -104,10 +107,15 @@ class BatchWorker(QObject):
 
         # Plain text
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                input_text = f.read()
-        except UnicodeDecodeError:
-            input_text = ""
+            input_text, encoding = decode_plain_text(
+                file_path.read_bytes(), self._auto_detect_cjk_encoding
+            )
+        except UnicodeError as e:
+            self.error.emit(f"{idx}: {file_path} -> Cannot detect or decode text encoding: {e}")
+            return
+
+        if self._auto_detect_cjk_encoding:
+            self.log.emit(f"{idx}: {file_path} -> Auto-detected {encoding}")
 
         if input_text:
             input_text = sanitize_invisible(input_text)
