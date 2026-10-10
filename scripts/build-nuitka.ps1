@@ -68,11 +68,20 @@ if ($Clean)
 # Detect PDFium platform folder (matches pdfium_loader.py convention).
 function Get-PdfiumPlatformFolder
 {
-    if ([Environment]::Is64BitProcess)
+    # Query the selected Python interpreter, not the PowerShell host.
+    $machine = (& $PythonExe -c "import platform; print(platform.machine().lower())").Trim()
+    if ($LASTEXITCODE -ne 0 -or -not $machine)
     {
-        return "win-x64"
+        Fail "Unable to determine Python architecture using '$PythonExe'."
     }
-    return "win-x86"
+
+    switch ($machine)
+    {
+        { $_ -in @("arm64", "aarch64") } { return "win-arm64" }
+        { $_ -in @("amd64", "x86_64") } { return "win-x64" }
+        { $_ -in @("x86", "i386", "i686") } { return "win-x86" }
+        default { Fail "Unsupported Python architecture: '$machine'" }
+    }
 }
 
 # Common Nuitka arguments
