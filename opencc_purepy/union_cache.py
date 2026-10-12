@@ -19,6 +19,10 @@ class UnionKey(Enum):
     HkRevPair = auto()
     JpsCharactersRev = auto()
     JpsPair = auto()
+    SealCharactersOnly = auto()
+    SealCharactersRevOnly = auto()
+    SealVariantsOnly = auto()
+    SealVariantsRevOnly = auto()
     StPunctOnly = auto()
 
 
@@ -84,6 +88,14 @@ class UnionCache:
             return [get_slot("jps_characters_rev")]
         if key is UnionKey.JpsPair:
             return [get_slot("jps_phrases"), get_slot("jps_characters")]
+        if key is UnionKey.SealCharactersOnly:
+            return [get_slot("seal_characters")]
+        if key is UnionKey.SealCharactersRevOnly:
+            return [get_slot("seal_characters_rev")]
+        if key is UnionKey.SealVariantsOnly:
+            return [get_slot("seal_variants")]
+        if key is UnionKey.SealVariantsRevOnly:
+            return [get_slot("seal_variants_rev")]
         if key is UnionKey.StPunctOnly:
             return [get_slot("st_punctuations")]
 

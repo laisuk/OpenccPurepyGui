@@ -33,6 +33,11 @@ class DictSlot(str, Enum):
     JPSCharactersRev = "jps_characters_rev"
     JPSPhrases = "jps_phrases"
 
+    SealCharacters = "seal_characters"
+    SealCharactersRev = "seal_characters_rev"
+    SealVariants = "seal_variants"
+    SealVariantsRev = "seal_variants_rev"
+
     @classmethod
     def parse(cls, value: "DictSlotLike") -> "DictSlot":
         """Normalize a user-supplied dictionary slot.

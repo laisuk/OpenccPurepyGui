@@ -109,7 +109,7 @@
         </item>
         <item>
          <property name="text">
-          <string>s2twp (简 -&gt; 繁/台/惯)</string>
+          <string>s2twp (简 -&gt; 繁/台/区)</string>
          </property>
         </item>
         <item>
@@ -119,7 +119,7 @@
         </item>
         <item>
          <property name="text">
-          <string>s2hkp (简 -&gt; 繁/港/惯)</string>
+          <string>s2hkp (简 -&gt; 繁/港/区)</string>
          </property>
         </item>
         <item>
@@ -134,7 +134,7 @@
         </item>
         <item>
          <property name="text">
-          <string>t2twp (繁 -&gt; 繁/台/惯)</string>
+          <string>t2twp (繁 -&gt; 繁/台/区)</string>
          </property>
         </item>
         <item>
@@ -144,7 +144,7 @@
         </item>
         <item>
          <property name="text">
-          <string>t2hkp (繁 -&gt; 繁/港/惯)</string>
+          <string>t2hkp (繁 -&gt; 繁/港/区)</string>
          </property>
         </item>
         <item>
@@ -154,7 +154,7 @@
         </item>
         <item>
          <property name="text">
-          <string>tw2sp (繁/台 -&gt; 简/惯)</string>
+          <string>tw2sp (繁/台 -&gt; 简/区)</string>
          </property>
         </item>
         <item>
@@ -164,7 +164,7 @@
         </item>
         <item>
          <property name="text">
-          <string>tw2tp (繁/台 -&gt; 繁/惯)</string>
+          <string>tw2tp (繁/台 -&gt; 繁/区)</string>
          </property>
         </item>
         <item>
@@ -174,7 +174,7 @@
         </item>
         <item>
          <property name="text">
-          <string>hk2sp (繁/港 -&gt; 简/惯)</string>
+          <string>hk2sp (繁/港 -&gt; 简/区)</string>
          </property>
         </item>
         <item>
@@ -184,7 +184,7 @@
         </item>
         <item>
          <property name="text">
-          <string>hk2tp (繁/港 -&gt; 繁/惯)</string>
+          <string>hk2tp (繁/港 -&gt; 繁/区)</string>
          </property>
         </item>
         <item>
@@ -195,6 +195,26 @@
         <item>
          <property name="text">
           <string>t2jp (日/旧 -&gt; 日/新)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>s2seal (简 -&gt; 小篆)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>t2seal (繁 -&gt; 小篆)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>seal2s (小篆 -&gt; 简)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>seal2t (小篆 -&gt; 繁)</string>
          </property>
         </item>
        </widget>

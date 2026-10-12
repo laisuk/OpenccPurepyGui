@@ -156,6 +156,16 @@ by `opencc-purepy`, including:
 | `t2jp`        | Traditional Chinese → Japanese Shinjitai                 |
 | `jp2t`        | Japanese Shinjitai → Traditional Chinese                 |
 
+The embedded Python API and CLI also support Small Seal Script conversion:
+`s2seal`, `t2seal`, `seal2s`, and `seal2t`. These configs can be used with
+`convert` and `office`, including punctuation conversion and custom dictionaries.
+GUI selector entries are maintained separately in `form.ui`.
+
+```powershell
+python -m opencc_purepy convert -c s2seal -i input.txt -o seal.txt
+python -m opencc_purepy convert -c seal2s -i seal.txt -o simplified.txt
+```
+
 ---
 
 ## CJK Normalization Compatibility

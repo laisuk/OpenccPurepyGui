@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'form.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.12.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -32,18 +32,18 @@ class Ui_MainWindow(object):
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(1155, 831)
         icon = QIcon()
-        icon.addFile(u":/images/resource/openccpurepygui.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon.addFile(u":/images/resource/openccpurepygui.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         MainWindow.setWindowIcon(icon)
         self.actionExit = QAction(MainWindow)
         self.actionExit.setObjectName(u"actionExit")
         icon1 = QIcon()
-        icon1.addFile(u":/images/resource/exit.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon1.addFile(u":/images/resource/exit.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.actionExit.setIcon(icon1)
         self.actionExit.setMenuRole(QAction.MenuRole.NoRole)
         self.actionAbout = QAction(MainWindow)
         self.actionAbout.setObjectName(u"actionAbout")
         icon2 = QIcon()
-        icon2.addFile(u":/images/resource/information.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon2.addFile(u":/images/resource/information.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.actionAbout.setIcon(icon2)
         self.actionAbout.setMenuRole(QAction.MenuRole.NoRole)
         self.actionConvertFilename = QAction(MainWindow)
@@ -103,6 +103,10 @@ class Ui_MainWindow(object):
         self.horizontalLayout_config.addWidget(self.rbManual)
 
         self.cbManual = QComboBox(self.centralwidget)
+        self.cbManual.addItem("")
+        self.cbManual.addItem("")
+        self.cbManual.addItem("")
+        self.cbManual.addItem("")
         self.cbManual.addItem("")
         self.cbManual.addItem("")
         self.cbManual.addItem("")
@@ -305,7 +309,7 @@ class Ui_MainWindow(object):
         self.btnReflow.setMaximumSize(QSize(30, 16777215))
         self.btnReflow.setFont(font3)
         icon3 = QIcon()
-        icon3.addFile(u":/images/resource/icons8-refresh-48.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon3.addFile(u":/images/resource/icons8-refresh-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.btnReflow.setIcon(icon3)
         self.btnReflow.setIconSize(QSize(18, 18))
 
@@ -473,7 +477,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.addLayout(self.horizontalLayout_textBox)
 
         icon4 = QIcon()
-        icon4.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon4.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.tabWidget.addTab(self.tab_main, icon4, "")
         self.tab_batch = QWidget()
         self.tab_batch.setObjectName(u"tab_batch")
@@ -544,7 +548,7 @@ class Ui_MainWindow(object):
         font8.setBold(False)
         self.btnPreview.setFont(font8)
         icon5 = QIcon()
-        icon5.addFile(u":/images/resource/visual.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon5.addFile(u":/images/resource/visual.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.btnPreview.setIcon(icon5)
         self.btnPreview.setIconSize(QSize(16, 16))
 
@@ -581,7 +585,7 @@ class Ui_MainWindow(object):
         self.btnOutDir.setMaximumSize(QSize(30, 16777215))
         self.btnOutDir.setFont(font3)
         icon6 = QIcon()
-        icon6.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon6.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.btnOutDir.setIcon(icon6)
         self.btnOutDir.setIconSize(QSize(18, 18))
 
@@ -604,7 +608,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addLayout(self.horizontalLayout_listbox_action)
 
         icon7 = QIcon()
-        icon7.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon7.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.tabWidget.addTab(self.tab_batch, icon7, "")
 
         self.verticalLayout_3.addWidget(self.tabWidget)
@@ -625,7 +629,7 @@ class Ui_MainWindow(object):
         font10.setBold(True)
         self.btnProcess.setFont(font10)
         icon8 = QIcon()
-        icon8.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon8.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.btnProcess.setIcon(icon8)
         self.btnProcess.setIconSize(QSize(28, 28))
 
@@ -769,24 +773,28 @@ class Ui_MainWindow(object):
         self.rbManual.setText(QCoreApplication.translate("MainWindow", u"Manual (\u81ea\u5b9a\u4e49) :", None))
         self.cbManual.setItemText(0, QCoreApplication.translate("MainWindow", u"s2t (\u7b80 -> \u7e41)", None))
         self.cbManual.setItemText(1, QCoreApplication.translate("MainWindow", u"s2tw (\u7b80 -> \u7e41/\u53f0)", None))
-        self.cbManual.setItemText(2, QCoreApplication.translate("MainWindow", u"s2twp (\u7b80 -> \u7e41/\u53f0/\u60ef)", None))
+        self.cbManual.setItemText(2, QCoreApplication.translate("MainWindow", u"s2twp (\u7b80 -> \u7e41/\u53f0/\u533a)", None))
         self.cbManual.setItemText(3, QCoreApplication.translate("MainWindow", u"s2hk (\u7b80 -> \u7e41/\u6e2f)", None))
-        self.cbManual.setItemText(4, QCoreApplication.translate("MainWindow", u"s2hkp (\u7b80 -> \u7e41/\u6e2f/\u60ef)", None))
+        self.cbManual.setItemText(4, QCoreApplication.translate("MainWindow", u"s2hkp (\u7b80 -> \u7e41/\u6e2f/\u533a)", None))
         self.cbManual.setItemText(5, QCoreApplication.translate("MainWindow", u"t2s (\u7e41 -> \u7b80)", None))
         self.cbManual.setItemText(6, QCoreApplication.translate("MainWindow", u"t2tw (\u7e41 -> \u7e41/\u53f0)", None))
-        self.cbManual.setItemText(7, QCoreApplication.translate("MainWindow", u"t2twp (\u7e41 -> \u7e41/\u53f0/\u60ef)", None))
+        self.cbManual.setItemText(7, QCoreApplication.translate("MainWindow", u"t2twp (\u7e41 -> \u7e41/\u53f0/\u533a)", None))
         self.cbManual.setItemText(8, QCoreApplication.translate("MainWindow", u"t2hk (\u7e41 -> \u7e41/\u6e2f)", None))
-        self.cbManual.setItemText(9, QCoreApplication.translate("MainWindow", u"t2hkp (\u7e41 -> \u7e41/\u6e2f/\u60ef)", None))
+        self.cbManual.setItemText(9, QCoreApplication.translate("MainWindow", u"t2hkp (\u7e41 -> \u7e41/\u6e2f/\u533a)", None))
         self.cbManual.setItemText(10, QCoreApplication.translate("MainWindow", u"tw2s (\u7e41/\u53f0 -> \u7b80)", None))
-        self.cbManual.setItemText(11, QCoreApplication.translate("MainWindow", u"tw2sp (\u7e41/\u53f0 -> \u7b80/\u60ef)", None))
+        self.cbManual.setItemText(11, QCoreApplication.translate("MainWindow", u"tw2sp (\u7e41/\u53f0 -> \u7b80/\u533a)", None))
         self.cbManual.setItemText(12, QCoreApplication.translate("MainWindow", u"tw2t (\u7e41/\u53f0 -> \u7e41)", None))
-        self.cbManual.setItemText(13, QCoreApplication.translate("MainWindow", u"tw2tp (\u7e41/\u53f0 -> \u7e41/\u60ef)", None))
+        self.cbManual.setItemText(13, QCoreApplication.translate("MainWindow", u"tw2tp (\u7e41/\u53f0 -> \u7e41/\u533a)", None))
         self.cbManual.setItemText(14, QCoreApplication.translate("MainWindow", u"hk2s (\u7e41/\u6e2f -> \u7b80)", None))
-        self.cbManual.setItemText(15, QCoreApplication.translate("MainWindow", u"hk2sp (\u7e41/\u6e2f -> \u7b80/\u60ef)", None))
+        self.cbManual.setItemText(15, QCoreApplication.translate("MainWindow", u"hk2sp (\u7e41/\u6e2f -> \u7b80/\u533a)", None))
         self.cbManual.setItemText(16, QCoreApplication.translate("MainWindow", u"hk2t (\u7e41/\u6e2f -> \u7e41)", None))
-        self.cbManual.setItemText(17, QCoreApplication.translate("MainWindow", u"hk2tp (\u7e41/\u6e2f -> \u7e41/\u60ef)", None))
+        self.cbManual.setItemText(17, QCoreApplication.translate("MainWindow", u"hk2tp (\u7e41/\u6e2f -> \u7e41/\u533a)", None))
         self.cbManual.setItemText(18, QCoreApplication.translate("MainWindow", u"jp2t (\u65e5/\u65b0 -> \u65e5/\u65e7)", None))
         self.cbManual.setItemText(19, QCoreApplication.translate("MainWindow", u"t2jp (\u65e5/\u65e7 -> \u65e5/\u65b0)", None))
+        self.cbManual.setItemText(20, QCoreApplication.translate("MainWindow", u"s2seal (\u7b80 -> \u5c0f\u7bc6)", None))
+        self.cbManual.setItemText(21, QCoreApplication.translate("MainWindow", u"t2seal (\u7e41 -> \u5c0f\u7bc6)", None))
+        self.cbManual.setItemText(22, QCoreApplication.translate("MainWindow", u"seal2s (\u5c0f\u7bc6 -> \u7b80)", None))
+        self.cbManual.setItemText(23, QCoreApplication.translate("MainWindow", u"seal2t (\u5c0f\u7bc6 -> \u7e41)", None))
 
         self.rbStd.setText(QCoreApplication.translate("MainWindow", u"General \uff08\u901a\u7528\u7b80\u7e41\uff09", None))
         self.rbZhTw.setText(QCoreApplication.translate("MainWindow", u"ZH/TW \uff08\u4e2d\u53f0\u7b80\u7e41\uff09", None))

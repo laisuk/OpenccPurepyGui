@@ -28,6 +28,7 @@ class DictionaryMaxlength:
         "hk_variants_phrases", "hk_variants",
         "hk_variants_rev", "hk_variants_rev_phrases",
         "jps_characters", "jps_characters_rev", "jps_phrases",
+        "seal_characters", "seal_characters_rev", "seal_variants", "seal_variants_rev",
     )
 
     _provider = None
@@ -58,6 +59,10 @@ class DictionaryMaxlength:
         self.jps_characters: Tuple[Dict[str, str], int] = ({}, 0)
         self.jps_characters_rev: Tuple[Dict[str, str], int] = ({}, 0)
         self.jps_phrases: Tuple[Dict[str, str], int] = ({}, 0)
+        self.seal_characters: Tuple[Dict[str, str], int] = ({}, 0)
+        self.seal_characters_rev: Tuple[Dict[str, str], int] = ({}, 0)
+        self.seal_variants: Tuple[Dict[str, str], int] = ({}, 0)
+        self.seal_variants_rev: Tuple[Dict[str, str], int] = ({}, 0)
 
         self._is_shared_provider = False
 
@@ -309,6 +314,10 @@ class DictionaryMaxlength:
             'jps_characters': "JPShinjitaiCharacters.txt",
             'jps_characters_rev': "JPShinjitaiCharactersRev.txt",
             'jps_phrases': "JPShinjitaiPhrases.txt",
+            "seal_characters": "SealCharacters.txt",
+            "seal_characters_rev": "SealCharactersRev.txt",
+            "seal_variants": "SealVariants.txt",
+            "seal_variants_rev": "SealVariantsRev.txt",
         }
 
         # ------------------------------------------------------------------
@@ -357,6 +366,10 @@ class DictionaryMaxlength:
             "ts_punctuations",
             "hk_phrases",
             "hk_phrases_rev",
+            "seal_characters",
+            "seal_characters_rev",
+            "seal_variants",
+            "seal_variants_rev",
         }
 
         for attr, path in file_map.items():
@@ -449,6 +462,14 @@ class DictionaryMaxlength:
 
         append:
             Merge into the existing slot. Duplicate keys use late-comer wins.
+
+        Both mappings accept ``DictSlot`` or parseable string slot names.
+        Overrides are applied before appends. This method mutates and returns
+        ``self``; customize before constructing an ``OpenCC`` converter so its
+        cached plans use the updated data.
+
+        :raises RuntimeError: If this is the shared dictionary provider.
+        :raises ValueError: If a slot name is invalid.
         """
         self._ensure_mutable()
 
@@ -495,7 +516,19 @@ class DictionaryMaxlength:
         Dictionary files follow the normal OpenCC whitespace-separated format.
         Keys are parsed from the first column, so leading spaces or embedded
         spaces in keys are not preserved. Use with_custom_dicts() for exact
-        in-memory keys.
+        in-memory keys. Only the first two whitespace-separated columns are
+        used; additional candidate translations are ignored. Blank lines and
+        lines beginning with ``#`` are skipped.
+
+        ``overrides`` replaces entire slots; ``appends`` merges entries with
+        later values winning. Both accept ``DictSlot`` or parseable string keys.
+        Overrides are applied before appends. This method mutates and returns
+        ``self``; call it before constructing an ``OpenCC`` converter.
+
+        :raises RuntimeError: If this is the shared dictionary provider.
+        :raises ValueError: If a slot name is invalid.
+        :raises OSError: If a file cannot be read.
+        :raises UnicodeError: If a file is not valid UTF-8.
         """
         self._ensure_mutable()
 
@@ -585,11 +618,19 @@ class DictionaryMaxlength:
             "JPShinjitaiCharacters.txt",
             "JPShinjitaiCharactersRev.txt",
             "JPShinjitaiPhrases.txt",
+            "SealCharacters.txt",
+            "SealCharactersRev.txt",
+            "SealVariants.txt",
+            "SealVariantsRev.txt",
         ]
 
         optional_files = {
             "HKPhrases.txt",
             "HKPhrasesRev.txt",
+            "SealCharacters.txt",
+            "SealCharactersRev.txt",
+            "SealVariants.txt",
+            "SealVariantsRev.txt",
         }
 
         missing = [

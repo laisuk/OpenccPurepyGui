@@ -43,6 +43,11 @@ class OpenccConfig(Enum):
     HK2TP = "hk2tp"
     T2JP = "t2jp"
     JP2T = "jp2t"
+    S2SEAL = "s2seal"
+    T2SEAL = "t2seal"
+    SEAL2S = "seal2s"
+    SEAL2T = "seal2t"
+
 
     # value: str
 
@@ -97,11 +102,18 @@ class OpenCC:
         dictionary reuse.
 
         :param config:
-            OpenCC configuration name. Defaults to ``s2t`` when omitted.
+            Supported configuration string or ``OpenccConfig`` member. Strings are
+            stripped and lowercased; ``None`` selects ``s2t``.
 
         :param dictionary:
             Optional custom dictionary container. If omitted, the built-in
-            shared dictionary provider is used.
+            shared dictionary provider is used. Customize private dictionaries
+            before passing them to a converter, whose conversion plans are cached.
+
+        :raises ValueError: If config is unsupported or has an invalid type.
+
+        Dictionary loading failures are recorded by ``get_last_error()`` and
+        leave an empty dictionary container rather than raising.
         """
         self._last_error = None
         self._config_cache: Dict[str, DictRefs] = {}
@@ -268,8 +280,10 @@ class OpenCC:
 
         ``mode`` must be ``"append"`` or ``"override"``. Append mode merges
         custom entries into the built-in slot with late-comer-wins duplicate
-        handling. Override mode replaces the selected slot before appends are
-        applied.
+        handling. Specifications are applied in iterable order. Override mode
+        replaces the entire slot at that point, including entries from earlier
+        specifications. ``None`` or an empty iterable loads only packaged data.
+        File I/O, decoding, invalid slot, and invalid mode errors propagate.
 
         Examples
         --------
@@ -340,7 +354,9 @@ class OpenCC:
         """
         Set the conversion configuration.
 
-        :param config: Configuration name or OpenccConfig enum
+        :param config: Supported string or ``OpenccConfig`` member; ``None``
+            resets to ``s2t``. Strings are stripped and lowercased.
+        :raises ValueError: If config is invalid; the active config is unchanged.
         """
         self.config = self._normalize_config(config)
 
@@ -370,7 +386,10 @@ class OpenCC:
         """
         Retrieve the last error message, if any.
 
-        :return: Error string or None
+        :return: Most recently recorded error string, or ``None``.
+
+        Successful conversion does not clear an earlier error. This is diagnostic
+        history, not a success flag for the latest call.
         """
         return self._last_error
 
@@ -803,6 +822,31 @@ class OpenCC:
                 DictRefs(self.union_cache.ensure_indexed(UnionKey.JpsPair))
                 .with_round_2(self.union_cache.ensure_indexed(UnionKey.StPunctOnly))
             )
+        elif config_key in ("s2seal", "s2seal_punct"):
+            refs = (
+                DictRefs(self.union_cache.ensure_indexed(
+                    UnionKey.S2T_PUNCT if config_key.endswith("_punct") else UnionKey.S2T))
+                .with_round_2(self.union_cache.ensure_indexed(UnionKey.SealVariantsOnly))
+                .with_round_3(self.union_cache.ensure_indexed(UnionKey.SealCharactersRevOnly))
+            )
+        elif config_key in ("seal2s", "seal2s_punct"):
+            refs = (
+                DictRefs(self.union_cache.ensure_indexed(UnionKey.SealCharactersOnly))
+                .with_round_2(self.union_cache.ensure_indexed(UnionKey.SealVariantsRevOnly))
+                .with_round_3(self.union_cache.ensure_indexed(
+                    UnionKey.T2S_PUNCT if config_key.endswith("_punct") else UnionKey.T2S))
+            )
+        elif config_key in ("t2seal", "t2seal_punct", "seal2t", "seal2t_punct"):
+            if config_key.startswith("t2seal"):
+                first, second = UnionKey.SealVariantsOnly, UnionKey.SealCharactersRevOnly
+            else:
+                first, second = UnionKey.SealCharactersOnly, UnionKey.SealVariantsRevOnly
+            refs = (
+                DictRefs(self.union_cache.ensure_indexed(first))
+                .with_round_2(self.union_cache.ensure_indexed(second))
+            )
+            if config_key.endswith("_punct"):
+                refs.with_round_3(self.union_cache.ensure_indexed(UnionKey.StPunctOnly))
         else:
             raise ValueError(f"Unsupported config: {config_key}")
 
@@ -928,6 +972,10 @@ class OpenCC:
     def t2tw(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Traditional Chinese to Taiwan Standard Traditional Chinese.
+
+        :param input_text: Text to convert, independently of the active config.
+        :param punctuation: Whether to apply Traditional-style punctuation mappings.
+        :return: Converted text. Conversion exceptions propagate.
         """
         refs = self._get_dict_refs("t2tw_punct" if punctuation else "t2tw")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
@@ -948,6 +996,10 @@ class OpenCC:
     def tw2t(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Taiwan Traditional to general Traditional Chinese.
+
+        :param input_text: Text to convert, independently of the active config.
+        :param punctuation: Whether to apply Traditional-style punctuation mappings.
+        :return: Converted text. Conversion exceptions propagate.
         """
         refs = self._get_dict_refs("tw2t_punct" if punctuation else "tw2t")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
@@ -969,6 +1021,10 @@ class OpenCC:
     def t2hk(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Traditional Chinese to Hong Kong variant.
+
+        :param input_text: Text to convert, independently of the active config.
+        :param punctuation: Whether to apply Traditional-style punctuation mappings.
+        :return: Converted text. Conversion exceptions propagate.
         """
         refs = self._get_dict_refs("t2hk_punct" if punctuation else "t2hk")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
@@ -989,6 +1045,10 @@ class OpenCC:
     def hk2t(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Hong Kong Traditional to standard Traditional Chinese.
+
+        :param input_text: Text to convert, independently of the active config.
+        :param punctuation: Whether to apply Traditional-style punctuation mappings.
+        :return: Converted text. Conversion exceptions propagate.
         """
         refs = self._get_dict_refs("hk2t_punct" if punctuation else "hk2t")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
@@ -1010,6 +1070,10 @@ class OpenCC:
     def t2jp(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Traditional Chinese to Japanese variants.
+
+        :param input_text: Text to convert, independently of the active config.
+        :param punctuation: Whether to apply Traditional-style punctuation mappings.
+        :return: Converted text. Conversion exceptions propagate.
         """
         refs = self._get_dict_refs("t2jp_punct" if punctuation else "t2jp")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
@@ -1017,17 +1081,67 @@ class OpenCC:
     def jp2t(self, input_text: str, punctuation: bool = False) -> str:
         """
         Convert Japanese Shinjitai (modern Kanji) to Traditional Chinese.
+
+        :param input_text: Text to convert, independently of the active config.
+        :param punctuation: Whether to apply Traditional-style punctuation mappings.
+        :return: Converted text. Conversion exceptions propagate.
         """
         refs = self._get_dict_refs("jp2t_punct" if punctuation else "jp2t")
         return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
 
+    def s2seal(self, input_text: str, punctuation: bool = False) -> str:
+        """Convert Simplified Chinese to Small Seal Script, independently of the active config.
+
+        Optional punctuation follows the corresponding Chinese conversion.
+        Conversion exceptions propagate.
+        """
+        refs = self._get_dict_refs("s2seal_punct" if punctuation else "s2seal")
+        return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
+
+    def t2seal(self, input_text: str, punctuation: bool = False) -> str:
+        """Convert Traditional Chinese to Small Seal Script, independently of the active config.
+
+        Optional punctuation follows the corresponding Chinese conversion.
+        Conversion exceptions propagate.
+        """
+        refs = self._get_dict_refs("t2seal_punct" if punctuation else "t2seal")
+        return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
+
+    def seal2s(self, input_text: str, punctuation: bool = False) -> str:
+        """Convert Small Seal Script to Simplified Chinese, independently of the active config.
+
+        Optional punctuation follows the corresponding Chinese conversion.
+        Conversion exceptions propagate.
+        """
+        refs = self._get_dict_refs("seal2s_punct" if punctuation else "seal2s")
+        return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
+
+    def seal2t(self, input_text: str, punctuation: bool = False) -> str:
+        """Convert Small Seal Script to Traditional Chinese, independently of the active config.
+
+        Optional punctuation follows the corresponding Chinese conversion.
+        Conversion exceptions propagate.
+        """
+        refs = self._get_dict_refs("seal2t_punct" if punctuation else "seal2t")
+        return refs.apply_segment_replace(input_text, union_replace=self.union_replace, validate_delegates=False)
+
     def convert(self, input_text: str, punctuation: bool = False) -> str:
         """
-        Automatically dispatch to the appropriate conversion method based on `self.config`.
+        Convert text using the active configuration.
 
-        :param input_text: The string to convert
-        :param punctuation: Whether to apply punctuation conversion
-        :return: Converted string or error message
+        Normalization and DeTofu are separate passes: normalize before calling
+        this method, then apply DeTofu to its output when needed.
+
+        :param input_text: The string to convert. Empty input returns ``""`` and
+            records ``"Input text is empty"`` in ``get_last_error()``.
+        :param punctuation: Whether to apply the configuration's punctuation
+            mappings. Defaults to ``False``.
+        :return: Converted text. An invalid active config or a caught conversion
+            exception returns an error message and records it in
+            ``get_last_error()``. Successful calls do not clear previous errors.
+
+        Direction-specific methods such as ``s2t()`` bypass this dispatcher and
+        propagate conversion exceptions. They do not change the active config.
         """
         if not input_text:
             self._last_error = "Input text is empty"
@@ -1075,6 +1189,14 @@ class OpenCC:
                 return self.jp2t(input_text, punctuation)
             elif config == "t2jp":
                 return self.t2jp(input_text, punctuation)
+            elif config == "s2seal":
+                return self.s2seal(input_text, punctuation)
+            elif config == "t2seal":
+                return self.t2seal(input_text, punctuation)
+            elif config == "seal2s":
+                return self.seal2s(input_text, punctuation)
+            elif config == "seal2t":
+                return self.seal2t(input_text, punctuation)
             else:
                 self._last_error = f"Invalid config: {config}"
                 return self._last_error
@@ -1105,10 +1227,14 @@ class OpenCC:
     def zho_check(self, input_text: str) -> int:
         """
         Heuristically determine whether input text is Simplified or Traditional Chinese.
-        Only a small prefix of the input is inspected for performance reasons.
+        Inspect at most the first 1,000 characters, then test at most 100
+        characters after stripping selected ASCII characters and punctuation.
+        Traditional evidence is checked first; mixed text may return either
+        script. This is a dictionary heuristic, not language detection.
 
         :param input_text: Input string
-        :return: 0 = unknown, 1 = traditional, 2 = simplified
+        :return: ``0`` for empty or indeterminate text, ``1`` for Traditional,
+            or ``2`` for Simplified.
         """
         if not input_text:
             return 0
@@ -1218,7 +1344,14 @@ class OpenCC:
         conversion dictionaries, phrase matching, regional variant selection,
         script detection, or punctuation conversion.
 
-        For converted text, apply DeTofu after convert().
+        For converted text, apply DeTofu after ``convert()``.
+
+        :param text: Input text; ``None`` and empty input return ``""``.
+        :param level: ``DeTofuLevel`` or a level string accepted by
+            ``opencc_purepy.detofu.parse_level()``. Defaults to ``ExtB``.
+        :return: Text with eligible mapped characters replaced; unmapped
+            characters are preserved. Font support is not inspected.
+        :raises ValueError: If a string level is unsupported.
         """
         return detofu(text, level)
 
@@ -1235,7 +1368,17 @@ class OpenCC:
             tofu_char<TAB>fallback_char<TAB>extension
 
         Blank lines and lines beginning with '#' are ignored. Custom mappings
-        override built-in mappings for the same tofu-risk character.
+        override built-in mappings for the same tofu-risk character when their
+        extension is eligible at the selected level.
+
+        :param text: Input text; ``None`` and empty input return ``""``.
+        :param level: ``DeTofuLevel`` or a supported level string.
+        :param path: Path to a UTF-8 fallback file.
+        :return: Text with eligible fallbacks applied after OpenCC conversion.
+        :raises TypeError: If path is ``None``.
+        :raises ValueError: If a string level is unsupported.
+        :raises OSError: If the file cannot be read.
+        :raises UnicodeError: If the file cannot be decoded as UTF-8.
         """
         if path is None:
             raise TypeError("path must not be None")
@@ -1260,7 +1403,16 @@ class OpenCC:
 
         Keys are tofu-risk characters and values are display-compatible fallback
         characters. Only the first Unicode scalar from each key and value is used.
-        Empty keys and values are ignored.
+        Empty keys and values are ignored. Later pairs override earlier pairs
+        and built-in mappings. Custom pairs are applied regardless of the level;
+        the level filters only the built-in mappings.
+
+        :param text: Input text; ``None`` and empty input return ``""``.
+        :param level: ``DeTofuLevel`` or a supported level string.
+        :param pairs: Mapping or iterable of character/fallback pairs.
+        :return: Text with fallbacks applied; unmapped characters are preserved.
+        :raises TypeError: If pairs is ``None``.
+        :raises ValueError: If a string level is unsupported.
         """
         if pairs is None:
             raise TypeError("pairs must not be None")
