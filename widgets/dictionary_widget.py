@@ -1,7 +1,7 @@
 """Custom dictionary configuration, persisted separately from active dictionaries."""
 from __future__ import annotations
 
-from PySide6.QtCore import QSettings, Signal
+from PySide6.QtCore import QSettings, Signal, Slot
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget, QHeaderView,
     QComboBox, QLineEdit, QPushButton, QFileDialog,
@@ -72,7 +72,7 @@ class DictionaryWidget(QWidget):
         actions.addWidget(self.apply_button)
         layout.addLayout(actions)
         add.clicked.connect(lambda: self.add_row())
-        self.apply_button.clicked.connect(lambda: self.apply_requested.emit(self.rows()))
+        self.apply_button.clicked.connect(self._apply_rows)
         settings = QSettings()
         count = settings.beginReadArray("dictionary/rows")
         for index in range(count):
@@ -84,6 +84,10 @@ class DictionaryWidget(QWidget):
                 save=False,
             )
         settings.endArray()
+
+    @Slot()
+    def _apply_rows(self):
+        self.apply_requested.emit(self.rows())
 
     def add_row(self, slot=None, mode="append", path="", *, save=True):
         index = self.table.rowCount()

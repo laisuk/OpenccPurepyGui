@@ -18,6 +18,42 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ### Fixed
 
+- Replaced the Custom Dictionary Apply button's lambda callback with a named
+  `_apply_rows` method decorated with `@Slot()`, preserving emission of the current
+  dictionary rows while avoiding a compiled-callback compatibility issue.
+    - **Context (2026-10-12):** this project contained the exact callback pattern
+      associated with a confirmed Nuitka standalone startup segmentation fault in
+      the sibling `OpenccPyo3Gui` project:
+      `self.apply_button.clicked.connect(lambda: self.apply_requested.emit(self.rows()))`.
+      The sibling executable built successfully but exited immediately with code `3`;
+      a `--trace-execution` build localized the crash to this connection during
+      widget construction, before the Apply button was clicked.
+    - **Relevant versions:** this project's `.venv` uses Python `3.13.16`,
+      PySide6/Shiboken `6.12.0`, and Nuitka `4.3`, matching the affected sibling
+      environment. The sibling's working older environment used Python `3.8.10`
+      and PySide6/Shiboken `6.6.3.1`, also with Nuitka `4.3`.
+    - **Why this form:** `@Slot()` registers an explicit zero-argument Qt slot on
+      the widget; connecting the named method avoids the failing compiled-lambda
+      path. This is a compatibility workaround, not evidence that lambdas are
+      generally invalid. The sibling fix changed both the callable form and slot
+      registration, so the decorator alone has not been proven responsible.
+      Python and PySide6 also changed together; the underlying defect has not been
+      attributed to a specific component. The original crash was confirmed in
+      `OpenccPyo3Gui`; this project receives the same fix for the shared pattern.
+    - **Verification in this project:** all 79 existing `test_*.py` tests passed
+      under `.venv`. An interpreted GUI smoke check constructed the main window
+      and confirmed that clicking Apply emits the expected rows for both empty and
+      populated tables. Rebuilt the standalone release using
+      `scripts/build-nuitka.ps1 -PythonExe ./.venv/Scripts/python.exe` with default
+      LTO enabled; the executable opened from `mainwindow.dist`, displayed its
+      main window, and closed normally with exit code `0` and no captured output.
+    - **Future troubleshooting:** capture executable stdout/stderr for immediate
+      exits, compare Python/PySide6/Shiboken/Nuitka versions, and use a separate
+      console-enabled `--trace-execution` build to identify the startup connection.
+      Prefer named `@Slot(...)` methods for QObject callbacks when practical.
+      See [Qt's signal and slot documentation](https://doc.qt.io/qtforpython-6.11/tutorials/basictutorial/signals_and_slots.html)
+      and [Nuitka's segmentation-fault debugging guidance](https://nuitka.net/info/segfault.html).
+
 - Fixed EPUB extraction of HTML named entities by converting them
   into XML-safe numeric character references, preventing XHTML
   parsing errors while preserving inline text spacing.
