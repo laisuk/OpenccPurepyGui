@@ -18,6 +18,14 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ### Fixed
 
+- Pinned Nuitka to `4.2.2` to avoid compiled PDF/OpenXML crashes seen with
+  `4.3` on Python `3.13.16` / PySide6 `6.12.0`. OpenccPyo3Gui diagnostics
+  reproduced exit code `3` at DOCX generator creation and PDF callback creation;
+  rebuilding its same application source with `4.2.2` passed both paths.
+  OpenccPurepyGui LTO-enabled compiled checks passed TXT, DOCX, ODT, EPUB,
+  sequential PDF extraction, and background PDF extraction (all exit code `0`).
+  Rebuilt the release executable; all 79 existing tests passed.
+
 - Moved the About dialog import to startup to avoid the lazy-import crash
   reproduced in OpenccPyo3Gui with Nuitka 4.3 / Python 3.13 / PySide6 6.12.
   OpenccPurepyGui contained the same import inside its About menu callback.
