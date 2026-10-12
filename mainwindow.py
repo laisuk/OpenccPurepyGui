@@ -9,6 +9,9 @@ from pathlib import Path
 from typing import Optional, Callable
 
 import PySide6
+# Import before Qt callbacks run: lazy loading this class from the About action
+# crashes the Nuitka/Python 3.13 build in OpenccPyo3Gui.
+from about_dialog import AboutDialog, AboutInfo
 from PySide6.QtCore import Qt, Slot, QThread, QEvent, QSettings
 from PySide6.QtGui import QGuiApplication, QTextCursor, QMouseEvent, QFont, QActionGroup, QIcon
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton, QMenu, QFontDialog, \
@@ -537,7 +540,6 @@ class MainWindow(QMainWindow):
         self.show_about()
 
     def show_about(self) -> None:
-        from about_dialog import AboutDialog, AboutInfo
 
         details = "\n".join([
             f"Python: {platform.python_version()}",

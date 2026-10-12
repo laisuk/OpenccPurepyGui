@@ -18,6 +18,12 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ### Fixed
 
+- Moved the About dialog import to startup to avoid the lazy-import crash
+  reproduced in OpenccPyo3Gui with Nuitka 4.3 / Python 3.13 / PySide6 6.12.
+  OpenccPurepyGui contained the same import inside its About menu callback.
+  Verified About, Copy Info, and OK in an LTO-enabled compiled smoke test (exit code `0`) and the interpreter; all 79
+  existing tests passed.
+
 - Replaced the Custom Dictionary Apply button's lambda callback with a named
   `_apply_rows` method decorated with `@Slot()`, preserving emission of the current
   dictionary rows while avoiding a compiled-callback compatibility issue.
