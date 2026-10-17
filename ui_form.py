@@ -320,6 +320,9 @@ class Ui_MainWindow(object):
         self.btnNormCompat.setMinimumSize(QSize(0, 28))
         self.btnNormCompat.setMaximumSize(QSize(30, 16777215))
         self.btnNormCompat.setFont(font3)
+        icon4 = QIcon()
+        icon4.addFile(u":/images/resource/icons8-playlist-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnNormCompat.setIcon(icon4)
         self.btnNormCompat.setIconSize(QSize(16, 16))
 
         self.horizontalLayout_source.addWidget(self.btnNormCompat)
@@ -476,9 +479,9 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addLayout(self.horizontalLayout_textBox)
 
-        icon4 = QIcon()
-        icon4.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.tabWidget.addTab(self.tab_main, icon4, "")
+        icon5 = QIcon()
+        icon5.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.tabWidget.addTab(self.tab_main, icon5, "")
         self.tab_batch = QWidget()
         self.tab_batch.setObjectName(u"tab_batch")
         self.verticalLayout = QVBoxLayout(self.tab_batch)
@@ -547,9 +550,9 @@ class Ui_MainWindow(object):
         font8.setPointSize(9)
         font8.setBold(False)
         self.btnPreview.setFont(font8)
-        icon5 = QIcon()
-        icon5.addFile(u":/images/resource/visual.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnPreview.setIcon(icon5)
+        icon6 = QIcon()
+        icon6.addFile(u":/images/resource/visual.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnPreview.setIcon(icon6)
         self.btnPreview.setIconSize(QSize(16, 16))
 
         self.horizontalLayout_listbox_buttons.addWidget(self.btnPreview)
@@ -584,9 +587,9 @@ class Ui_MainWindow(object):
         self.btnOutDir.setSizePolicy(sizePolicy1)
         self.btnOutDir.setMaximumSize(QSize(30, 16777215))
         self.btnOutDir.setFont(font3)
-        icon6 = QIcon()
-        icon6.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnOutDir.setIcon(icon6)
+        icon7 = QIcon()
+        icon7.addFile(u":/images/resource/icons8-folder-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnOutDir.setIcon(icon7)
         self.btnOutDir.setIconSize(QSize(18, 18))
 
         self.horizontalLayout_preview.addWidget(self.btnOutDir)
@@ -607,9 +610,9 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout_listbox_action)
 
-        icon7 = QIcon()
-        icon7.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.tabWidget.addTab(self.tab_batch, icon7, "")
+        icon8 = QIcon()
+        icon8.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.tabWidget.addTab(self.tab_batch, icon8, "")
 
         self.verticalLayout_3.addWidget(self.tabWidget)
 
@@ -628,9 +631,9 @@ class Ui_MainWindow(object):
         font10.setPointSize(14)
         font10.setBold(True)
         self.btnProcess.setFont(font10)
-        icon8 = QIcon()
-        icon8.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnProcess.setIcon(icon8)
+        icon9 = QIcon()
+        icon9.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnProcess.setIcon(icon9)
         self.btnProcess.setIconSize(QSize(28, 28))
 
         self.horizontalLayout_process.addWidget(self.btnProcess)
@@ -814,7 +817,7 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(tooltip)
         self.btnNormCompat.setToolTip(QCoreApplication.translate("MainWindow", u"Normalize CJK compatibility ideographs and Unicode compatibility characters", None))
 #endif // QT_CONFIG(tooltip)
-        self.btnNormCompat.setText(QCoreApplication.translate("MainWindow", u"\u2261", None))
+        self.btnNormCompat.setText("")
 #if QT_CONFIG(tooltip)
         self.btnClearTbSource.setToolTip(QCoreApplication.translate("MainWindow", u"Clear source box contents", None))
 #endif // QT_CONFIG(tooltip)

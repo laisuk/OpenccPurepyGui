@@ -643,7 +643,11 @@
                     <string>Normalize CJK compatibility ideographs and Unicode compatibility characters</string>
                    </property>
                    <property name="text">
-                    <string>≡</string>
+                    <string/>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="resource.qrc">
+                     <normaloff>:/images/resource/icons8-playlist-64.png</normaloff>:/images/resource/icons8-playlist-64.png</iconset>
                    </property>
                    <property name="iconSize">
                     <size>
