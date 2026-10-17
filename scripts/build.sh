@@ -87,21 +87,22 @@ command -v "$PYTHON_EXE" >/dev/null 2>&1 ||
 "$PYTHON_EXE" -m nuitka --version >/dev/null ||
     fail "Nuitka is not available in the selected Python"
 
-# Verify that the PDFium loader package is available.
-[[ -f pdf_module/pdfium_loader.py ]] ||
-    echo "WARNING: PDFium loader not found; verify PDF support."
-
 case "$(uname -m)" in
     x86_64|amd64)
-        PDFIUM_UNUSED_ARCH="linux-arm64"
+        PDFIUM_ARCH="linux-x64"
         ;;
     aarch64|arm64)
-        PDFIUM_UNUSED_ARCH="linux-x64"
+        PDFIUM_ARCH="linux-arm64"
         ;;
     *)
         fail "Unsupported Linux architecture: $(uname -m)"
         ;;
 esac
+
+PDFIUM_SOURCE="pdf_module/pdfium/$PDFIUM_ARCH/libpdfium.so"
+
+[[ -f "$PDFIUM_SOURCE" ]] ||
+    fail "PDFium native library missing: $PDFIUM_SOURCE"
 
 # Clean generated folders only.
 if [[ "$CLEAN" == "1" ]]; then
@@ -118,9 +119,6 @@ common=(
     --include-package=opencc_purepy
     --include-data-dir=opencc_purepy/dicts=opencc_purepy/dicts
 
-    # Bundle PDFium native library in its expected relative location.
-    --include-package=pdf_module
-
     # QApplication reads VERSION at runtime.
     --include-data-files=VERSION=VERSION
 
@@ -128,8 +126,6 @@ common=(
 )
 
 # Python package imports are followed by Nuitka.
-# PDFium .so libraries are intentionally not copied manually.
-# Linux PDFium must be resolvable by the application's loader.
 
 if [[ "$RELEASE" == "1" ]]; then
     common+=(--lto=yes)
@@ -156,7 +152,7 @@ echo "  Console:     $CONSOLE"
 echo "  OutputName:  $OUTPUT_NAME"
 echo "  Entry:       $ENTRY"
 echo "  PythonExe:   $PYTHON_EXE"
-echo "  PDFium:      Linux system/native loader"
+echo "  PDFium:      $PDFIUM_ARCH (bundled)"
 echo
 
 echo "Invoking: $PYTHON_EXE -m nuitka ${mode[*]} ${common[*]} $ENTRY"
@@ -171,15 +167,15 @@ else
     output="$PROJECT_ROOT/$base.dist/$OUTPUT_NAME"
 fi
 
-# Remove PDFium native binaries for the other architecture.
-DIST_DIR="$PROJECT_ROOT/${ENTRY##*/}"
-DIST_DIR="${DIST_DIR%.*}.dist"
+if [[ "$ONEFILE" == "0" ]]; then
+    DIST_DIR="$PROJECT_ROOT/$base.dist"
+    PDFIUM_DEST="$DIST_DIR/pdf_module/pdfium/$PDFIUM_ARCH"
 
-PDFIUM_UNUSED_DIR="$DIST_DIR/pdf_module/pdfium/$PDFIUM_UNUSED_ARCH"
+    mkdir -p "$PDFIUM_DEST"
+    cp -L -- "$PDFIUM_SOURCE" "$PDFIUM_DEST/libpdfium.so"
 
-if [[ -d "$PDFIUM_UNUSED_DIR" ]]; then
-    echo "Removing unused PDFium architecture: $PDFIUM_UNUSED_ARCH"
-    rm -rf -- "$PDFIUM_UNUSED_DIR"
+    echo "Bundled PDFium: $PDFIUM_ARCH"
+    ls -lh "$PDFIUM_DEST/libpdfium.so"
 fi
 
 echo
