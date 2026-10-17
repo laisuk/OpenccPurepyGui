@@ -119,7 +119,6 @@ jobs:
             --standalone \
             --enable-plugin=pyside6 \
             --include-package=opencc_purepy \
-            --include-package=pdf_module \
             --include-package=helpers \
             --include-package=openxml_module \
             --include-package=services \
@@ -257,36 +256,26 @@ jobs:
             ${ICON_FLAG} \
             mainwindow.py
 
-      - name: Trim unused Linux PDFium architecture
+      - name: Bundle Linux PDFium
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          case "${{ matrix.artifact_suffix }}" in
-            linux-x64)
-              KEEP="linux-x64"
-              REMOVE="linux-arm64"
-              ;;
-            linux-arm64)
-              KEEP="linux-arm64"
-              REMOVE="linux-x64"
-              ;;
-            *)
-              echo "Unsupported Linux architecture"
-              exit 1
-              ;;
-          esac
+          set -euo pipefail
 
-          PDFIUM_DIR="mainwindow.dist/pdf_module/pdfium"
+          PDFIUM_PLAT="${{ matrix.artifact_suffix }}"
+          PDFIUM_SOURCE="pdf_module/pdfium/$PDFIUM_PLAT/libpdfium.so"
+          PDFIUM_DEST="mainwindow.dist/pdf_module/pdfium/$PDFIUM_PLAT"
 
-          test -f "$PDFIUM_DIR/$KEEP/libpdfium.so" || {
-            echo "Missing required PDFium: $KEEP"
+          if [[ ! -f "$PDFIUM_SOURCE" ]]; then
+            echo "ERROR: PDFium native library missing: $PDFIUM_SOURCE"
             exit 1
-          }
+          fi
 
-          rm -rf -- "$PDFIUM_DIR/$REMOVE"
+          mkdir -p "$PDFIUM_DEST"
+          cp -L "$PDFIUM_SOURCE" "$PDFIUM_DEST/libpdfium.so"
 
-          echo "Bundled PDFium: $KEEP"
-          find "$PDFIUM_DIR" -type f
+          echo "Bundled PDFium: $PDFIUM_PLAT"
+          ls -lh "$PDFIUM_DEST/libpdfium.so"
 
       # ---------- Package artifacts ----------
       - name: Package artifact (Linux)
