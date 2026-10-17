@@ -119,6 +119,7 @@ jobs:
             --standalone \
             --enable-plugin=pyside6 \
             --include-package=opencc_purepy \
+            --include-package=pdf_module \
             --include-package=helpers \
             --include-package=openxml_module \
             --include-package=services \
@@ -255,6 +256,37 @@ jobs:
             ${PDFIUM_FLAG} \
             ${ICON_FLAG} \
             mainwindow.py
+
+      - name: Trim unused Linux PDFium architecture
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          case "${{ matrix.artifact_suffix }}" in
+            linux-x64)
+              KEEP="linux-x64"
+              REMOVE="linux-arm64"
+              ;;
+            linux-arm64)
+              KEEP="linux-arm64"
+              REMOVE="linux-x64"
+              ;;
+            *)
+              echo "Unsupported Linux architecture"
+              exit 1
+              ;;
+          esac
+
+          PDFIUM_DIR="mainwindow.dist/pdf_module/pdfium"
+
+          test -f "$PDFIUM_DIR/$KEEP/libpdfium.so" || {
+            echo "Missing required PDFium: $KEEP"
+            exit 1
+          }
+
+          rm -rf -- "$PDFIUM_DIR/$REMOVE"
+
+          echo "Bundled PDFium: $KEEP"
+          find "$PDFIUM_DIR" -type f
 
       # ---------- Package artifacts ----------
       - name: Package artifact (Linux)
