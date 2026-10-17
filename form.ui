@@ -1546,7 +1546,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Convert Filename</string>
+    <string>Convert Filename (Batch)</string>
    </property>
    <property name="toolTip">
     <string>Convert Filename in batch conversion</string>
@@ -1600,7 +1600,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Auto-Detect CJK Text Encoding</string>
+    <string>Auto-Detect CJK Text Encoding (Batch)</string>
    </property>
   </action>
  </widget>
@@ -1621,7 +1621,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_config"/>
   <buttongroup name="buttonGroup_region"/>
+  <buttongroup name="buttonGroup_config"/>
  </buttongroups>
 </ui>

@@ -46,7 +46,7 @@ class TestIndexedHotPath(unittest.TestCase):
         rng = random.Random(20261004)
         for _ in range(100):
             mapping = {''.join(rng.choice('ab汉𠀀') for _ in range(rng.randint(1, 12))):
-                       rng.choice(['', 'X', '汉字']) for _ in range(80)}
+                           rng.choice(['', 'X', '汉字']) for _ in range(80)}
             union = StarterUnion(mapping, rng.choice([0, 1, 5, 12]))
             union.build_starter_index()
             text = ''.join(rng.choice('ab汉𠀀!') for _ in range(300))
@@ -86,25 +86,37 @@ class TestIndexedHotPath(unittest.TestCase):
         self.assertEqual(OpenCC.convert_union_indexed('汉字汉', restored), 'FIRST')
 
     def test_all_configs_and_punctuation_match_mask_path(self):
-        text = ('汉字软件搜索后台发展头发，漢字軟體搜尋伺服器；𠀀😀「测试」。\n' * 400)
+        text = (
+                "汉字软件搜索后台发展头发，漢字軟體搜尋伺服器；𠀀😀「测试」。\n"
+                * 400
+        )
         self.assertGreaterEqual(len(text), 10000)
+
         for config in OpenCC.CONFIG_LIST:
             cc = OpenCC(config)
+
             for punctuation in (False, True):
-                refs = cc._get_dict_refs(config + ('_punct' if punctuation else ''))
-                slots = [slot for slot in (refs.round_1, refs.round_2, refs.round_3)
-                         if slot is not None]
-                indexes = [slot._starter_lengths for slot in slots]
-                try:
-                    for slot in slots:
-                        slot._starter_lengths = None
-                    expected = cc.convert(text, punctuation)
-                finally:
-                    for slot, index in zip(slots, indexes):
-                        slot._starter_lengths = index
-                with self.subTest(config=config, punctuation=punctuation):
-                    self.assertEqual(cc.convert(text, punctuation), expected)
-                    self.assertFalse(expected.startswith('Conversion failed:'))
+                config_key = config + ("_punct" if punctuation else "")
+                refs = cc._get_dict_refs(config_key)
+
+                # Reference: legacy greedy dictionary lookup.
+                expected = refs.apply_segment_replace(
+                    text,
+                    segment_replace=cc.segment_replace,
+                    validate_delegates=False,
+                )
+
+                # Actual: optimized StarterUnion lookup.
+                actual = cc.convert(text, punctuation)
+
+                with self.subTest(
+                        config=config,
+                        punctuation=punctuation,
+                ):
+                    self.assertEqual(actual, expected)
+                    self.assertFalse(
+                        actual.startswith("Conversion failed:")
+                    )
 
     def test_parallel_threshold_and_chunking_are_preserved(self):
         cc = OpenCC()
@@ -113,7 +125,7 @@ class TestIndexedHotPath(unittest.TestCase):
         at_threshold = below + '，'
         with patch('opencc_purepy.core.Pool') as pool_type:
             pool = pool_type.return_value.__enter__.return_value
-            pool.map.side_effect = lambda fn, groups: [fn(group) for group in groups]
+            pool.map.side_effect = lambda fn, grps: [fn(group) for group in grps]
             self.assertEqual(cc.union_replace(below, union), 'x，' * 499999 + 'H')
             pool_type.assert_not_called()
             self.assertEqual(cc.union_replace(at_threshold, union), 'x，' * 499999 + 'H，')

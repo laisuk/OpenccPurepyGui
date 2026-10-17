@@ -564,14 +564,16 @@ class MainWindow(QMainWindow):
         dlg.exec()
 
     def tab_bar_changed(self, index: int) -> None:
+        self.ui.btnProcess.setEnabled(True) if index < 2 else self.ui.btnProcess.setEnabled(False)
         if index == 0:
             self.ui.btnOpenFile.setEnabled(True)
+            self.ui.lblFilename.setVisible(True)
             self.ui.lblFilename.setEnabled(True)
             self.ui.btnSaveAs.setEnabled(True)
             self.ui.cbSaveTarget.setEnabled(True)
-        elif index == 1:
+        else:
             self.ui.btnOpenFile.setEnabled(False)
-            self.ui.lblFilename.setEnabled(False)
+            self.ui.lblFilename.setVisible(False)
             self.ui.btnSaveAs.setEnabled(False)
             self.ui.cbSaveTarget.setEnabled(False)
 
@@ -1276,6 +1278,9 @@ class MainWindow(QMainWindow):
         menu.popup(pos)
 
     def _auto_detect_current_text_file(self) -> None:
+        if self._batch_thread is not None or self._pdf_thread is not None:
+            return
+
         filename = self.ui.tbSource.content_filename
         if not filename:
             return
@@ -1309,6 +1314,9 @@ class MainWindow(QMainWindow):
             )
 
     def _reload_current_text_file(self, encoding: str) -> None:
+        if self._batch_thread is not None or self._pdf_thread is not None:
+            return
+
         filename = self.ui.tbSource.content_filename
 
         if not filename:

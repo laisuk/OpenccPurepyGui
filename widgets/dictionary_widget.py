@@ -108,10 +108,10 @@ class DictionaryWidget(QWidget):
         file_layout = QHBoxLayout(cell)
         file_layout.setContentsMargins(0, 0, 0, 0)
         path_edit = QLineEdit(path, cell)
-        browse = QPushButton("Browse …", cell)
+        browse = QPushButton("🗁 Browse", cell)
         file_layout.addWidget(path_edit)
         file_layout.addWidget(browse)
-        remove = QPushButton("Remove", self.table)
+        remove = QPushButton("✕ Remove", self.table)
         remove.setStyleSheet("QPushButton { color: #D32F2F; }")
         for column, widget in enumerate((slot_box, mode_box, cell, remove)):
             self.table.setCellWidget(index, column, widget)
