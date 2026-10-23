@@ -613,8 +613,8 @@
                    </property>
                    <property name="iconSize">
                     <size>
-                     <width>18</width>
-                     <height>18</height>
+                     <width>20</width>
+                     <height>20</height>
                     </size>
                    </property>
                   </widget>
@@ -651,8 +651,8 @@
                    </property>
                    <property name="iconSize">
                     <size>
-                     <width>16</width>
-                     <height>16</height>
+                     <width>20</width>
+                     <height>20</height>
                     </size>
                    </property>
                   </widget>
@@ -1167,8 +1167,8 @@
               </property>
               <property name="iconSize">
                <size>
-                <width>16</width>
-                <height>16</height>
+                <width>20</width>
+                <height>20</height>
                </size>
               </property>
              </widget>
@@ -1230,12 +1230,12 @@
               </property>
               <property name="icon">
                <iconset resource="resource.qrc">
-                <normaloff>:/images/resource/icons8-folder-64.png</normaloff>:/images/resource/icons8-folder-64.png</iconset>
+                <normaloff>:/images/resource/icons8-opened-folder-40.png</normaloff>:/images/resource/icons8-opened-folder-40.png</iconset>
               </property>
               <property name="iconSize">
                <size>
-                <width>18</width>
-                <height>18</height>
+                <width>20</width>
+                <height>20</height>
                </size>
               </property>
              </widget>
@@ -1625,7 +1625,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>

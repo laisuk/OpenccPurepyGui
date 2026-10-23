@@ -59,7 +59,7 @@ class DictionaryWidget(QWidget):
         self.empty = QLabel("No custom dictionaries configured.")
         layout.addWidget(self.empty)
         actions = QHBoxLayout()
-        add = QPushButton("✚ Add Custom Dictionary", self)
+        add = QPushButton("＋ Add Custom Dictionary", self)
         add.setObjectName("dictionaryAdd")
         self.apply_button = QPushButton("✔ Apply to Current Converter", self)
         self.apply_button.setObjectName("dictionaryApply")
