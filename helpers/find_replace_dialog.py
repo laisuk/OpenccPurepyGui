@@ -18,7 +18,8 @@ class FindReplaceDialog(QDialog):
     def __init__(self, editor: QPlainTextEdit, parent: QWidget | None = None):
         super().__init__(parent)
         self.editor = editor
-        self.setWindowTitle('Find / Replace')
+        # self.setWindowTitle('Find / Replace')
+        self.update_title()
         self.setWindowFlag(Qt.WindowType.Tool)
         self.setModal(False)
         self.setMinimumWidth(470)
@@ -83,8 +84,6 @@ class FindReplaceDialog(QDialog):
         self.editor.document().contentsChanged.connect(self._editor_changed)
         self.editor.cursorPositionChanged.connect(self._editor_changed)
 
-        from typing import cast
-
         settings = QSettings()
         self.match_case.setChecked(
             cast(bool, settings.value("findReplace/matchCase", False, type=bool))
@@ -103,8 +102,21 @@ class FindReplaceDialog(QDialog):
             return
 
         self.editor.setExtraSelections([])
+        self.editor.document().contentsChanged.disconnect(self._editor_changed)
+        self.editor.cursorPositionChanged.disconnect(self._editor_changed)
+        self._query_start = None
         self.editor = editor
+        self.update_title()
+        self.editor.document().contentsChanged.connect(self._editor_changed)
+        self.editor.cursorPositionChanged.connect(self._editor_changed)
         self.refresh()
+
+    def update_title(self) -> None:
+        target = self.tr(
+            "Source" if self.editor.objectName() == "tbSource"
+            else "Destination"
+        )
+        self.setWindowTitle(f"{self.tr('Find / Replace')} - {target}")
 
     def open_find(self, replace_mode: bool = False) -> None:
         self.replace_row.setVisible(replace_mode)
