@@ -1596,13 +1596,16 @@
     <bool>true</bool>
    </property>
    <property name="checked">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="text">
     <string>Auto-Reflow PDF Text</string>
    </property>
   </action>
   <action name="actionSelectEditorFont">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::MailMessageNew"/>
+   </property>
    <property name="text">
     <string>Select Editor Font ...</string>
    </property>
@@ -1616,6 +1619,9 @@
    </property>
   </action>
   <action name="actionFind">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::EditFind"/>
+   </property>
    <property name="text">
     <string>Find</string>
    </property>
@@ -1649,7 +1655,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_config"/>
   <buttongroup name="buttonGroup_region"/>
+  <buttongroup name="buttonGroup_config"/>
  </buttongroups>
 </ui>
