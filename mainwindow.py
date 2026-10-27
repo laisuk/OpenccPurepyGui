@@ -10,7 +10,7 @@ from typing import Optional, Callable
 
 import PySide6
 from PySide6.QtCore import Qt, Slot, QThread, QEvent, QSettings
-from PySide6.QtGui import QGuiApplication, QTextCursor, QMouseEvent, QFont, QActionGroup, QIcon
+from PySide6.QtGui import QGuiApplication, QTextCursor, QMouseEvent, QFont, QActionGroup, QIcon, QAction, QKeySequence
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QPushButton, QMenu, QFontDialog, \
     QWidget, QVBoxLayout
 
@@ -39,6 +39,7 @@ from helpers.plain_text_encoding import decode_plain_text
 #     pyside6-uic form.ui -o ui_form.py, or
 #     pyside2-uic form.ui -o ui_form.py
 from ui_form import Ui_MainWindow
+from helpers.find_replace_dialog import FindReplaceDialog
 
 
 def read_version_file() -> str:
@@ -96,6 +97,30 @@ class MainWindow(QMainWindow):
         self._batch_thread = None
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self._find_dialog = FindReplaceDialog(self.ui.tbSource, self)
+        self._find_action = QAction('Find…', self)
+        self._find_action.setShortcut(QKeySequence.StandardKey.Find)
+        self._find_action.triggered.connect(lambda: self._find_dialog.open_find(False))
+        self._replace_action = QAction('Replace…', self)
+        self._replace_action.setShortcut(QKeySequence('Ctrl+H'))
+        self._replace_action.triggered.connect(lambda: self._find_dialog.open_find(True))
+        self._next_action = QAction('Find Next', self)
+        self._next_action.setShortcut(QKeySequence('F3'))
+        self._next_action.triggered.connect(lambda: self._find_dialog.navigate(False))
+        self._previous_action = QAction('Find Previous', self)
+        self._previous_action.setShortcut(QKeySequence('Shift+F3'))
+        self._previous_action.triggered.connect(lambda: self._find_dialog.navigate(True))
+        self._find_replace_dialog: FindReplaceDialog | None = None
+
+        # Preserve the active selection's blue accent when the tool dialog has focus.
+        self.ui.tbSource.setStyleSheet(
+            self.ui.tbSource.styleSheet()
+            + ' QPlainTextEdit { selection-background-color: #2878D7; selection-color: white; }'
+        )
+        self.ui.tbDestination.setStyleSheet(
+            self.ui.tbSource.styleSheet()
+            + ' QPlainTextEdit { selection-background-color: #2878D7; selection-color: white; }'
+        )
         self.resize(1000, 700)
 
         self._current_text_encoding = "utf-8-sig"
@@ -222,6 +247,12 @@ class MainWindow(QMainWindow):
         self.ui.tbSource.fileDropped.connect(self._on_tb_source_file_dropped)
         self.ui.tbSource.pdfDropped.connect(self._on_tb_source_pdf_dropped)
         self.ui.tbSource.openXmlDropped.connect(self._on_tb_source_non_pdf_dropped)
+        self.ui.actionFind.triggered.connect(
+            lambda: self.show_find_replace(False)
+        )
+        self.ui.actionReplace.triggered.connect(
+            lambda: self.show_find_replace(True)
+        )
 
         self.converter = OpenCC()
         self.dictionary_tab = QWidget(self.ui.tabWidget)
@@ -1339,6 +1370,27 @@ class MainWindow(QMainWindow):
                 "Encoding Error",
                 f"Failed to reload file using {encoding}:\n{ex}",
             )
+
+    def show_find_replace(self, replace_mode: bool = False) -> None:
+        """Open Find / Replace for the focused editor, defaulting to Source."""
+        source = self.ui.tbSource
+        destination = self.ui.tbDestination
+
+        if replace_mode:
+            editor = source
+        elif destination.hasFocus():
+            editor = destination
+        else:
+            editor = source
+
+        if self._find_replace_dialog is None:
+            self._find_replace_dialog = FindReplaceDialog(editor, self)
+        else:
+            self._find_replace_dialog.set_editor(editor)
+
+        self.ui.tabWidget.setCurrentWidget(self.ui.tabMain)
+        editor.setFocus()
+        self._find_replace_dialog.open_find(replace_mode)
 
 
 def btn_exit_click():

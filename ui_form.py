@@ -68,6 +68,10 @@ class Ui_MainWindow(object):
         self.actionAutoDetectCjkEncoding = QAction(MainWindow)
         self.actionAutoDetectCjkEncoding.setObjectName(u"actionAutoDetectCjkEncoding")
         self.actionAutoDetectCjkEncoding.setCheckable(True)
+        self.actionFind = QAction(MainWindow)
+        self.actionFind.setObjectName(u"actionFind")
+        self.actionReplace = QAction(MainWindow)
+        self.actionReplace.setObjectName(u"actionReplace")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout_3 = QVBoxLayout(self.centralwidget)
@@ -200,15 +204,15 @@ class Ui_MainWindow(object):
         self.tabWidget.setFont(font)
         self.tabWidget.setTabShape(QTabWidget.TabShape.Rounded)
         self.tabWidget.setIconSize(QSize(20, 20))
-        self.tab_main = QWidget()
-        self.tab_main.setObjectName(u"tab_main")
-        self.verticalLayout_2 = QVBoxLayout(self.tab_main)
+        self.tabMain = QWidget()
+        self.tabMain.setObjectName(u"tabMain")
+        self.verticalLayout_2 = QVBoxLayout(self.tabMain)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.horizontalLayout_textBox = QHBoxLayout()
         self.horizontalLayout_textBox.setSpacing(12)
         self.horizontalLayout_textBox.setObjectName(u"horizontalLayout_textBox")
         self.horizontalLayout_textBox.setContentsMargins(0, 0, 0, 0)
-        self.frameSource = QFrame(self.tab_main)
+        self.frameSource = QFrame(self.tabMain)
         self.frameSource.setObjectName(u"frameSource")
         self.frameSource.setFrameShape(QFrame.Shape.Box)
         self.frameSource.setFrameShadow(QFrame.Shadow.Sunken)
@@ -362,7 +366,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_textBox.addWidget(self.frameSource)
 
-        self.frameDestination = QFrame(self.tab_main)
+        self.frameDestination = QFrame(self.tabMain)
         self.frameDestination.setObjectName(u"frameDestination")
         self.frameDestination.setFrameShape(QFrame.Shape.Box)
         self.frameDestination.setFrameShadow(QFrame.Shadow.Sunken)
@@ -481,14 +485,14 @@ class Ui_MainWindow(object):
 
         icon5 = QIcon()
         icon5.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.tabWidget.addTab(self.tab_main, icon5, "")
-        self.tab_batch = QWidget()
-        self.tab_batch.setObjectName(u"tab_batch")
-        self.verticalLayout = QVBoxLayout(self.tab_batch)
+        self.tabWidget.addTab(self.tabMain, icon5, "")
+        self.tabBatch = QWidget()
+        self.tabBatch.setObjectName(u"tabBatch")
+        self.verticalLayout = QVBoxLayout(self.tabBatch)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.horizontalLayout_listbox = QHBoxLayout()
         self.horizontalLayout_listbox.setObjectName(u"horizontalLayout_listbox")
-        self.listSource = DragListWidget(self.tab_batch)
+        self.listSource = DragListWidget(self.tabBatch)
         self.listSource.setObjectName(u"listSource")
         font6 = QFont()
         font6.setFamilies([u"Segoe UI"])
@@ -505,7 +509,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_listbox.addWidget(self.listSource)
 
-        self.tbPreview = QPlainTextEdit(self.tab_batch)
+        self.tbPreview = QPlainTextEdit(self.tabBatch)
         self.tbPreview.setObjectName(u"tbPreview")
         self.tbPreview.setFont(font6)
         self.tbPreview.setAcceptDrops(True)
@@ -523,7 +527,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_listbox_action.setObjectName(u"horizontalLayout_listbox_action")
         self.horizontalLayout_listbox_buttons = QHBoxLayout()
         self.horizontalLayout_listbox_buttons.setObjectName(u"horizontalLayout_listbox_buttons")
-        self.btnAdd = QPushButton(self.tab_batch)
+        self.btnAdd = QPushButton(self.tabBatch)
         self.btnAdd.setObjectName(u"btnAdd")
         font7 = QFont()
         font7.setPointSize(9)
@@ -532,19 +536,19 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_listbox_buttons.addWidget(self.btnAdd)
 
-        self.btnRemove = QPushButton(self.tab_batch)
+        self.btnRemove = QPushButton(self.tabBatch)
         self.btnRemove.setObjectName(u"btnRemove")
         self.btnRemove.setFont(font3)
 
         self.horizontalLayout_listbox_buttons.addWidget(self.btnRemove)
 
-        self.btnClear = QPushButton(self.tab_batch)
+        self.btnClear = QPushButton(self.tabBatch)
         self.btnClear.setObjectName(u"btnClear")
         self.btnClear.setFont(font3)
 
         self.horizontalLayout_listbox_buttons.addWidget(self.btnClear)
 
-        self.btnPreview = QPushButton(self.tab_batch)
+        self.btnPreview = QPushButton(self.tabBatch)
         self.btnPreview.setObjectName(u"btnPreview")
         font8 = QFont()
         font8.setPointSize(9)
@@ -562,7 +566,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_preview = QHBoxLayout()
         self.horizontalLayout_preview.setObjectName(u"horizontalLayout_preview")
-        self.label = QLabel(self.tab_batch)
+        self.label = QLabel(self.tabBatch)
         self.label.setObjectName(u"label")
         sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
         sizePolicy2.setHorizontalStretch(0)
@@ -576,12 +580,12 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_preview.addWidget(self.label)
 
-        self.lineEditDir = QLineEdit(self.tab_batch)
+        self.lineEditDir = QLineEdit(self.tabBatch)
         self.lineEditDir.setObjectName(u"lineEditDir")
 
         self.horizontalLayout_preview.addWidget(self.lineEditDir)
 
-        self.btnOutDir = QPushButton(self.tab_batch)
+        self.btnOutDir = QPushButton(self.tabBatch)
         self.btnOutDir.setObjectName(u"btnOutDir")
         sizePolicy1.setHeightForWidth(self.btnOutDir.sizePolicy().hasHeightForWidth())
         self.btnOutDir.setSizePolicy(sizePolicy1)
@@ -594,7 +598,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_preview.addWidget(self.btnOutDir)
 
-        self.btnPreviewClear = QPushButton(self.tab_batch)
+        self.btnPreviewClear = QPushButton(self.tabBatch)
         self.btnPreviewClear.setObjectName(u"btnPreviewClear")
         sizePolicy1.setHeightForWidth(self.btnPreviewClear.sizePolicy().hasHeightForWidth())
         self.btnPreviewClear.setSizePolicy(sizePolicy1)
@@ -612,7 +616,7 @@ class Ui_MainWindow(object):
 
         icon8 = QIcon()
         icon8.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.tabWidget.addTab(self.tab_batch, icon8, "")
+        self.tabWidget.addTab(self.tabBatch, icon8, "")
 
         self.verticalLayout_3.addWidget(self.tabWidget)
 
@@ -725,6 +729,8 @@ class Ui_MainWindow(object):
         self.menuHelp.setObjectName(u"menuHelp")
         self.menuSettings = QMenu(self.menubar)
         self.menuSettings.setObjectName(u"menuSettings")
+        self.menuEdit = QMenu(self.menubar)
+        self.menuEdit.setObjectName(u"menuEdit")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -732,6 +738,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.menuFile.menuAction())
+        self.menubar.addAction(self.menuEdit.menuAction())
         self.menubar.addAction(self.menuSettings.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
         self.menuFile.addAction(self.actionExit)
@@ -746,6 +753,8 @@ class Ui_MainWindow(object):
         self.menuSettings.addAction(self.actionSelectEditorFont)
         self.menuSettings.addSeparator()
         self.menuSettings.addAction(self.actionUsePdfTextExtractWorker)
+        self.menuEdit.addAction(self.actionFind)
+        self.menuEdit.addAction(self.actionReplace)
 
         self.retranslateUi(MainWindow)
 
@@ -771,6 +780,14 @@ class Ui_MainWindow(object):
         self.actionAutoReflow.setText(QCoreApplication.translate("MainWindow", u"Auto-Reflow PDF Text", None))
         self.actionSelectEditorFont.setText(QCoreApplication.translate("MainWindow", u"Select Editor Font ...", None))
         self.actionAutoDetectCjkEncoding.setText(QCoreApplication.translate("MainWindow", u"Auto-Detect CJK Text Encoding (Batch)", None))
+        self.actionFind.setText(QCoreApplication.translate("MainWindow", u"Find", None))
+#if QT_CONFIG(shortcut)
+        self.actionFind.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+F", None))
+#endif // QT_CONFIG(shortcut)
+        self.actionReplace.setText(QCoreApplication.translate("MainWindow", u"Replace", None))
+#if QT_CONFIG(shortcut)
+        self.actionReplace.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+H", None))
+#endif // QT_CONFIG(shortcut)
         self.rbS2t.setText(QCoreApplication.translate("MainWindow", u"zh-Hans \uff08\u7b80\uff09 To zh-Hant \uff08\u7e41\uff09", None))
         self.rbT2s.setText(QCoreApplication.translate("MainWindow", u"zh-Hant \uff08\u7e41\uff09 To zh-Hans \uff08\u7b80\uff09", None))
         self.rbManual.setText(QCoreApplication.translate("MainWindow", u"Manual (\u81ea\u5b9a\u4e49) :", None))
@@ -834,7 +851,7 @@ class Ui_MainWindow(object):
 #endif // QT_CONFIG(tooltip)
         self.btnClearTbDestination.setText(QCoreApplication.translate("MainWindow", u"AC", None))
         self.btnCopy.setText(QCoreApplication.translate("MainWindow", u"Copy", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_main), QCoreApplication.translate("MainWindow", u"Single Convert \uff08\u5355\u9879\uff09", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabMain), QCoreApplication.translate("MainWindow", u"Single Convert \uff08\u5355\u9879\uff09", None))
         self.btnAdd.setText(QCoreApplication.translate("MainWindow", u"\u2795", None))
         self.btnRemove.setText(QCoreApplication.translate("MainWindow", u"\u2796", None))
         self.btnClear.setText(QCoreApplication.translate("MainWindow", u"AC", None))
@@ -843,7 +860,7 @@ class Ui_MainWindow(object):
         self.lineEditDir.setText(QCoreApplication.translate("MainWindow", u"./output", None))
         self.btnOutDir.setText("")
         self.btnPreviewClear.setText(QCoreApplication.translate("MainWindow", u"AC", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_batch), QCoreApplication.translate("MainWindow", u"Batch Convert \uff08\u6279\u91cf\uff09", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabBatch), QCoreApplication.translate("MainWindow", u"Batch Convert \uff08\u6279\u91cf\uff09", None))
         self.btnProcess.setText(QCoreApplication.translate("MainWindow", u"Process", None))
         self.cbSaveTarget.setItemText(0, QCoreApplication.translate("MainWindow", u"Source", None))
         self.cbSaveTarget.setItemText(1, QCoreApplication.translate("MainWindow", u"Destination", None))
@@ -855,5 +872,6 @@ class Ui_MainWindow(object):
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", u"Help", None))
         self.menuSettings.setTitle(QCoreApplication.translate("MainWindow", u"Settings", None))
+        self.menuEdit.setTitle(QCoreApplication.translate("MainWindow", u"Edit", None))
     # retranslateUi
 
