@@ -1,14 +1,23 @@
 from pathlib import Path
 from typing import Iterable, List, Set
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QDragEnterEvent, QDropEvent
-from PySide6.QtWidgets import QPlainTextEdit, QListWidget, QAbstractItemView
+from PySide6.QtCore import Qt, Signal, QEvent
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QPainter, QPalette, QPaintEvent
+from PySide6.QtWidgets import QPlainTextEdit, QListWidget, QAbstractItemView, QWidget
 
 RECURSIVE_FOLDERS = True
 # Optional: restrict types (None = accept all files)
 # ACCEPT_EXTENSIONS = None
 ACCEPT_EXTENSIONS = {".txt", ".md", ".docx", ".xlsx", ".pptx", ".odt", ".ods", ".odp", ".epub", ".pdf"}
+
+
+class _LineNumberArea(QWidget):
+    def __init__(self, editor: "TextEditWidget"):
+        super().__init__(editor)
+        self._editor = editor
+
+    def paintEvent(self, event: QPaintEvent) -> None:
+        self._editor.paint_line_numbers(event)
 
 
 class TextEditWidget(QPlainTextEdit):
@@ -20,6 +29,80 @@ class TextEditWidget(QPlainTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setAcceptDrops(True)
+        self._line_numbers_visible = False
+        self._line_number_area = _LineNumberArea(self)
+        self._line_number_area.hide()
+        self.blockCountChanged.connect(self._update_line_number_width)
+        self.updateRequest.connect(self._update_line_number_area)
+        self._update_line_number_width()
+
+    def setLineNumbersVisible(self, visible):
+        visible = bool(visible)
+        if self._line_numbers_visible == visible:
+            return
+        self._line_numbers_visible = visible
+        self._line_number_area.setVisible(visible)
+        self._update_line_number_width()
+
+    def lineNumbersVisible(self):
+        return self._line_numbers_visible
+
+    def _line_number_width(self):
+        if not self._line_numbers_visible:
+            return 0
+        return 8 + self.fontMetrics().horizontalAdvance("9") * len(str(max(1, self.blockCount())))
+
+    def _update_line_number_width(self, *_):
+        self.setViewportMargins(self._line_number_width(), 0, 0, 0)
+        self._update_line_number_geometry()
+        self._line_number_area.update()
+
+    def _update_line_number_geometry(self):
+        rect = self.contentsRect()
+        self._line_number_area.setGeometry(rect.left(), rect.top(),
+                                           self._line_number_width(), rect.height())
+
+    def _update_line_number_area(self, rect, dy):
+        if not self._line_numbers_visible:
+            return
+        if dy:
+            self._line_number_area.scroll(0, dy)
+        else:
+            self._line_number_area.update(0, rect.y(), self._line_number_area.width(), rect.height())
+        if rect.contains(self.viewport().rect()):
+            self._update_line_number_width()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._update_line_number_geometry()
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        if hasattr(self, "_line_number_area") and event.type() in (
+                QEvent.Type.FontChange, QEvent.Type.StyleChange):
+            self._update_line_number_width()
+
+    def _paint_line_numbers(self, event):
+        painter = QPainter(self._line_number_area)
+        painter.fillRect(event.rect(), self.palette().alternateBase())
+        painter.setPen(self.palette().color(QPalette.ColorRole.PlaceholderText))
+        painter.setFont(self.font())
+        block = self.firstVisibleBlock()
+        while block.isValid():
+            top = self.blockBoundingGeometry(block).translated(self.contentOffset()).top()
+            if top > event.rect().bottom():
+                break
+            bottom = top + self.blockBoundingRect(block).height()
+            if block.isVisible() and bottom >= event.rect().top():
+                painter.drawText(0, round(top), self._line_number_area.width() - 4,
+                                 self.fontMetrics().height(),
+                                 Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+                                 str(block.blockNumber() + 1))
+            block = block.next()
+        painter.end()
+
+    def paint_line_numbers(self, event: QPaintEvent) -> None:
+        self._paint_line_numbers(event)
 
     content_filename = ""
 

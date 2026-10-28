@@ -120,6 +120,21 @@ class MainWindow(QMainWindow):
                 self.ui.tbSource.setFont(font)
                 self.ui.tbDestination.setFont(font)
 
+        # Restore and synchronize the gutter on both editors.
+        show_line_numbers = bool(
+            settings.value("editor/showLineNumbers", False, type=bool)
+        )
+        self.ui.actionShowLineNumbers.setChecked(show_line_numbers)
+
+        def set_line_numbers_visible(visible):
+            self.ui.tbSource.setLineNumbersVisible(visible)
+            self.ui.tbDestination.setLineNumbersVisible(visible)
+            QSettings().setValue("editor/showLineNumbers", visible)
+
+        self.ui.tbSource.setLineNumbersVisible(show_line_numbers)
+        self.ui.tbDestination.setLineNumbersVisible(show_line_numbers)
+        self.ui.actionShowLineNumbers.toggled.connect(set_line_numbers_visible)
+
         # General settings
         self.ui.actionConvertFilename.setChecked(
             bool(settings.value("convertFilename", False, type=bool))
@@ -1376,7 +1391,6 @@ class MainWindow(QMainWindow):
         self.ui.tabWidget.setCurrentWidget(self.ui.tabMain)
         editor.setFocus()
         self._find_replace_dialog.open_find(replace_mode)
-
 
     def navigate_find(self, backward: bool = False) -> None:
         if self._find_replace_dialog is None:

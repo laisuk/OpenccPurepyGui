@@ -721,6 +721,9 @@
                    <property name="text">
                     <string>Paste</string>
                    </property>
+                   <property name="icon">
+                    <iconset theme="edit-paste"/>
+                   </property>
                   </widget>
                  </item>
                 </layout>
@@ -758,7 +761,7 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QPlainTextEdit" name="tbDestination">
+              <widget class="TextEditWidget" name="tbDestination">
                <property name="font">
                 <font>
                  <family>Microsoft YaHei</family>
@@ -1021,6 +1024,9 @@
                    </property>
                    <property name="text">
                     <string>Copy</string>
+                   </property>
+                   <property name="icon">
+                    <iconset theme="edit-copy"/>
                    </property>
                   </widget>
                  </item>
@@ -1388,6 +1394,9 @@
           <property name="text">
            <string>Save As</string>
           </property>
+          <property name="icon">
+           <iconset theme="document-save-as"/>
+          </property>
          </widget>
         </item>
         <item>
@@ -1406,6 +1415,16 @@
           </property>
           <property name="text">
            <string>Exit</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resource.qrc">
+            <normaloff>:/images/resource/exit.png</normaloff>:/images/resource/exit.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>14</width>
+            <height>14</height>
+           </size>
           </property>
          </widget>
         </item>
@@ -1431,6 +1450,9 @@
           </property>
           <property name="text">
            <string>Open File</string>
+          </property>
+          <property name="icon">
+           <iconset theme="QIcon::ThemeIcon::DocumentOpen"/>
           </property>
          </widget>
         </item>
@@ -1517,8 +1539,15 @@
     <addaction name="actionFind"/>
     <addaction name="actionReplace"/>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionShowLineNumbers"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
+   <addaction name="menuView"/>
    <addaction name="menuSettings"/>
    <addaction name="menuHelp"/>
   </widget>
@@ -1604,7 +1633,7 @@
   </action>
   <action name="actionSelectEditorFont">
    <property name="icon">
-    <iconset theme="QIcon::ThemeIcon::MailMessageNew"/>
+    <iconset theme="preferences-desktop-font"/>
    </property>
    <property name="text">
     <string>Select Editor Font ...</string>
@@ -1623,7 +1652,7 @@
     <iconset theme="QIcon::ThemeIcon::EditFind"/>
    </property>
    <property name="text">
-    <string>Find</string>
+    <string>Find ...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+F</string>
@@ -1631,10 +1660,18 @@
   </action>
   <action name="actionReplace">
    <property name="text">
-    <string>Replace</string>
+    <string>Replace ...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+H</string>
+   </property>
+  </action>
+  <action name="actionShowLineNumbers">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Line Numbers</string>
    </property>
   </action>
  </widget>
