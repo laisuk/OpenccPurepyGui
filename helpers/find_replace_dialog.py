@@ -1,7 +1,7 @@
 """Modeless Find / Replace dialog for a QPlainTextEdit source editor."""
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QRegularExpression, QSettings, QTimer
+from PySide6.QtCore import QEvent, QObject, Qt, QRegularExpression, QSettings, QTimer
 from PySide6.QtGui import QColor, QTextCursor, QTextDocument
 from PySide6.QtWidgets import (
     QCheckBox, QDialog, QHBoxLayout, QLabel, QLineEdit,
@@ -9,6 +9,8 @@ from PySide6.QtWidgets import (
     QTextEdit
 )
 from typing import Any, cast
+# noinspection PyPackageRequirements
+from shiboken6 import isValid
 
 
 class FindReplaceDialog(QDialog):
@@ -18,6 +20,8 @@ class FindReplaceDialog(QDialog):
     def __init__(self, editor: QPlainTextEdit, parent: QWidget | None = None):
         super().__init__(parent)
         self.editor = editor
+        self._styled_editor: QPlainTextEdit | None = None
+        self._original_editor_stylesheet = ''
         # self.setWindowTitle('Find / Replace')
         self.update_title()
         self.setWindowFlag(Qt.WindowType.Tool)
@@ -81,8 +85,7 @@ class FindReplaceDialog(QDialog):
         self.replace_button.clicked.connect(self.replace_one)
         self.replace_all_button.clicked.connect(self.replace_all)
         self.find_edit.returnPressed.connect(lambda: self.navigate(False))
-        self.editor.document().contentsChanged.connect(self._editor_changed)
-        self.editor.cursorPositionChanged.connect(self._editor_changed)
+        self._connect_editor()
 
         settings = QSettings()
         self.match_case.setChecked(
@@ -96,19 +99,70 @@ class FindReplaceDialog(QDialog):
         )
         self.replace_row.hide()
 
+    def _update_selection_style(self, active: bool) -> None:
+        target = self.editor if active and self.editor is not None and isValid(self.editor) else None
+        if self._styled_editor is target:
+            return
+        if self._styled_editor is not None and isValid(self._styled_editor):
+            self._styled_editor.setStyleSheet(self._original_editor_stylesheet)
+        self._styled_editor = target
+        self._original_editor_stylesheet = ''
+        if target is not None:
+            self._original_editor_stylesheet = target.styleSheet()
+            stylesheet = self._original_editor_stylesheet
+            # Widget stylesheets may use bare declarations instead of rules.
+            if stylesheet and '{' not in stylesheet:
+                stylesheet = f'QPlainTextEdit {{ {stylesheet} }}'
+            target.setStyleSheet(stylesheet + (
+                '\nQPlainTextEdit { selection-background-color: #B3D7FF; selection-color: #000000; }'
+            ))
+
+    def event(self, event: QEvent) -> bool:
+        # Qt can deliver events while QDialog.__init__ is still running.
+        if not hasattr(self, '_styled_editor'):
+            return super().event(event)
+        if event.type() == QEvent.Type.DeferredDelete:
+            self._update_selection_style(False)
+            return super().event(event)
+        handled = super().event(event)
+        if event.type() in (QEvent.Type.Show, QEvent.Type.WindowActivate):
+            self._update_selection_style(self.isVisible() and self.isActiveWindow())
+        elif event.type() in (QEvent.Type.Hide, QEvent.Type.WindowDeactivate):
+            self._update_selection_style(False)
+        return handled
+
+    def _connect_editor(self) -> None:
+        self._editor_connections = (
+            self.editor.document().contentsChanged.connect(self._editor_changed),
+            self.editor.cursorPositionChanged.connect(self._editor_changed),
+            self.editor.destroyed.connect(self._editor_destroyed),
+        )
+
+    def _editor_destroyed(self, *_args) -> None:
+        self._update_selection_style(False)
+        # pyrefly: ignore [bad-assignment]
+        self.editor = None
+        self._editor_connections = ()
+        self._query_start = None
+        self.refresh_timer.stop()
+        self.close()
+
     def set_editor(self, editor: QPlainTextEdit) -> None:
         """Switch the target editor without recreating the dialog."""
         if self.editor is editor:
             return
 
-        self.editor.setExtraSelections([])
-        self.editor.document().contentsChanged.disconnect(self._editor_changed)
-        self.editor.cursorPositionChanged.disconnect(self._editor_changed)
+        self._update_selection_style(False)
+        if self.editor is not None:
+            self.editor.setExtraSelections([])
+        for connection in self._editor_connections:
+            QObject.disconnect(connection)
+        self.refresh_timer.stop()
         self._query_start = None
         self.editor = editor
         self.update_title()
-        self.editor.document().contentsChanged.connect(self._editor_changed)
-        self.editor.cursorPositionChanged.connect(self._editor_changed)
+        self._update_selection_style(self.isVisible() and self.isActiveWindow())
+        self._connect_editor()
         self.refresh()
 
     def update_title(self) -> None:
@@ -119,6 +173,8 @@ class FindReplaceDialog(QDialog):
         self.setWindowTitle(f"{self.tr('Find / Replace')} - {target}")
 
     def open_find(self, replace_mode: bool = False) -> None:
+        if self.editor is None:
+            return
         self.replace_row.setVisible(replace_mode)
         cursor = self.editor.textCursor()
         if cursor.hasSelection():
@@ -153,12 +209,14 @@ class FindReplaceDialog(QDialog):
         return bool(self.find_edit.text()) and (not self.regex.isChecked() or self._expression().isValid())
 
     def _search(self, start: QTextCursor, backward: bool = False) -> QTextCursor:
-        if not self._valid_query():
+        if self.editor is None or not self._valid_query():
             return QTextCursor()
         query = self._expression() if self.regex.isChecked() else self.find_edit.text()
         return self.editor.document().find(query, start, self._flags(backward))
 
     def _is_current_match(self) -> bool:
+        if self.editor is None:
+            return False
         current = self.editor.textCursor()
         if not self._valid_query() or not current.hasSelection():
             return False
@@ -178,6 +236,8 @@ class FindReplaceDialog(QDialog):
                 return QTextCursor()
 
     def navigate(self, backward: bool = False) -> None:
+        if self.editor is None:
+            return
         self._query_start = None
         if not self._valid_query():
             return
@@ -194,6 +254,8 @@ class FindReplaceDialog(QDialog):
         self.refresh()
 
     def replace_one(self) -> None:
+        if self.editor is None:
+            return
         if not self._valid_query() or self.editor.isReadOnly():
             return
         if not self._is_current_match():
@@ -205,6 +267,8 @@ class FindReplaceDialog(QDialog):
         self.navigate(False)
 
     def replace_all(self) -> None:
+        if self.editor is None:
+            return
         if not self._valid_query() or self.editor.isReadOnly():
             return
         scan = QTextCursor(self.editor.document())
@@ -233,6 +297,8 @@ class FindReplaceDialog(QDialog):
             self.schedule_refresh()
 
     def _query_changed(self, *_args) -> None:
+        if self.editor is None:
+            return
         if self._query_start is None:
             self._query_start = self.editor.textCursor()
             # Keep the same starting point while refining a selected match.
@@ -244,6 +310,8 @@ class FindReplaceDialog(QDialog):
             self.refresh_timer.start()
 
     def refresh(self) -> None:
+        if self.editor is None:
+            return
         valid = self._valid_query()
         if valid and self._query_start is not None:
             start = self._query_start
@@ -303,7 +371,8 @@ class FindReplaceDialog(QDialog):
 
     def closeEvent(self, event) -> None:
         self.refresh_timer.stop()
-        self.editor.setExtraSelections([])
+        if self.editor is not None:
+            self.editor.setExtraSelections([])
         self._save_settings()
         super().closeEvent(event)
 

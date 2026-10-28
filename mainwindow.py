@@ -97,30 +97,15 @@ class MainWindow(QMainWindow):
         self._batch_thread = None
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._find_dialog = FindReplaceDialog(self.ui.tbSource, self)
-        self._find_action = QAction('Find…', self)
-        self._find_action.setShortcut(QKeySequence.StandardKey.Find)
-        self._find_action.triggered.connect(lambda: self._find_dialog.open_find(False))
-        self._replace_action = QAction('Replace…', self)
-        self._replace_action.setShortcut(QKeySequence('Ctrl+H'))
-        self._replace_action.triggered.connect(lambda: self._find_dialog.open_find(True))
         self._next_action = QAction('Find Next', self)
         self._next_action.setShortcut(QKeySequence('F3'))
-        self._next_action.triggered.connect(lambda: self._find_dialog.navigate(False))
+        self._next_action.triggered.connect(lambda: self.navigate_find(False))
         self._previous_action = QAction('Find Previous', self)
         self._previous_action.setShortcut(QKeySequence('Shift+F3'))
-        self._previous_action.triggered.connect(lambda: self._find_dialog.navigate(True))
+        self._previous_action.triggered.connect(lambda: self.navigate_find(True))
+        self.addActions([self._next_action, self._previous_action])
         self._find_replace_dialog: FindReplaceDialog | None = None
 
-        # Preserve the active selection's blue accent when the tool dialog has focus.
-        self.ui.tbSource.setStyleSheet(
-            self.ui.tbSource.styleSheet()
-            + ' QPlainTextEdit { selection-background-color: #2878D7; selection-color: white; }'
-        )
-        self.ui.tbDestination.setStyleSheet(
-            self.ui.tbSource.styleSheet()
-            + ' QPlainTextEdit { selection-background-color: #2878D7; selection-color: white; }'
-        )
         self.resize(1000, 700)
 
         self._current_text_encoding = "utf-8-sig"
@@ -1391,6 +1376,13 @@ class MainWindow(QMainWindow):
         self.ui.tabWidget.setCurrentWidget(self.ui.tabMain)
         editor.setFocus()
         self._find_replace_dialog.open_find(replace_mode)
+
+
+    def navigate_find(self, backward: bool = False) -> None:
+        if self._find_replace_dialog is None:
+            self.show_find_replace()
+        else:
+            self._find_replace_dialog.navigate(backward)
 
 
 def btn_exit_click():
