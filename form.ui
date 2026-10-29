@@ -950,13 +950,14 @@
                    <property name="toolTip">
                     <string>Fallback unsupported CJK characters to displayable alternatives to avoid tofu (□)</string>
                    </property>
-                   <property name="text">
-                    <string>豆</string>
+                   <property name="icon">
+                    <iconset resource="resource.qrc">
+                     <normaloff>:/images/resource/detofu.png</normaloff>:/images/resource/detofu.png</iconset>
                    </property>
                    <property name="iconSize">
                     <size>
-                     <width>18</width>
-                     <height>18</height>
+                     <width>20</width>
+                     <height>20</height>
                     </size>
                    </property>
                   </widget>
@@ -1538,6 +1539,7 @@
     </property>
     <addaction name="actionFind"/>
     <addaction name="actionReplace"/>
+    <addaction name="actionGoToLine"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -1674,6 +1676,17 @@
     <string>Show Line Numbers</string>
    </property>
   </action>
+  <action name="actionGoToLine">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::GoNext"/>
+   </property>
+   <property name="text">
+    <string>Go to Line ...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+G</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -1692,7 +1705,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>

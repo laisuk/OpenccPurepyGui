@@ -79,6 +79,10 @@ class Ui_MainWindow(object):
         self.actionShowLineNumbers = QAction(MainWindow)
         self.actionShowLineNumbers.setObjectName(u"actionShowLineNumbers")
         self.actionShowLineNumbers.setCheckable(True)
+        self.actionGoToLine = QAction(MainWindow)
+        self.actionGoToLine.setObjectName(u"actionGoToLine")
+        icon5 = QIcon(QIcon.fromTheme(QIcon.ThemeIcon.GoNext))
+        self.actionGoToLine.setIcon(icon5)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout_3 = QVBoxLayout(self.centralwidget)
@@ -319,9 +323,9 @@ class Ui_MainWindow(object):
         self.btnReflow.setMinimumSize(QSize(0, 28))
         self.btnReflow.setMaximumSize(QSize(30, 16777215))
         self.btnReflow.setFont(font3)
-        icon5 = QIcon()
-        icon5.addFile(u":/images/resource/icons8-refresh-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnReflow.setIcon(icon5)
+        icon6 = QIcon()
+        icon6.addFile(u":/images/resource/icons8-refresh-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnReflow.setIcon(icon6)
         self.btnReflow.setIconSize(QSize(20, 20))
 
         self.horizontalLayout_source.addWidget(self.btnReflow)
@@ -331,9 +335,9 @@ class Ui_MainWindow(object):
         self.btnNormCompat.setMinimumSize(QSize(0, 28))
         self.btnNormCompat.setMaximumSize(QSize(30, 16777215))
         self.btnNormCompat.setFont(font3)
-        icon6 = QIcon()
-        icon6.addFile(u":/images/resource/icons8-playlist-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnNormCompat.setIcon(icon6)
+        icon7 = QIcon()
+        icon7.addFile(u":/images/resource/icons8-playlist-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnNormCompat.setIcon(icon7)
         self.btnNormCompat.setIconSize(QSize(20, 20))
 
         self.horizontalLayout_source.addWidget(self.btnNormCompat)
@@ -359,8 +363,8 @@ class Ui_MainWindow(object):
         self.btnPaste.setSizePolicy(sizePolicy1)
         self.btnPaste.setMinimumSize(QSize(0, 28))
         self.btnPaste.setFont(font5)
-        icon7 = QIcon(QIcon.fromTheme(u"edit-paste"))
-        self.btnPaste.setIcon(icon7)
+        icon8 = QIcon(QIcon.fromTheme(u"edit-paste"))
+        self.btnPaste.setIcon(icon8)
 
         self.horizontalLayout_source.addWidget(self.btnPaste)
 
@@ -451,7 +455,10 @@ class Ui_MainWindow(object):
         self.btnDeTofu.setMinimumSize(QSize(0, 28))
         self.btnDeTofu.setMaximumSize(QSize(30, 16777215))
         self.btnDeTofu.setFont(font3)
-        self.btnDeTofu.setIconSize(QSize(18, 18))
+        icon9 = QIcon()
+        icon9.addFile(u":/images/resource/detofu.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnDeTofu.setIcon(icon9)
+        self.btnDeTofu.setIconSize(QSize(20, 20))
 
         self.horizontalLayout_deatination.addWidget(self.btnDeTofu)
 
@@ -473,8 +480,8 @@ class Ui_MainWindow(object):
         self.btnCopy.setSizePolicy(sizePolicy1)
         self.btnCopy.setMinimumSize(QSize(0, 28))
         self.btnCopy.setFont(font5)
-        icon8 = QIcon(QIcon.fromTheme(u"edit-copy"))
-        self.btnCopy.setIcon(icon8)
+        icon10 = QIcon(QIcon.fromTheme(u"edit-copy"))
+        self.btnCopy.setIcon(icon10)
 
         self.horizontalLayout_deatination.addWidget(self.btnCopy)
 
@@ -494,9 +501,9 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addLayout(self.horizontalLayout_textBox)
 
-        icon9 = QIcon()
-        icon9.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.tabWidget.addTab(self.tabMain, icon9, "")
+        icon11 = QIcon()
+        icon11.addFile(u":/images/resource/icons8-document-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.tabWidget.addTab(self.tabMain, icon11, "")
         self.tabBatch = QWidget()
         self.tabBatch.setObjectName(u"tabBatch")
         self.verticalLayout = QVBoxLayout(self.tabBatch)
@@ -565,9 +572,9 @@ class Ui_MainWindow(object):
         font8.setPointSize(9)
         font8.setBold(False)
         self.btnPreview.setFont(font8)
-        icon10 = QIcon()
-        icon10.addFile(u":/images/resource/visual.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnPreview.setIcon(icon10)
+        icon12 = QIcon()
+        icon12.addFile(u":/images/resource/visual.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnPreview.setIcon(icon12)
         self.btnPreview.setIconSize(QSize(20, 20))
 
         self.horizontalLayout_listbox_buttons.addWidget(self.btnPreview)
@@ -602,9 +609,9 @@ class Ui_MainWindow(object):
         self.btnOutDir.setSizePolicy(sizePolicy1)
         self.btnOutDir.setMaximumSize(QSize(30, 16777215))
         self.btnOutDir.setFont(font3)
-        icon11 = QIcon()
-        icon11.addFile(u":/images/resource/icons8-opened-folder-40.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnOutDir.setIcon(icon11)
+        icon13 = QIcon()
+        icon13.addFile(u":/images/resource/icons8-opened-folder-40.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnOutDir.setIcon(icon13)
         self.btnOutDir.setIconSize(QSize(20, 20))
 
         self.horizontalLayout_preview.addWidget(self.btnOutDir)
@@ -625,9 +632,9 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout_listbox_action)
 
-        icon12 = QIcon()
-        icon12.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.tabWidget.addTab(self.tabBatch, icon12, "")
+        icon14 = QIcon()
+        icon14.addFile(u":/images/resource/icons8-documents-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.tabWidget.addTab(self.tabBatch, icon14, "")
 
         self.verticalLayout_3.addWidget(self.tabWidget)
 
@@ -646,9 +653,9 @@ class Ui_MainWindow(object):
         font10.setPointSize(14)
         font10.setBold(True)
         self.btnProcess.setFont(font10)
-        icon13 = QIcon()
-        icon13.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnProcess.setIcon(icon13)
+        icon15 = QIcon()
+        icon15.addFile(u":/images/resource/icons8-start-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnProcess.setIcon(icon15)
         self.btnProcess.setIconSize(QSize(28, 28))
 
         self.horizontalLayout_process.addWidget(self.btnProcess)
@@ -678,8 +685,8 @@ class Ui_MainWindow(object):
         sizePolicy1.setHeightForWidth(self.btnSaveAs.sizePolicy().hasHeightForWidth())
         self.btnSaveAs.setSizePolicy(sizePolicy1)
         self.btnSaveAs.setFont(font9)
-        icon14 = QIcon(QIcon.fromTheme(u"document-save-as"))
-        self.btnSaveAs.setIcon(icon14)
+        icon16 = QIcon(QIcon.fromTheme(u"document-save-as"))
+        self.btnSaveAs.setIcon(icon16)
 
         self.horizontalLayout_saveExit.addWidget(self.btnSaveAs)
 
@@ -705,8 +712,8 @@ class Ui_MainWindow(object):
         sizePolicy1.setHeightForWidth(self.btnOpenFile.sizePolicy().hasHeightForWidth())
         self.btnOpenFile.setSizePolicy(sizePolicy1)
         self.btnOpenFile.setFont(font9)
-        icon15 = QIcon(QIcon.fromTheme(QIcon.ThemeIcon.DocumentOpen))
-        self.btnOpenFile.setIcon(icon15)
+        icon17 = QIcon(QIcon.fromTheme(QIcon.ThemeIcon.DocumentOpen))
+        self.btnOpenFile.setIcon(icon17)
 
         self.horizontalLayout_openFile.addWidget(self.btnOpenFile)
 
@@ -775,6 +782,7 @@ class Ui_MainWindow(object):
         self.menuSettings.addAction(self.actionUsePdfTextExtractWorker)
         self.menuEdit.addAction(self.actionFind)
         self.menuEdit.addAction(self.actionReplace)
+        self.menuEdit.addAction(self.actionGoToLine)
         self.menuView.addAction(self.actionShowLineNumbers)
 
         self.retranslateUi(MainWindow)
@@ -810,6 +818,10 @@ class Ui_MainWindow(object):
         self.actionReplace.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+H", None))
 #endif // QT_CONFIG(shortcut)
         self.actionShowLineNumbers.setText(QCoreApplication.translate("MainWindow", u"Show Line Numbers", None))
+        self.actionGoToLine.setText(QCoreApplication.translate("MainWindow", u"Go to Line ...", None))
+#if QT_CONFIG(shortcut)
+        self.actionGoToLine.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+G", None))
+#endif // QT_CONFIG(shortcut)
         self.rbS2t.setText(QCoreApplication.translate("MainWindow", u"zh-Hans \uff08\u7b80\uff09 To zh-Hant \uff08\u7e41\uff09", None))
         self.rbT2s.setText(QCoreApplication.translate("MainWindow", u"zh-Hant \uff08\u7e41\uff09 To zh-Hans \uff08\u7b80\uff09", None))
         self.rbManual.setText(QCoreApplication.translate("MainWindow", u"Manual (\u81ea\u5b9a\u4e49) :", None))
@@ -867,7 +879,6 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(tooltip)
         self.btnDeTofu.setToolTip(QCoreApplication.translate("MainWindow", u"Fallback unsupported CJK characters to displayable alternatives to avoid tofu (\u25a1)", None))
 #endif // QT_CONFIG(tooltip)
-        self.btnDeTofu.setText(QCoreApplication.translate("MainWindow", u"\u8c46", None))
 #if QT_CONFIG(tooltip)
         self.btnClearTbDestination.setToolTip(QCoreApplication.translate("MainWindow", u"Clear destination contents", None))
 #endif // QT_CONFIG(tooltip)

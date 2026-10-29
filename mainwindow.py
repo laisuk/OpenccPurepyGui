@@ -40,6 +40,7 @@ from helpers.plain_text_encoding import decode_plain_text
 #     pyside2-uic form.ui -o ui_form.py
 from ui_form import Ui_MainWindow
 from helpers.find_replace_dialog import FindReplaceDialog
+from helpers.go_to_line import GoToLine
 
 
 def read_version_file() -> str:
@@ -253,6 +254,7 @@ class MainWindow(QMainWindow):
         self.ui.actionReplace.triggered.connect(
             lambda: self.show_find_replace(True)
         )
+        self.ui.actionGoToLine.triggered.connect(self.show_go_to_line)
 
         self.converter = OpenCC()
         self.dictionary_tab = QWidget(self.ui.tabWidget)
@@ -1397,6 +1399,16 @@ class MainWindow(QMainWindow):
             self.show_find_replace()
         else:
             self._find_replace_dialog.navigate(backward)
+
+    def show_go_to_line(self) -> None:
+        """Go to a line in the focused editor, defaulting to Source."""
+        editor = (
+            self.ui.tbDestination
+            if self.ui.tbDestination.hasFocus()
+            else self.ui.tbSource
+        )
+
+        GoToLine.show(editor, self)
 
 
 def btn_exit_click():
