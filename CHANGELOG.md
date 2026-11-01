@@ -73,6 +73,20 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
   into XML-safe numeric character references, preventing XHTML
   parsing errors while preserving inline text spacing.
 
+### Performance
+
+- Optimized font placeholder restoration during Office and EPUB document conversion.
+- Replaced repeated whole-document string replacements with a single-pass restoration algorithm, avoiding quadratic
+  performance degradation when processing documents containing numerous font declarations.
+- Reduced unnecessary string allocations and repeated scans of XML/XHTML content.
+- Preserved existing font declarations, placeholder formats, conversion behavior, and public APIs.
+- Improved performance for font-heavy documents, particularly large EPUB files with thousands of font declarations.
+
+### Tests
+
+- Added regression coverage for font placeholder restoration, including known and unknown placeholders and non-recursive
+  replacement behavior.
+
 ---
 
 ## [1.3.0] - 2026-10-05
