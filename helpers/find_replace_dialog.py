@@ -1,7 +1,7 @@
 """Modeless Find / Replace dialog for a QPlainTextEdit source editor."""
 from __future__ import annotations
 
-from PySide6.QtCore import QEvent, QObject, Qt, QRegularExpression, QSettings, QTimer
+from PySide6.QtCore import QEvent, Qt, QRegularExpression, QSettings, QTimer
 from PySide6.QtGui import QColor, QTextCursor, QTextDocument
 from PySide6.QtWidgets import (
     QCheckBox, QDialog, QHBoxLayout, QLabel, QLineEdit,
@@ -133,10 +133,12 @@ class FindReplaceDialog(QDialog):
 
     def _connect_editor(self) -> None:
         self._editor_connections = (
-            self.editor.document().contentsChanged.connect(self._editor_changed),
-            self.editor.cursorPositionChanged.connect(self._editor_changed),
-            self.editor.destroyed.connect(self._editor_destroyed),
+            (self.editor.document().contentsChanged, self._editor_changed),
+            (self.editor.cursorPositionChanged, self._editor_changed),
+            (self.editor.destroyed, self._editor_destroyed),
         )
+        for signal, slot in self._editor_connections:
+            signal.connect(slot)
 
     def _editor_destroyed(self, *_args) -> None:
         self._update_selection_style(False)
@@ -155,8 +157,11 @@ class FindReplaceDialog(QDialog):
         self._update_selection_style(False)
         if self.editor is not None:
             self.editor.setExtraSelections([])
-        for connection in self._editor_connections:
-            QObject.disconnect(connection)
+        for signal, slot in self._editor_connections:
+            try:
+                signal.disconnect(slot)
+            except (TypeError, RuntimeError):
+                pass
         self.refresh_timer.stop()
         self._query_start = None
         self.editor = editor
