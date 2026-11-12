@@ -342,7 +342,7 @@ class Ui_MainWindow(object):
         self.btnNormCompat.setMaximumSize(QSize(30, 16777215))
         self.btnNormCompat.setFont(font3)
         icon8 = QIcon()
-        icon8.addFile(u":/images/resource/icons8-playlist-64.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon8.addFile(u":/images/resource/icons8-playlist-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.btnNormCompat.setIcon(icon8)
         self.btnNormCompat.setIconSize(QSize(20, 20))
 
@@ -618,9 +618,9 @@ class Ui_MainWindow(object):
         self.btnOutDir.setMaximumSize(QSize(30, 16777215))
         self.btnOutDir.setFont(font3)
         icon14 = QIcon()
-        icon14.addFile(u":/images/resource/icons8-opened-folder-40.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon14.addFile(u":/images/resource/icons8-opened-folder-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.btnOutDir.setIcon(icon14)
-        self.btnOutDir.setIconSize(QSize(21, 21))
+        self.btnOutDir.setIconSize(QSize(22, 22))
 
         self.horizontalLayout_preview.addWidget(self.btnOutDir)
 
@@ -731,7 +731,7 @@ class Ui_MainWindow(object):
 
         self.lblFilename = QLabel(self.centralwidget)
         self.lblFilename.setObjectName(u"lblFilename")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         sizePolicy3.setHorizontalStretch(0)
         sizePolicy3.setVerticalStretch(0)
         sizePolicy3.setHeightForWidth(self.lblFilename.sizePolicy().hasHeightForWidth())

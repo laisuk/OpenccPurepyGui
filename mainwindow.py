@@ -267,7 +267,7 @@ class MainWindow(QMainWindow):
         self.dictionary_widget = DictionaryWidget(OpenCC.available_slots(), self.dictionary_tab)
         dictionary_layout.addWidget(self.dictionary_widget)
         self.ui.tabWidget.addTab(
-            self.dictionary_tab, QIcon(":/images/resource/icons8-dictionary-48.png"), "Dictionary（字典）"
+            self.dictionary_tab, QIcon(":/images/resource/icons8-dictionary-64.png"), "Dictionary（字典）"
         )
         self.dictionary_widget.apply_requested.connect(self.apply_custom_dictionaries)
 
