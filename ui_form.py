@@ -620,7 +620,7 @@ class Ui_MainWindow(object):
         icon14 = QIcon()
         icon14.addFile(u":/images/resource/icons8-opened-folder-40.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.btnOutDir.setIcon(icon14)
-        self.btnOutDir.setIconSize(QSize(20, 20))
+        self.btnOutDir.setIconSize(QSize(21, 21))
 
         self.horizontalLayout_preview.addWidget(self.btnOutDir)
 
