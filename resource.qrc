@@ -11,7 +11,6 @@
     <file>resource/icons8-documents-64.png</file>
     <file>resource/icons8-start-48.png</file>
     <file>resource/icons8-dictionary-48.png</file>
-    <file>resource/icons8-dictionary-64.png</file>
     <file>resource/icons8-refresh-48.png</file>
     <file>resource/icons8-replace-50.png</file>
     <file>resource/icons8-playlist-64.png</file>
@@ -19,6 +18,7 @@
     <file>resource/icons8-save-as-50.png</file>
     <file>resource/detofu.png</file>
     <file>resource/information.png</file>
+    <file>resource/icons8-eye-40.png</file>
     <file>resource/visual.png</file>
     <file>resource/exit.png</file>
     <file>resource/openccpurepygui.png</file>

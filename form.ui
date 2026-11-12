@@ -1401,6 +1401,12 @@
            <iconset resource="resource.qrc">
             <normaloff>:/images/resource/icons8-save-as-50.png</normaloff>:/images/resource/icons8-save-as-50.png</iconset>
           </property>
+          <property name="iconSize">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
          </widget>
         </item>
         <item>
@@ -1426,8 +1432,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>14</width>
-            <height>14</height>
+            <width>16</width>
+            <height>16</height>
            </size>
           </property>
          </widget>
@@ -1458,6 +1464,12 @@
           <property name="icon">
            <iconset resource="resource.qrc">
             <normaloff>:/images/resource/icons8-add-file-50.png</normaloff>:/images/resource/icons8-add-file-50.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
           </property>
          </widget>
         </item>
@@ -1716,7 +1728,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_config"/>
   <buttongroup name="buttonGroup_region"/>
+  <buttongroup name="buttonGroup_config"/>
  </buttongroups>
 </ui>
