@@ -1538,6 +1538,15 @@
     <property name="title">
      <string>Settings</string>
     </property>
+    <widget class="QMenu" name="menuTheme">
+     <property name="title">
+      <string>Theme</string>
+     </property>
+     <property name="icon">
+      <iconset resource="resource.qrc">
+       <normaloff>:/images/resource/icons8-theme-48.png</normaloff>:/images/resource/icons8-theme-48.png</iconset>
+     </property>
+    </widget>
     <addaction name="actionConvertFilename"/>
     <addaction name="actionAutoDetectCjkEncoding"/>
     <addaction name="separator"/>
@@ -1545,9 +1554,10 @@
     <addaction name="actionCompactPdfText"/>
     <addaction name="actionAutoReflow"/>
     <addaction name="separator"/>
-    <addaction name="actionSelectEditorFont"/>
-    <addaction name="separator"/>
     <addaction name="actionUsePdfTextExtractWorker"/>
+    <addaction name="separator"/>
+    <addaction name="actionSelectEditorFont"/>
+    <addaction name="menuTheme"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -1728,7 +1738,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>
