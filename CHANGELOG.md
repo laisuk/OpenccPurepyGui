@@ -11,6 +11,8 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ### Added
 
+- Ported ZhoConverterQt's Settings > Theme modes (Follow System, Light, and Dark),
+  including saved preferences, system theme updates, and palette refreshes for open widgets.
 - Synced the embedded `opencc-purepy` core with upstream v1.5.0 development, adding Small Seal Script configs
   `s2seal`, `t2seal`, `seal2s`, and `seal2t` to the Python API and text/Office CLI.
 - Added four Seal dictionary slots and their text/JSON data, including custom dictionary and `dictgen` support.

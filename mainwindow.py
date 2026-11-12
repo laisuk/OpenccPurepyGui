@@ -33,6 +33,7 @@ from pdf_module.pdf_helper import build_progress_bar, extract_pdf_text_core
 from pdf_module.reflow_helper import reflow_cjk_paragraphs_core
 from helpers.cjk_encoding_detector import detect_cjk_encoding
 from helpers.plain_text_encoding import decode_plain_text
+from helpers.theme import initialize as initialize_theme, normalize_mode
 
 # Important:
 # You need to run the following command to generate the ui_form.py file
@@ -112,6 +113,19 @@ class MainWindow(QMainWindow):
         self._current_text_encoding = "utf-8-sig"
 
         settings = QSettings()
+
+        self._theme = initialize_theme()
+        self._theme_group = QActionGroup(self)
+        self._theme_group.setExclusive(True)
+        for label, theme_mode in (("Follow System", 0), ("Light", 1), ("Dark", 2)):
+            action = self.ui.menuTheme.addAction(self.tr(label))
+            action.setCheckable(True)
+            action.setData(theme_mode)
+            self._theme_group.addAction(action)
+            action.setChecked(theme_mode == normalize_mode(settings.value("theme/themeMode", 0)))
+            action.triggered.connect(
+                lambda checked=False, mode=theme_mode: self._set_theme(mode)
+            )
 
         # Editor font
         font_string = settings.value("editor/font", "", type=str)
@@ -1373,6 +1387,10 @@ class MainWindow(QMainWindow):
                 f"Failed to reload file using {encoding}:\n{ex}",
             )
 
+    def _set_theme(self, mode: int) -> None:
+        QSettings().setValue("theme/themeMode", mode)
+        self._theme.apply(mode)
+
     def show_find_replace(self, replace_mode: bool = False) -> None:
         """Open Find / Replace for the focused editor, defaulting to Source."""
         source = self.ui.tbSource
@@ -1420,7 +1438,7 @@ if __name__ == "__main__":
     app.setOrganizationName("Laisuk")
     app.setApplicationName("OpenccPurepyGui")
     app.setApplicationVersion(read_version_file())
-    app.setStyle("WindowsVista")
+    initialize_theme()
     widget = MainWindow()
     widget.show()
     sys.exit(app.exec())
