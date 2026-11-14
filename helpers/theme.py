@@ -97,17 +97,15 @@ class Theme(QObject):
             self._refresh_stylesheets()
 
 
-_theme_controller: Theme | None = None
-
-
 def initialize() -> Theme:
-    global _theme_controller
-
     app = QApplication.instance()
     if not isinstance(app, QApplication):
         raise RuntimeError("Create QApplication before initializing themes")
 
-    if _theme_controller is None:
-        _theme_controller = Theme(app)
+    controller = getattr(app, "_theme_controller", None)
 
-    return _theme_controller
+    if controller is None:
+        controller = Theme(app)
+        setattr(app, "_theme_controller", controller)
+
+    return controller
