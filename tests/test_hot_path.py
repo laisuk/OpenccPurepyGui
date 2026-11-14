@@ -123,7 +123,8 @@ class TestIndexedHotPath(unittest.TestCase):
         union = StarterUnion({'汉': 'H'}, 1)
         below = 'x，' * 499999 + '汉'
         at_threshold = below + '，'
-        with patch('opencc_purepy.core.Pool') as pool_type:
+        with patch('multiprocessing.Pool') as pool_type, \
+                patch('opencc_purepy.core.os.cpu_count', return_value=4):
             pool = pool_type.return_value.__enter__.return_value
             pool.map.side_effect = lambda fn, grps: [fn(group) for group in grps]
             self.assertEqual(cc.union_replace(below, union), 'x，' * 499999 + 'H')

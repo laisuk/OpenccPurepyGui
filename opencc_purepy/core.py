@@ -1,6 +1,7 @@
+import os
 import re
+import sys
 from enum import Enum
-from multiprocessing import Pool, cpu_count
 from typing import Dict, Iterable, List, Mapping, Optional, Tuple, Union
 
 from .utils import CustomDictSpec
@@ -20,6 +21,27 @@ STRIP_REGEX = re.compile(r"[!-/:-@\[-`{-~\t\n\v\f\r 0-9A-Za-z_著]")
 
 DELIMITERS = frozenset(
     " \t\n\r!\"#$%&'()*+,-./:;<=>?@[\\]^_{}|~＝、。“”‘’『』「」﹁﹂—－（）《》〈〉？！…／＼︒︑︔︓︿﹀︹︺︙︐［﹇］﹈︕︖︰︳︴︽︾︵︶｛︷｝︸﹃﹄【︻】︼　～．，；：")
+
+
+def _parallel_worker_count() -> int:
+    """Use at most four workers; unsupported runtimes or unknown CPUs use serial."""
+    if sys.platform in ("emscripten", "wasi"):
+        return 1
+    try:
+        count = os.cpu_count()
+    except (NotImplementedError, OSError):
+        return 1
+    return min(4, max(1, count or 1))
+
+
+def _load_pool():
+    """Import process support only for eligible work; worker errors are not caught."""
+    try:
+        from multiprocessing import Pool
+    except ImportError:
+        # Some Python builds omit multiprocessing or its native extension.
+        return None
+    return Pool
 
 
 class OpenccConfig(Enum):
@@ -47,7 +69,6 @@ class OpenccConfig(Enum):
     T2SEAL = "t2seal"
     SEAL2S = "seal2s"
     SEAL2T = "seal2t"
-
 
     # value: str
 
@@ -439,7 +460,9 @@ class OpenCC:
         - No StarterIndex / fast-path logic.
         - Accepts a round's `dictionaries` as List[(dict, max_len)] and a round
           `max_word_length` (already computed by DictRefs).
-        - Keeps the existing parallelization behavior.
+        - Uses up to four processes above 1,000 ranges and at least 1,000,000
+          characters, when multiple CPUs and process support are available.
+        - Emscripten/Pyodide and WASI always use the serial path.
 
         Parameters
         ----------
@@ -470,10 +493,11 @@ class OpenCC:
         total_length = len(text)
         use_parallel = len(ranges) > 1_000 and total_length >= 1_000_000
 
-        if use_parallel:
-            group_count = min(4, max(1, cpu_count()))
+        group_count = _parallel_worker_count() if use_parallel else 1
+        pool_type = _load_pool() if group_count > 1 else None
+        if pool_type is not None:
             groups = chunk_ranges(ranges, group_count)
-            with Pool(processes=group_count) as pool:
+            with pool_type(processes=group_count) as pool:
                 results = pool.map(
                     convert_range_group,
                     [(text, group, dictionaries, max_word_length, OpenCC.convert_segment) for group in groups],
@@ -539,6 +563,9 @@ class OpenCC:
     def union_replace(self, text: str, union: StarterUnionLike) -> str:
         """
         Greedy replacement on segmented text using a cached StarterUnion.
+
+        Uses the same process thresholds and serial platform fallbacks as
+        ``segment_replace()``. Pool startup and worker failures propagate.
         """
         if not text:
             return text
@@ -556,10 +583,11 @@ class OpenCC:
 
         use_parallel = len(ranges) > 1_000 and total_length >= 1_000_000
 
-        if use_parallel:
-            group_count = min(4, max(1, cpu_count()))
+        group_count = _parallel_worker_count() if use_parallel else 1
+        pool_type = _load_pool() if group_count > 1 else None
+        if pool_type is not None:
             groups = chunk_ranges(ranges, group_count)
-            with Pool(processes=group_count) as pool:
+            with pool_type(processes=group_count) as pool:
                 results = pool.map(
                     convert_range_group_union,
                     [(text, group, union) for group in groups],
