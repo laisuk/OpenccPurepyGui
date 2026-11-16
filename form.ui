@@ -1703,7 +1703,7 @@
   <action name="actionReplace">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/images/resource/icons8-replace-50.png</normaloff>:/images/resource/icons8-replace-50.png</iconset>
+     <normaloff>:/images/resource/icons8-replace-48.png</normaloff>:/images/resource/icons8-replace-48.png</iconset>
    </property>
    <property name="text">
     <string>Replace...</string>

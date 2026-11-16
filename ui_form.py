@@ -88,7 +88,7 @@ class Ui_MainWindow(object):
         self.actionReplace = QAction(MainWindow)
         self.actionReplace.setObjectName(u"actionReplace")
         icon8 = QIcon()
-        icon8.addFile(u":/images/resource/icons8-replace-50.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon8.addFile(u":/images/resource/icons8-replace-48.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.actionReplace.setIcon(icon8)
         self.actionShowLineNumbers = QAction(MainWindow)
         self.actionShowLineNumbers.setObjectName(u"actionShowLineNumbers")
