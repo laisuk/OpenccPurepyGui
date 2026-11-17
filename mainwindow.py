@@ -1258,9 +1258,27 @@ class MainWindow(QMainWindow):
 
     def eventFilter(self, watched, event):
         if watched is self.ui.lblFilename:
-            if event.type() == QEvent.Type.MouseButtonPress:
-                if isinstance(event, QMouseEvent):
-                    if event.button() == Qt.MouseButton.LeftButton:
+            if (
+                    event.type() == QEvent.Type.MouseButtonPress
+                    and isinstance(event, QMouseEvent)
+                    and event.button() == Qt.MouseButton.LeftButton
+            ):
+                label = self.ui.lblFilename
+                text = label.text()
+
+                if text:
+                    rect = label.contentsRect()
+                    text_width = label.fontMetrics().horizontalAdvance(text)
+                    alignment = label.alignment()
+
+                    if alignment & Qt.AlignmentFlag.AlignRight:
+                        text_x = rect.right() - text_width + 1
+                    elif alignment & Qt.AlignmentFlag.AlignHCenter:
+                        text_x = rect.left() + (rect.width() - text_width) // 2
+                    else:
+                        text_x = rect.left()
+
+                    if text_x <= event.position().x() < text_x + text_width:
                         self._show_encoding_menu()
                         return True
 
