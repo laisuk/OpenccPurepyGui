@@ -2,9 +2,8 @@
   <qresource prefix="images">
     <file>resource/icons8-add-file-50.png</file>
     <file>resource/icons8-advance-50.png</file>
+    <file>resource/icons8-book-50.png</file>
     <file>resource/icons8-copy-50.png</file>
-    <file>resource/icons8-dictionary-48.png</file>
-    <file>resource/icons8-dictionary-64.png</file>
     <file>resource/icons8-document-64.png</file>
     <file>resource/icons8-documents-64.png</file>
     <file>resource/icons8-f-48.png</file>
