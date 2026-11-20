@@ -14,7 +14,7 @@ MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 text and document conversion, built with **Python**, **PySide6**, and **Qt**.
 
 It uses [opencc-purepy](https://github.com/laisuk/opencc_purepy), a
-pure-Python OpenCC implementation, to provide conversion between
+pure-Python `OpenCC` implementation, to provide conversion between
 Simplified Chinese, Traditional Chinese, Taiwan variants, Hong Kong
 variants, and Japanese Shinjitai.
 
@@ -63,7 +63,7 @@ Available release targets include:
 ### PDF
 
 - Extract text from PDF documents
-- Convert extracted PDF text using the selected OpenCC configuration
+- Convert extracted PDF text using the selected `OpenCC` configuration
 - Optional **page headers**
 - Optional **compact extracted text**
 - Optional **automatic text reflow**
@@ -112,8 +112,6 @@ text, and automatic reflow can be configured in the application.
 
 ![Batch mode](./assets/image02.png)
 
-![Batch conversion](./assets/image03.png)
-
 Batch mode supports plain-text files, PDF documents, Office/OpenDocument
 documents, and EPUB files.
 
@@ -127,6 +125,12 @@ documents, and EPUB files.
 Supported document formats include:
 
 `PDF` · `DOCX` · `XLSX` · `PPTX` · `ODT` · `ODS` · `ODP` · `EPUB`
+
+### Custom Dictionary
+
+![Dictionary](./assets/image03.png)
+
+---
 
 ## Conversion Configurations
 
@@ -173,7 +177,7 @@ python -m opencc_purepy convert -c seal2s -i seal.txt -o simplified.txt
 **CJK Normalization Compatibility** normalizes Unicode compatibility
 characters into their standard CJK forms.
 
-This helps produce consistent text before OpenCC conversion, especially
+This helps produce consistent text before `OpenCC` conversion, especially
 when source documents contain compatibility characters that are visually
 similar or equivalent to standard CJK characters.
 
@@ -186,7 +190,7 @@ characters that may appear as missing-glyph boxes ("tofu") in fonts or
 applications without sufficient Unicode coverage.
 
 It can replace mapped rare characters with display-compatible
-alternatives after OpenCC conversion.
+alternatives after `OpenCC` conversion.
 
 DeTofu supports configurable CJK extension levels from **Ext-B through
 Ext-I**, as well as custom fallback mappings.
