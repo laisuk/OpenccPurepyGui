@@ -7,11 +7,11 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ---
 
-## [1.4.0] - Unreleased
+## \[1.4.0] - Unreleased
 
 ### Added
 
-- Ported ZhoConverterQt's Settings > Theme modes (Follow System, Light, and Dark),
+- Ported `ZhoConverterQt`'s Settings > Theme modes (Follow System, Light, and Dark),
   including saved preferences, system theme updates, and palette refreshes for open widgets.
 - Synced the embedded `opencc-purepy` core with upstream v1.5.0 development, adding Small Seal Script configs
   `s2seal`, `t2seal`, `seal2s`, and `seal2t` to the Python API and text/Office CLI.
@@ -29,7 +29,7 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
   sequential PDF extraction, and background PDF extraction (all exit code `0`).
   Rebuilt the release executable; all 79 existing tests passed.
 
-- Moved the About dialog import to startup to avoid the lazy-import crash
+- Moved the About dialog import to start up to avoid the lazy-import crash
   reproduced in OpenccPyo3Gui with Nuitka 4.3 / Python 3.13 / PySide6 6.12.
   OpenccPurepyGui contained the same import inside its About menu callback.
   Verified About, Copy Info, and OK in an LTO-enabled compiled smoke test (exit code `0`) and the interpreter; all 79
@@ -91,7 +91,7 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ---
 
-## [1.3.0] - 2026-10-05
+## \[1.3.0] - 2026-10-05
 
 ### Added
 
@@ -119,7 +119,7 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 - Renamed the internal Taiwan and Hong Kong triple union keys to `TwTriple`, `TwRevTriple`, `HkTriple`, and
   `HkRevTriple`.
 - Refactored `s2twp` from three conversion rounds to two rounds by combining Taiwan phrase and variant normalization
-  into one round, matching upstream OpenCC behavior and improving conversion efficiency.
+  into one round, matching upstream `OpenCC` behavior and improving conversion efficiency.
 - Optimized dictionary matching with precomputed descending starter-indexed candidate-length tuples, substantially
   reducing conversion overhead.
 - Optimized text reflow.
@@ -127,7 +127,7 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ---
 
-## [1.2.2] - 2026-05-14
+## \[1.2.2] - 2026-05-14
 
 ### Changed
 
@@ -138,7 +138,7 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ---
 
-## [1.2.0] - 2026-02-18
+## \[1.2.0] - 2026-02-18
 
 ### Added
 
@@ -151,7 +151,7 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ---
 
-## [1.1.0] - 2025-09-22
+## \[1.1.0] - 2025-09-22
 
 ### Added
 
@@ -159,12 +159,12 @@ the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 ---
 
-## [1.0.0] – 2025-09-05
+## \[1.0.0] – 2025-09-05
 
 ### Added
 
 - Initial release of `OpenccPurepyGui` for `opencc-purepy`.
 - Pure Python OpenCC-compatible engine for Traditional and Simplified Chinese text conversion.
-- Supported standard OpenCC configs:
+- Supported standard `OpenCC` configs:
     - `s2t`, `s2tw`, `s2twp`, `s2hk`, `t2s`, `tw2s`, `tw2sp`, `hk2s`, `jp2t`, `t2jp`
 - Support conversion of plain text, Office documents and Epub.
